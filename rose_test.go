@@ -21,7 +21,7 @@ func TestDatabaseDirCreated(t *testing.T) {
 
 	m = &Metadata{
 		Method: "insert",
-		Data:   &[]byte{},
+		Data:   []byte{},
 		Id: "validid",
 	}
 
@@ -51,7 +51,7 @@ func TestInvalidMethod(t *testing.T) {
 	for i := 0; i < len(iv); i++ {
 		m = &Metadata{
 			Method: iv[i],
-			Data:   &[]byte{},
+			Data:   []byte{},
 			Id: "validid",
 		}
 
@@ -89,7 +89,7 @@ func TestInvalidId(t *testing.T) {
 	for i := 0; i < len(iv); i++ {
 		m = &Metadata{
 			Method: iv[i],
-			Data:   &[]byte{},
+			Data:   []byte{},
 			Id: "",
 		}
 
@@ -117,7 +117,7 @@ func TestValidMethod(t *testing.T) {
 	for i := 0; i < len(iv); i++ {
 		m = &Metadata{
 			Method: iv[i],
-			Data:   &[]byte{},
+			Data:   []byte{},
 			Id: "validid",
 		}
 
@@ -149,7 +149,7 @@ func TestSingleInsert(t *testing.T) {
 
 	m = &Metadata{
 		Method: InsertMethodType,
-		Data:   &s,
+		Data:   s,
 		Id:     "id",
 	}
 
@@ -181,9 +181,9 @@ func TestMultipleInsert(t *testing.T) {
 
 	var appErr RoseError
 	var appResult *AppResult
-	var currId uint
+	var currId uint64
 
-	defer testRemoveFileSystemDb(t)
+	//defer testRemoveFileSystemDb(t)
 
 	a = testCreateController(testGetTestName(t))
 
@@ -192,7 +192,7 @@ func TestMultipleInsert(t *testing.T) {
 
 		m = &Metadata{
 			Method: InsertMethodType,
-			Data:   &s,
+			Data:   s,
 			Id:     fmt.Sprintf("id-%d", i),
 		}
 
@@ -212,6 +212,8 @@ func TestMultipleInsert(t *testing.T) {
 
 		currId++
 	}
+
+	a.Close()
 }
 
 func TestSingleRead(t *testing.T) {
@@ -305,7 +307,7 @@ func TestMultipleConcurrentRequests(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		m = &Metadata{
 			Method: InsertMethodType,
-			Data:   &s,
+			Data:   s,
 			Id:     fmt.Sprintf("id-%d", i),
 		}
 
@@ -318,7 +320,7 @@ func TestMultipleConcurrentRequests(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		m = &Metadata{
 			Method: ReadMethodType,
-			Data:   &s,
+			Data:   s,
 			Id:     fmt.Sprintf("id-%d", i),
 		}
 
@@ -351,44 +353,35 @@ func TestMultipleConcurrentRequests(t *testing.T) {
 
 func testCreateController(testName string) *Rose {
 	var a *Rose
-	var appErr RoseError
-	var errStream chan RoseError
 
-	a = &Rose{}
-	errStream = a.Init(false)
-
-	appErr = <- errStream
-
-	if appErr != nil {
-		panic(fmt.Sprintf("%s: fixtureInsertSingle: Rose failed to Init with message: %s", testName, appErr.Error()))
-	}
+	a = New()
 
 	return a
 }
 
 func testRemoveFileSystemDb(t *testing.T) {
-	var roseDir string
+	var dir string
 
-	roseDir = RoseDir()
-	if _, err := os.Stat(roseDir); os.IsNotExist(err) {
-		t.Errorf("%s: Database directory .rose_db was not created in %s", roseDir, testGetTestName(t))
+	dir = roseDbDir()
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		t.Errorf("%s: Database directory .rose_db was not created in %s", dir, testGetTestName(t))
 
 		return
 	}
 
-	files, err := ioutil.ReadDir(roseDir)
+	files, err := ioutil.ReadDir(dir)
 
 	if err != nil {
-		t.Errorf("%s: Removing %s failed with message %s", roseDir, testGetTestName(t), err.Error())
+		t.Errorf("%s: Removing %s failed with message %s", dir, testGetTestName(t), err.Error())
 
 		return
 	}
 
 	for _, f := range files {
-		err = os.Remove(fmt.Sprintf("%s/%s", roseDir, f.Name()))
+		err = os.Remove(fmt.Sprintf("%s/%s", dir, f.Name()))
 
 		if err != nil {
-			t.Errorf("%s: Removing %s failed with message %s", roseDir, testGetTestName(t), err.Error())
+			t.Errorf("%s: Removing %s failed with message %s", dir, testGetTestName(t), err.Error())
 
 			return
 		}
@@ -396,28 +389,28 @@ func testRemoveFileSystemDb(t *testing.T) {
 }
 
 func benchmarkRemoveFileSystemDb(b *testing.B) {
-	var roseDir string
+	var dir string
 
-	roseDir = RoseDir()
-	if _, err := os.Stat(roseDir); os.IsNotExist(err) {
-		b.Errorf("%s: Database directory .rose_db was not created in %s", roseDir, testGetBenchmarkName(b))
+	dir = roseDir()
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		b.Errorf("%s: Database directory .rose_db was not created in %s", dir, testGetBenchmarkName(b))
 
 		return
 	}
 
-	files, err := ioutil.ReadDir(roseDir)
+	files, err := ioutil.ReadDir(dir)
 
 	if err != nil {
-		b.Errorf("%s: Removing %s failed with message %s", roseDir, testGetBenchmarkName(b), err.Error())
+		b.Errorf("%s: Removing %s failed with message %s", dir, testGetBenchmarkName(b), err.Error())
 
 		return
 	}
 
 	for _, f := range files {
-		err = os.Remove(fmt.Sprintf("%s/%s", roseDir, f.Name()))
+		err = os.Remove(fmt.Sprintf("%s/%s", dir, f.Name()))
 
 		if err != nil {
-			b.Errorf("%s: Removing %s failed with message %s", roseDir, testGetBenchmarkName(b), err.Error())
+			b.Errorf("%s: Removing %s failed with message %s", dir, testGetBenchmarkName(b), err.Error())
 
 			return
 		}
@@ -442,7 +435,7 @@ func fixtureSingleInsert(id string, value string, a *Rose, t *testing.T, testNam
 
 	m = &Metadata{
 		Method: InsertMethodType,
-		Data:   &s,
+		Data:   s,
 		Id:     id,
 	}
 

@@ -17,11 +17,11 @@ func newIdFactory() *idFactory {
 	}
 }
 
-func (m *idFactory) Next() uint {
+func (m *idFactory) Next() uint64 {
 	if m.CurrIdx == 0 {
 		m.CurrIdx++
 
-		return uint(0)
+		return uint64(0)
 	}
 
 	var c uint16
@@ -33,5 +33,5 @@ func (m *idFactory) Next() uint {
 		m.CurrIdx = 0
 	}
 
-	return uint(c)
+	return uint64(c)
 }

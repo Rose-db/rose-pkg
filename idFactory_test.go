@@ -7,7 +7,7 @@ import (
 func TestIdGenerationWithinRange(t *testing.T) {
 	var fac *idFactory
 	var iterations int = 0
-	var currId uint = 0
+	var currId uint64 = 0
 
 	fac = newIdFactory()
 

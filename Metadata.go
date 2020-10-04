@@ -7,7 +7,7 @@ import (
 type Metadata struct {
 	Method 	string
 	Id 		string
-	Data 	*[]byte
+	Data 	[]byte
 }
 
 func (m *Metadata) validate() RoseError {

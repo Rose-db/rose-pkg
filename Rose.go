@@ -1,17 +1,12 @@
 package rose
 
-import (
-	"fmt"
-)
-
-
 type Rose struct {
 	Database *database
-	FsDbHandler *fsDbHandler
+	JobQueue *jobQueue
 }
 
 type AppResult struct {
-	Id uint
+	Id uint64
 	Method string
 	Status string
 	Reason string
@@ -27,13 +22,15 @@ func (a *Rose) Insert(m *Metadata) (RoseError, *AppResult) {
 		return vErr, nil
 	}
 
-	var idx uint
+	var idx uint64
+	var data *[]uint8
 
-	idx, _ = a.Database.Insert(m.Id, m.Data)
+	data = &m.Data
 
-/*	a.FsDbHandler.OpenIfNotOpen(blockIdx)
-	a.FsDbHandler.Write(idx, m.Data)
-*/
+	idx, _ = a.Database.Insert(m.Id, data)
+
+	a.JobQueue.Add(&job{Data: data})
+
 	return nil, &AppResult{
 		Id:     idx,
 		Method: m.Method,
@@ -88,23 +85,17 @@ func (a *Rose) Delete(m *Metadata) (RoseError, *AppResult) {
 	}
 }
 
-func (a *Rose) Init(log bool) chan RoseError {
-	var fsStream chan string
-	var errStream chan RoseError
+func (a *Rose) Close() {
+	a.JobQueue.Close()
+}
 
-	fsStream = make(chan string)
-	errStream = make(chan RoseError)
+func New() *Rose {
+	createDbIfNotExists()
 
-	go createDbIfNotExists(fsStream, errStream)
-
-	for msg := range fsStream {
-		if log {
-			fmt.Println(msg)
-		}
+	a := &Rose{
+		Database: newDatabase(),
+		JobQueue: newJobQueue(),
 	}
 
-	a.Database = newDatabase()
-	a.FsDbHandler = newFsDbHandler()
-
-	return errStream
+	return a
 }

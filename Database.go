@@ -2,12 +2,13 @@ package rose
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 )
 
 type dbReadResult struct {
-	Idx uint
+	Idx uint64
 	Id string
 	Result string
 }
@@ -25,24 +26,24 @@ type dbReadResult struct {
 	is created with the same size.
  */
 type database struct {
-	InternalDb map[uint]*[3000]*[]uint8
+	InternalDb map[uint64]*[3000]*[]uint8
 	// map of user supplied ids to InternalDb indexes
 	// IdLookupMap::string -> idx::uint -> InternalDb[idx] -> []uint8
-	IdLookupMap map[string]uint
+	IdLookupMap map[string]uint64
 	idFactory *idFactory
 	RWMutex *sync.RWMutex
 
-	CurrMapIdx uint
+	CurrMapIdx uint64
 }
 
 func newDatabase() *database {
 	d := &database{}
 
-	d.InternalDb = make(map[uint]*[3000]*[]uint8)
+	d.InternalDb = make(map[uint64]*[3000]*[]uint8)
 	d.InternalDb[0] = &[3000]*[]uint8{}
 	d.RWMutex = &sync.RWMutex{}
 
-	d.IdLookupMap = make(map[string]uint)
+	d.IdLookupMap = make(map[string]uint64)
 
 	m := newIdFactory()
 
@@ -60,10 +61,10 @@ func newDatabase() *database {
 		- if the block does not exist, it is created
 	- the value is stored in the block with its index
 */
-func (d *database) Insert(id string, v *[]uint8) (uint, uint) {
-	var idx uint
+func (d *database) Insert(id string, v *[]uint8) (uint64, uint64) {
+	var idx uint64
 	var m *[3000]*[]uint8
-	var computedIdx, mapIdx uint
+	var computedIdx, mapIdx uint64
 
 	d.RWMutex.Lock()
 
@@ -79,9 +80,15 @@ func (d *database) Insert(id string, v *[]uint8) (uint, uint) {
 
 	// r operation
 	d.IdLookupMap[id] = idx
-	m[idx] = v
 
 	computedIdx = idx + (d.CurrMapIdx * 3000)
+
+	*v = append(*v, byte(10))
+	f := strconv.FormatUint(computedIdx, 10) + " "
+	b := []uint8(f)
+	*v = append(b, *v...)
+
+	m[idx] = v
 
 	if idx == 2999 {
 		d.CurrMapIdx++
@@ -99,9 +106,9 @@ func (d *database) Delete(id string) {
 }
 
 func (d *database) Read(id string) (*dbReadResult, *dbReadError) {
-	var idx uint
+	var idx uint64
 	var m *[3000]*[]uint8
-	var mapId uint = 0
+	var mapId uint64 = 0
 	var b *[]uint8
 
 	idx, ok := d.IdLookupMap[id]
