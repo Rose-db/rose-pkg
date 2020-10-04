@@ -18,7 +18,7 @@ type AppResult struct {
 	Result string
 }
 
-func (a *Rose) Run(m *Metadata) (RoseError, *AppResult) {
+func (a *Rose) Insert(m *Metadata) (RoseError, *AppResult) {
 	var vErr RoseError
 
 	vErr = m.validate()
@@ -27,18 +27,6 @@ func (a *Rose) Run(m *Metadata) (RoseError, *AppResult) {
 		return vErr, nil
 	}
 
-	if m.Method == InsertMethodType {
-		return nil, a.insert(m)
-	} else if m.Method == DeleteMethodType {
-		return a.delete(m)
-	} else if m.Method == ReadMethodType {
-		return a.read(m)
-	}
-
-	panic("Internal rose error. Unreachable code reached. None of the methods have executed but one should have.")
-}
-
-func (a *Rose) insert(m *Metadata) *AppResult {
 	var idx, blockIdx uint
 
 	idx, blockIdx = a.Database.Insert(m.Id, m.Data)
@@ -46,14 +34,22 @@ func (a *Rose) insert(m *Metadata) *AppResult {
 	a.FsDbHandler.AcquireBlock(blockIdx)
 	a.FsDbHandler.Write(idx, m.Data)
 
-	return &AppResult{
+	return nil, &AppResult{
 		Id:     idx,
 		Method: m.Method,
 		Status: FoundResultStatus,
 	}
 }
 
-func (a *Rose) read(m *Metadata) (RoseError, *AppResult) {
+func (a *Rose) Read(m *Metadata) (RoseError, *AppResult) {
+	var vErr RoseError
+
+	vErr = m.validate()
+
+	if vErr != nil {
+		return vErr, nil
+	}
+
 	var res *dbReadResult
 	var err *dbReadError
 	res, err = a.Database.Read(m.Id)
@@ -76,7 +72,15 @@ func (a *Rose) read(m *Metadata) (RoseError, *AppResult) {
 	}
 }
 
-func (a *Rose) delete(m *Metadata) (RoseError, *AppResult) {
+func (a *Rose) Delete(m *Metadata) (RoseError, *AppResult) {
+	var vErr RoseError
+
+	vErr = m.validate()
+
+	if vErr != nil {
+		return vErr, nil
+	}
+
 	return nil, &AppResult{
 		Id:     1,
 		Method: m.Method,

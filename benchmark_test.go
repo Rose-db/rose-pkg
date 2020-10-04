@@ -10,7 +10,7 @@ var testString string = "Lorem ipsum dolor sit amet, consectetur adipiscing elit
 
 func benchmarkDirectInsert(i int, a *Rose, m *Metadata) {
 	for c := 0; c < i; c++ {
-		_, _ = a.Run(m)
+		_, _ = a.Insert(m)
 	}
 }
 
