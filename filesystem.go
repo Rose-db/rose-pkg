@@ -38,6 +38,86 @@ func createDbIfNotExists(msgCom chan string, errCom chan RoseError) {
 	close(errCom)
 }
 
+type fsDbHandler struct {
+	File *os.File
+	Block uint
+}
+
+func newFsDbHandler() *fsDbHandler {
+	return &fsDbHandler{}
+}
+
+func (fs *fsDbHandler) AcquireBlock(b uint) {
+	if fs.File == nil {
+		fs.File = fs.createFile(b)
+	}
+
+	if b != fs.Block {
+		fs.syncAndClose()
+		fs.File = fs.createFile(b)
+		fs.Block = b
+	}
+}
+
+func (fs *fsDbHandler) Write(id uint, d *[]byte) {
+	var err error
+	var name string
+
+	name = fs.File.Name()
+	*d = append(*d, byte(10))
+
+	_, err = fs.File.Write(*d)
+
+	if err != nil {
+		panic(&dbIntegrityError{
+			Code:    DbIntegrityViolationCode,
+			Message: fmt.Sprintf("Database integrity violation. Cannot write to existing file %s with underlying message: %s", name, err.Error()),
+		})
+	}
+}
+
+func (fs *fsDbHandler) createFile(b uint) *os.File {
+	var f string
+	var file *os.File
+
+	f = fmt.Sprintf("%s/%d.rose", RoseDir(), b)
+
+	file, err := os.Create(f)
+
+	if err != nil {
+		panic(&dbIntegrityError{
+			Code:    DbIntegrityViolationCode,
+			Message: fmt.Sprintf("Database integrity violation. Cannot create file %s with underlying message: %s", f, err.Error()),
+		})
+	}
+
+	return file
+}
+
+func (fs *fsDbHandler) syncAndClose() {
+	var err error
+	var name string
+
+	name = fs.File.Name()
+	err = fs.File.Sync()
+
+	if err != nil {
+		panic(&dbIntegrityError{
+			Code:    DbIntegrityViolationCode,
+			Message: fmt.Sprintf("Database integrity violation. Database file system problem for file %s with underlying message: %s", name, err.Error()),
+		})
+	}
+
+	err = fs.File.Close()
+
+	if err != nil {
+		panic(&dbIntegrityError{
+			Code:    DbIntegrityViolationCode,
+			Message: fmt.Sprintf("Database integrity violation. Cannot close file %s with underlying message: %s", name, err.Error()),
+		})
+	}
+}
+
 // Returns the directory name of the user home directory.
 // Directory returned does not have a leading slash, e.i /path/to/dir
 func userHomeDir() string {
@@ -60,114 +140,4 @@ func userHomeDir() string {
 
 func RoseDir() string {
 	return fmt.Sprintf("%s/.rose_db", userHomeDir())
-}
-
-/**
-Creates a file with name {id}.rose and writes the value in it.
-
-This function is designed to be called as a goroutine only.
-
-DO NOT CALL THIS FUNCTION AS ANYTHING ELSE EXCEPT AS A GOROUTINE
-
-This method must write to a file that does not exists. If the file
-exists, its content is truncated and replaced with new content. If the file
-does not exists, it is created and content is written to it.
-
-This function cannot result in an error and therefor, panics if it encounters
-one. If this function panics, its is an indication of an internal bug. Execution
-cannot continue if this function fails.
-*/
-func fsWrite(id uint, d *[]byte) {
-	// create file name, for example /path/to/dir/.rose_db/{id}.rose
-	f := fmt.Sprintf("%s/%d.rose", RoseDir(), id)
-
-	// if the file exists, work with the existing file and return
-	if _, err := os.Stat(f); os.IsExist(err) {
-		// if the file exists, empty the file contents
-		err = os.Truncate(f, 0)
-
-		if err != nil {
-			panic(&dbIntegrityError{
-				Code:    DbIntegrityViolationCode,
-				Message: fmt.Sprintf("Database integrity violation. Cannot truncate file %s with underlying message: %s", f, err.Error()),
-			})
-		}
-
-		// open the file for writing
-		file, err := os.Open(f)
-
-		if err != nil {
-			panic(&dbIntegrityError{
-				Code:    DbIntegrityViolationCode,
-				Message: fmt.Sprintf("Database integrity violation. Cannot open file %s with underlying message: %s", f, err.Error()),
-			})
-		}
-
-		// write to file
-		_, err = file.Write(*d)
-
-		if err != nil {
-			panic(&dbIntegrityError{
-				Code:    DbIntegrityViolationCode,
-				Message: fmt.Sprintf("Database integrity violation. Cannot write to existing file %s with underlying message: %s", f, err.Error()),
-			})
-		}
-
-		err = file.Sync()
-
-		if err != nil {
-			panic(&dbIntegrityError{
-				Code:    DbIntegrityViolationCode,
-				Message: fmt.Sprintf("Database integrity violation. Database file system problem for file %s with underlying message: %s", f, err.Error()),
-			})
-		}
-
-		err = file.Close()
-
-		if err != nil {
-			panic(&dbIntegrityError{
-				Code:    DbIntegrityViolationCode,
-				Message: fmt.Sprintf("Database integrity violation. Database file system problem for file %s with underlying message: %s", f, err.Error()),
-			})
-		}
-
-		return
-	}
-
-	// if the file doesn't exist, create it
-	file, err := os.Create(f)
-
-	if err != nil {
-		panic(&dbIntegrityError{
-			Code:    DbIntegrityViolationCode,
-			Message: fmt.Sprintf("Database integrity violation. Cannot create file %s with underlying message: %s", f, err.Error()),
-		})
-	}
-
-	_, err = file.Write(*d)
-
-	if err != nil {
-		panic(&dbIntegrityError{
-			Code:    DbIntegrityViolationCode,
-			Message: fmt.Sprintf("Database integrity violation. Cannot write to new file %s with underlying message: %s", f, err.Error()),
-		})
-	}
-
-	err = file.Sync()
-
-	if err != nil {
-		panic(&dbIntegrityError{
-			Code:    DbIntegrityViolationCode,
-			Message: fmt.Sprintf("Database integrity violation. Database file system problem for file %s with underlying message: %s", f, err.Error()),
-		})
-	}
-
-	err = file.Close()
-
-	if err != nil {
-		panic(&dbIntegrityError{
-			Code:    DbIntegrityViolationCode,
-			Message: fmt.Sprintf("Database integrity violation. Cannot close file %s with underlying message: %s", f, err.Error()),
-		})
-	}
 }

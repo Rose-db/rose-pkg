@@ -35,7 +35,7 @@ type database struct {
 	CurrMapIdx uint
 }
 
-func NewDatabase() *database {
+func newDatabase() *database {
 	d := &database{}
 
 	d.InternalDb = make(map[uint]*[3000]*[]uint8)
@@ -60,10 +60,10 @@ func NewDatabase() *database {
 		- if the block does not exist, it is created
 	- the value is stored in the block with its index
 */
-func (d *database) Insert(id string, v *[]uint8) uint {
+func (d *database) Insert(id string, v *[]uint8) (uint, uint) {
 	var idx uint
 	var m *[3000]*[]uint8
-	var computedIdx uint
+	var computedIdx, mapIdx uint
 
 	d.RWMutex.Lock()
 
@@ -86,10 +86,12 @@ func (d *database) Insert(id string, v *[]uint8) uint {
 	if idx == 2999 {
 		d.CurrMapIdx++
 	}
+
+	mapIdx = d.CurrMapIdx
 	
 	d.RWMutex.Unlock()
 
-	return computedIdx
+	return computedIdx, mapIdx
 }
 
 func (d *database) Delete(id string) {

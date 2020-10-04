@@ -5,9 +5,9 @@ import (
 )
 
 
-type AppController struct {
+type Rose struct {
 	Database *database
-	FsJobQueue *fsJobQueue
+	FsDbHandler *fsDbHandler
 }
 
 type AppResult struct {
@@ -18,7 +18,7 @@ type AppResult struct {
 	Result string
 }
 
-func (a *AppController) Run(m *Metadata) (RoseError, *AppResult) {
+func (a *Rose) Run(m *Metadata) (RoseError, *AppResult) {
 	var vErr RoseError
 
 	vErr = m.validate()
@@ -28,7 +28,7 @@ func (a *AppController) Run(m *Metadata) (RoseError, *AppResult) {
 	}
 
 	if m.Method == InsertMethodType {
-		return a.insert(m)
+		return nil, a.insert(m)
 	} else if m.Method == DeleteMethodType {
 		return a.delete(m)
 	} else if m.Method == ReadMethodType {
@@ -38,24 +38,22 @@ func (a *AppController) Run(m *Metadata) (RoseError, *AppResult) {
 	panic("Internal rose error. Unreachable code reached. None of the methods have executed but one should have.")
 }
 
-func (a *AppController) insert(m *Metadata) (RoseError, *AppResult) {
-	var idx uint
+func (a *Rose) insert(m *Metadata) *AppResult {
+	var idx, blockIdx uint
 
-	idx = a.Database.Insert(m.Id, m.Data)
+	idx, blockIdx = a.Database.Insert(m.Id, m.Data)
 
-	a.FsJobQueue.Run(&job{
-		Id:    idx,
-		Value: m.Data,
-	})
+	a.FsDbHandler.AcquireBlock(blockIdx)
+	a.FsDbHandler.Write(idx, m.Data)
 
-	return nil, &AppResult{
+	return &AppResult{
 		Id:     idx,
 		Method: m.Method,
 		Status: FoundResultStatus,
 	}
 }
 
-func (a *AppController) read(m *Metadata) (RoseError, *AppResult) {
+func (a *Rose) read(m *Metadata) (RoseError, *AppResult) {
 	var res *dbReadResult
 	var err *dbReadError
 	res, err = a.Database.Read(m.Id)
@@ -78,7 +76,7 @@ func (a *AppController) read(m *Metadata) (RoseError, *AppResult) {
 	}
 }
 
-func (a *AppController) delete(m *Metadata) (RoseError, *AppResult) {
+func (a *Rose) delete(m *Metadata) (RoseError, *AppResult) {
 	return nil, &AppResult{
 		Id:     1,
 		Method: m.Method,
@@ -86,7 +84,7 @@ func (a *AppController) delete(m *Metadata) (RoseError, *AppResult) {
 	}
 }
 
-func (a *AppController) Init(log bool) chan RoseError {
+func (a *Rose) Init(log bool) chan RoseError {
 	var fsStream chan string
 	var errStream chan RoseError
 
@@ -101,9 +99,8 @@ func (a *AppController) Init(log bool) chan RoseError {
 		}
 	}
 
-	a.Database = NewDatabase()
-
-	a.FsJobQueue = newJobQueue(200)
+	a.Database = newDatabase()
+	a.FsDbHandler = newFsDbHandler()
 
 	return errStream
 }

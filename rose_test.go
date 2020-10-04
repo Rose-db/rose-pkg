@@ -11,9 +11,8 @@ import (
 )
 
 func TestDatabaseDirCreated(t *testing.T) {
-	t.Skip()
 	var m *Metadata
-	var a *AppController
+	var a *Rose
 
 	defer testRemoveFileSystemDb(t)
 	a = testCreateController(testGetTestName(t))
@@ -35,11 +34,9 @@ func TestDatabaseDirCreated(t *testing.T) {
 }
 
 func TestInvalidMethod(t *testing.T) {
-	t.Skip()
-
 	var iv []string
 	var m *Metadata
-	var a *AppController
+	var a *Rose
 
 	defer testRemoveFileSystemDb(t)
 
@@ -73,11 +70,9 @@ func TestInvalidMethod(t *testing.T) {
 }
 
 func TestInvalidId(t *testing.T) {
-	t.Skip()
-
 	var iv []string
 	var m *Metadata
-	var a *AppController
+	var a *Rose
 
 	defer testRemoveFileSystemDb(t)
 
@@ -101,11 +96,9 @@ func TestInvalidId(t *testing.T) {
 }
 
 func TestValidMethod(t *testing.T) {
-	t.Skip()
-
 	var iv []string
 	var m *Metadata
-	var a *AppController
+	var a *Rose
 
 	defer testRemoveFileSystemDb(t)
 
@@ -131,10 +124,8 @@ func TestValidMethod(t *testing.T) {
 }
 
 func TestSingleInsert(t *testing.T) {
-	t.Skip()
-
 	var s []byte
-	var a *AppController
+	var a *Rose
 	var m *Metadata
 
 	var runErr RoseError
@@ -155,19 +146,19 @@ func TestSingleInsert(t *testing.T) {
 	runErr, appResult = a.Run(m)
 
 	if runErr != nil {
-		t.Errorf("%s: AppController::Run returned an error: %s", testGetTestName(t), runErr.Error())
+		t.Errorf("%s: Rose::Run returned an error: %s", testGetTestName(t), runErr.Error())
 
 		return
 	}
 
 	if appResult.Status != "ok" {
-		t.Errorf("%s: AppController::Run returned a non ok status but it should return ok", testGetTestName(t))
+		t.Errorf("%s: Rose::Run returned a non ok status but it should return ok", testGetTestName(t))
 
 		return
 	}
 
 	if appResult.Id != 0 {
-		t.Errorf("%s: AppController::Run invalid Id returned on inisert. Got %d, expected %d", testGetTestName(t), appResult.Id, 0)
+		t.Errorf("%s: Rose::Run invalid Id returned on inisert. Got %d, expected %d", testGetTestName(t), appResult.Id, 0)
 
 		return
 	}
@@ -175,19 +166,20 @@ func TestSingleInsert(t *testing.T) {
 
 func TestMultipleInsert(t *testing.T) {
 	var s []byte
-	var a *AppController
+	var a *Rose
 	var m *Metadata
 
 	var appErr RoseError
 	var appResult *AppResult
 	var currId uint
 
-	//defer testRemoveFileSystemDb(t)
+	defer testRemoveFileSystemDb(t)
 
 	a = testCreateController(testGetTestName(t))
 
-	s = []byte("sdčkfjalsčkjfdlsčakdfjlčk")
 	for i := 0; i < 500000; i++ {
+		s = []byte("sdčkfjalsčkjfdlsčakdfjlčk")
+
 		m = &Metadata{
 			Method: InsertMethodType,
 			Data:   &s,
@@ -197,13 +189,13 @@ func TestMultipleInsert(t *testing.T) {
 		appErr, appResult = a.Run(m)
 
 		if appErr != nil {
-			t.Errorf("%s: AppController::Run() returned an error: %s", testGetTestName(t), appErr.Error())
+			t.Errorf("%s: Rose::Run() returned an error: %s", testGetTestName(t), appErr.Error())
 
 			return
 		}
 
 		if appResult.Id != currId {
-			t.Errorf("%s: AppController::Run() there has been a discrepancy between generated id and counted id. Got %d, expected %d", testGetTestName(t), appResult.Id, currId)
+			t.Errorf("%s: Rose::Run() there has been a discrepancy between generated id and counted id. Got %d, expected %d", testGetTestName(t), appResult.Id, currId)
 
 			return
 		}
@@ -214,8 +206,7 @@ func TestMultipleInsert(t *testing.T) {
 
 func TestSingleRead(t *testing.T) {
 	t.Skip()
-
-	var app *AppController
+	var app *Rose
 	var m *Metadata
 	var runErr RoseError
 	var appResult *AppResult
@@ -253,9 +244,7 @@ func TestSingleRead(t *testing.T) {
 }
 
 func TestSingleReadNotFound(t *testing.T) {
-	t.Skip()
-
-	var app *AppController
+	var app *Rose
 	var m *Metadata
 	var runErr RoseError
 	var appResult *AppResult
@@ -285,10 +274,8 @@ func TestSingleReadNotFound(t *testing.T) {
 }
 
 func TestMultipleConcurrentRequests(t *testing.T) {
-	t.Skip()
-
 	var s []byte
-	var a *AppController
+	var a *Rose
 	var m *Metadata
 
 	var readIds []int
@@ -324,7 +311,7 @@ func TestMultipleConcurrentRequests(t *testing.T) {
 		appErr, appResult = a.Run(m)
 
 		if appErr != nil {
-			t.Errorf("%s: AppController::Run() returned an error: %s", testGetTestName(t), appErr.Error())
+			t.Errorf("%s: Rose::Run() returned an error: %s", testGetTestName(t), appErr.Error())
 
 			return
 		}
@@ -348,18 +335,18 @@ func TestMultipleConcurrentRequests(t *testing.T) {
 }
 
 
-func testCreateController(testName string) *AppController {
-	var a *AppController
+func testCreateController(testName string) *Rose {
+	var a *Rose
 	var appErr RoseError
 	var errStream chan RoseError
 
-	a = &AppController{}
+	a = &Rose{}
 	errStream = a.Init(false)
 
 	appErr = <- errStream
 
 	if appErr != nil {
-		panic(fmt.Sprintf("%s: fixtureInsertSingle: AppController failed to Init with message: %s", testName, appErr.Error()))
+		panic(fmt.Sprintf("%s: fixtureInsertSingle: Rose failed to Init with message: %s", testName, appErr.Error()))
 	}
 
 	return a
@@ -394,8 +381,37 @@ func testRemoveFileSystemDb(t *testing.T) {
 	}
 }
 
-func testGetBenchmarkName(t *testing.B) string {
-	v := reflect.ValueOf(*t)
+func benchmarkRemoveFileSystemDb(b *testing.B) {
+	var roseDir string
+
+	roseDir = RoseDir()
+	if _, err := os.Stat(roseDir); os.IsNotExist(err) {
+		b.Errorf("%s: Database directory .rose_db was not created in %s", roseDir, testGetBenchmarkName(b))
+
+		return
+	}
+
+	files, err := ioutil.ReadDir(roseDir)
+
+	if err != nil {
+		b.Errorf("%s: Removing %s failed with message %s", roseDir, testGetBenchmarkName(b), err.Error())
+
+		return
+	}
+
+	for _, f := range files {
+		err = os.Remove(fmt.Sprintf("%s/%s", roseDir, f.Name()))
+
+		if err != nil {
+			b.Errorf("%s: Removing %s failed with message %s", roseDir, testGetBenchmarkName(b), err.Error())
+
+			return
+		}
+	}
+}
+
+func testGetBenchmarkName(b *testing.B) string {
+	v := reflect.ValueOf(*b)
 	return v.FieldByName("name").String()
 }
 
@@ -404,7 +420,7 @@ func testGetTestName(t *testing.T) string {
 	return v.FieldByName("name").String()
 }
 
-func fixtureSingleInsert(id string, value string, a *AppController, t *testing.T, testName string) {
+func fixtureSingleInsert(id string, value string, a *Rose, t *testing.T, testName string) {
 	var s []byte
 	var m *Metadata
 	var appErr RoseError
@@ -419,6 +435,6 @@ func fixtureSingleInsert(id string, value string, a *AppController, t *testing.T
 	appErr, _ = a.Run(m)
 
 	if appErr != nil {
-		panic(fmt.Sprintf("%s: fixtureInsertSingle: AppController failed to Init with message: %s", testName, appErr.Error()))
+		panic(fmt.Sprintf("%s: fixtureInsertSingle: Rose failed to Init with message: %s", testName, appErr.Error()))
 	}
 }
