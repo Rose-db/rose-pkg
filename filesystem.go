@@ -113,6 +113,15 @@ func fsWrite(id uint, d *[]byte) {
 			})
 		}
 
+		err = file.Sync()
+
+		if err != nil {
+			panic(&dbIntegrityError{
+				Code:    DbIntegrityViolationCode,
+				Message: fmt.Sprintf("Database integrity violation. Database file system problem for file %s with underlying message: %s", f, err.Error()),
+			})
+		}
+
 		err = file.Close()
 
 		if err != nil {
@@ -141,6 +150,15 @@ func fsWrite(id uint, d *[]byte) {
 		panic(&dbIntegrityError{
 			Code:    DbIntegrityViolationCode,
 			Message: fmt.Sprintf("Database integrity violation. Cannot write to new file %s with underlying message: %s", f, err.Error()),
+		})
+	}
+
+	err = file.Sync()
+
+	if err != nil {
+		panic(&dbIntegrityError{
+			Code:    DbIntegrityViolationCode,
+			Message: fmt.Sprintf("Database integrity violation. Database file system problem for file %s with underlying message: %s", f, err.Error()),
 		})
 	}
 

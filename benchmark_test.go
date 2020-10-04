@@ -2,7 +2,6 @@ package rose
 
 import (
 	"fmt"
-	"rose/main"
 	"testing"
 )
 
@@ -12,12 +11,6 @@ var testString string = "Lorem ipsum dolor sit amet, consectetur adipiscing elit
 func benchmarkDirectInsert(i int, a *AppController, m *Metadata) {
 	for c := 0; c < i; c++ {
 		_, _ = a.Run(m)
-	}
-}
-
-func benchmarkServerInsert(i int, method string, data string, b *testing.B) {
-	for c := 0; c < i; c++ {
-		main.testSendRequest(method, fmt.Sprintf("id-%d", c), data, b)
 	}
 }
 
@@ -134,42 +127,5 @@ func BenchmarkDirectInsertHundredMillion(b *testing.B) {
 		}
 
 		benchmarkDirectInsert(100000000, a, m)
-	}
-}
-
-/****************************************
-
-FOR THESE BENCHMARKS, ROSE SERVER MUST BE STARTED
-
-****************************************/
-func BenchmarkServerInsertHundred(b *testing.B) {
-	for n := 0; n < b.N; n++ {
-		benchmarkServerInsert(100, InsertMethodType, testString, b)
-	}
-}
-
-func BenchmarkServerInsertThousand(b *testing.B) {
-	for n := 0; n < b.N; n++ {
-		benchmarkServerInsert(1000, InsertMethodType, testString, b)
-	}
-}
-
-func BenchmarkServerInsertTenThousand(b *testing.B) {
-	for n := 0; n < b.N; n++ {
-		benchmarkServerInsert(10000, InsertMethodType, testString, b)
-	}
-}
-
-func BenchmarkServerInsertHundredThousand(b *testing.B) {
-	for n := 0; n < b.N; n++ {
-		benchmarkServerInsert(100000, InsertMethodType, testString, b)
-	}
-}
-
-func BenchmarkServerInsertMillion(b *testing.B) {
-	b.Skip(fmt.Sprintf("%s: Skipping... overly intensive", testGetBenchmarkName(b)))
-
-	for n := 0; n < b.N; n++ {
-		benchmarkServerInsert(1000000, InsertMethodType, testString, b)
 	}
 }

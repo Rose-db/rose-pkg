@@ -4,6 +4,7 @@ import (
 	"fmt"
 )
 
+
 type AppController struct {
 	Database *database
 	FsJobQueue *fsJobQueue
@@ -42,7 +43,7 @@ func (a *AppController) insert(m *Metadata) (RoseError, *AppResult) {
 
 	idx = a.Database.Insert(m.Id, m.Data)
 
-	go a.FsJobQueue.Run(&job{
+	a.FsJobQueue.Run(&job{
 		Id:    idx,
 		Value: m.Data,
 	})

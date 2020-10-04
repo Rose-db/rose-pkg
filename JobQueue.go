@@ -29,11 +29,13 @@ func (jq *fsJobQueue) Run(j *job) {
 	jq.Open++
 	jq.Lock.Unlock()
 
-	if jq.Open >= jq.Limit {
-		time.Sleep(2000 * time.Millisecond)
-	}
+	go func(j *job, open int, limit int) {
+		if open >= limit {
+			time.Sleep(5 * time.Millisecond)
+		}
 
-	fsWrite(j.Id, j.Value)
+		fsWrite(j.Id, j.Value)
+	}(j, jq.Open, jq.Limit)
 
 	jq.Lock.Lock()
 	jq.Open--

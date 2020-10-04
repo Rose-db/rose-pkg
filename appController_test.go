@@ -11,6 +11,7 @@ import (
 )
 
 func TestDatabaseDirCreated(t *testing.T) {
+	t.Skip()
 	var m *Metadata
 	var a *AppController
 
@@ -34,6 +35,8 @@ func TestDatabaseDirCreated(t *testing.T) {
 }
 
 func TestInvalidMethod(t *testing.T) {
+	t.Skip()
+
 	var iv []string
 	var m *Metadata
 	var a *AppController
@@ -70,6 +73,8 @@ func TestInvalidMethod(t *testing.T) {
 }
 
 func TestInvalidId(t *testing.T) {
+	t.Skip()
+
 	var iv []string
 	var m *Metadata
 	var a *AppController
@@ -96,6 +101,8 @@ func TestInvalidId(t *testing.T) {
 }
 
 func TestValidMethod(t *testing.T) {
+	t.Skip()
+
 	var iv []string
 	var m *Metadata
 	var a *AppController
@@ -124,6 +131,8 @@ func TestValidMethod(t *testing.T) {
 }
 
 func TestSingleInsert(t *testing.T) {
+	t.Skip()
+
 	var s []byte
 	var a *AppController
 	var m *Metadata
@@ -173,7 +182,7 @@ func TestMultipleInsert(t *testing.T) {
 	var appResult *AppResult
 	var currId uint
 
-	defer testRemoveFileSystemDb(t)
+	//defer testRemoveFileSystemDb(t)
 
 	a = testCreateController(testGetTestName(t))
 
@@ -204,6 +213,8 @@ func TestMultipleInsert(t *testing.T) {
 }
 
 func TestSingleRead(t *testing.T) {
+	t.Skip()
+
 	var app *AppController
 	var m *Metadata
 	var runErr RoseError
@@ -242,6 +253,8 @@ func TestSingleRead(t *testing.T) {
 }
 
 func TestSingleReadNotFound(t *testing.T) {
+	t.Skip()
+
 	var app *AppController
 	var m *Metadata
 	var runErr RoseError
@@ -272,6 +285,8 @@ func TestSingleReadNotFound(t *testing.T) {
 }
 
 func TestMultipleConcurrentRequests(t *testing.T) {
+	t.Skip()
+
 	var s []byte
 	var a *AppController
 	var m *Metadata
