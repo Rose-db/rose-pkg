@@ -27,13 +27,13 @@ func (a *Rose) Insert(m *Metadata) (RoseError, *AppResult) {
 		return vErr, nil
 	}
 
-	var idx, blockIdx uint
+	var idx uint
 
-	idx, blockIdx = a.Database.Insert(m.Id, m.Data)
+	idx, _ = a.Database.Insert(m.Id, m.Data)
 
-	a.FsDbHandler.AcquireBlock(blockIdx)
+/*	a.FsDbHandler.OpenIfNotOpen(blockIdx)
 	a.FsDbHandler.Write(idx, m.Data)
-
+*/
 	return nil, &AppResult{
 		Id:     idx,
 		Method: m.Method,

@@ -7,28 +7,34 @@ import (
 )
 
 func createDbIfNotExists(msgCom chan string, errCom chan RoseError) {
-	var roseDb string
+	var dir, db, log string
 	var fsErr RoseError
 
-	roseDb = RoseDir()
+	dir = roseDir()
+	db = fmt.Sprintf("%s/db", roseDir)
+	log = fmt.Sprintf("%s/log", roseDir)
+
+	dirs := [3]string{dir, db, log}
 
 	msgCom<- "Creating the database on the filesystem if not exists..."
-	if _, err := os.Stat(roseDb); os.IsNotExist(err) {
-		msgCom<- "Database not found. Creating it now from scratch..."
-		err = os.Mkdir(roseDb, os.ModePerm)
 
-		if err != nil {
-			close(msgCom)
-			fsErr = &systemError{
-				Code:    SystemErrorCode,
-				Message: err.Error(),
+	for _, d := range dirs {
+		if _, err := os.Stat(d); os.IsNotExist(err) {
+			err = os.Mkdir(d, os.ModePerm)
+
+			if err != nil {
+				close(msgCom)
+				fsErr = &systemError{
+					Code:    SystemErrorCode,
+					Message: err.Error(),
+				}
+
+				errCom<- fsErr
+
+				close(errCom)
+
+				return
 			}
-
-			errCom<- fsErr
-
-			close(errCom)
-
-			return
 		}
 	}
 
@@ -47,14 +53,14 @@ func newFsDbHandler() *fsDbHandler {
 	return &fsDbHandler{}
 }
 
-func (fs *fsDbHandler) AcquireBlock(b uint) {
+func (fs *fsDbHandler) OpenIfNotOpen(b uint) {
 	if fs.File == nil {
-		fs.File = fs.createFile(b)
+		fs.File = fs.createFile()
 	}
 
 	if b != fs.Block {
 		fs.syncAndClose()
-		fs.File = fs.createFile(b)
+		fs.File = fs.createFile()
 		fs.Block = b
 	}
 }
@@ -76,11 +82,11 @@ func (fs *fsDbHandler) Write(id uint, d *[]byte) {
 	}
 }
 
-func (fs *fsDbHandler) createFile(b uint) *os.File {
+func (fs *fsDbHandler) createFile() *os.File {
 	var f string
 	var file *os.File
 
-	f = fmt.Sprintf("%s/%d.rose", RoseDir(), b)
+	f = fmt.Sprintf("%s/%d.rose/db", roseDir(), "rose.rose")
 
 	file, err := os.Create(f)
 
@@ -138,6 +144,10 @@ func userHomeDir() string {
 	return os.Getenv("HOME")
 }
 
-func RoseDir() string {
+func roseDir() string {
 	return fmt.Sprintf("%s/.rose_db", userHomeDir())
+}
+
+func roseDbDir() string {
+	return fmt.Sprintf("%s/.rose_db/db", userHomeDir())
 }
