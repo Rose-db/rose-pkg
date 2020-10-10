@@ -24,7 +24,7 @@ type dbReadResult struct {
 	Blocks can hold up to 3000 indexes (value). When the reach max size, a new map
 	is created with the same size.
  */
-type database struct {
+type memDb struct {
 	InternalDb map[uint64]*[3000]*[]uint8
 	// map of user supplied ids to InternalDb indexes
 	// IdLookupMap::string -> idx::uint -> InternalDb[idx] -> []uint8
@@ -35,8 +35,8 @@ type database struct {
 	CurrMapIdx uint64
 }
 
-func newDatabase() *database {
-	d := &database{}
+func newMemoryDb() *memDb {
+	d := &memDb{}
 
 	d.InternalDb = make(map[uint64]*[3000]*[]uint8)
 	d.InternalDb[0] = &[3000]*[]uint8{}
@@ -60,7 +60,7 @@ func newDatabase() *database {
 		- if the block does not exist, it is created
 	- the value is stored in the block with its index
 */
-func (d *database) Insert(id string, v *[]uint8) (uint64, uint64) {
+func (d *memDb) Insert(id string, v *[]uint8) (uint64, uint64) {
 	var idx uint64
 	var m *[3000]*[]uint8
 	var computedIdx, mapIdx uint64
@@ -98,11 +98,11 @@ func (d *database) Insert(id string, v *[]uint8) (uint64, uint64) {
 	return computedIdx, mapIdx
 }
 
-func (d *database) Delete(id string) {
+func (d *memDb) Delete(id string) {
 
 }
 
-func (d *database) Read(id string) (*dbReadResult, *dbReadError) {
+func (d *memDb) Read(id string) (*dbReadResult, *dbReadError) {
 	var idx uint64
 	var m *[3000]*[]uint8
 	var mapId uint64 = 0

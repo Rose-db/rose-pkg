@@ -1,7 +1,7 @@
 package rose
 
 type Rose struct {
-	Database *database
+	MemDb *memDb
 	JobQueue *jobQueue
 }
 
@@ -28,7 +28,7 @@ func (a *Rose) Insert(m *Metadata) (RoseError, *AppResult) {
 	data = &m.Data
 
 	// save the entry under idx into memory
-	idx, _ = a.Database.Insert(m.Id, data)
+	idx, _ = a.MemDb.Insert(m.Id, data)
 
 	// create a copy of the data so that we don't mutate the one
 	// in memory
@@ -62,7 +62,7 @@ func (a *Rose) Read(m *Metadata) (RoseError, *AppResult) {
 
 	var res *dbReadResult
 	var err *dbReadError
-	res, err = a.Database.Read(m.Id)
+	res, err = a.MemDb.Read(m.Id)
 
 	if err != nil {
 		return nil, &AppResult{
@@ -106,7 +106,7 @@ func New(log bool) *Rose {
 	createDbIfNotExists(log)
 
 	r := &Rose{
-		Database: newDatabase(),
+		MemDb: newMemoryDb(),
 		JobQueue: newJobQueue(),
 	}
 
