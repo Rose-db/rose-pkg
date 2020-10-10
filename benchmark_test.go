@@ -20,6 +20,7 @@ func BenchmarkDirectInsertHundred(b *testing.B) {
 	var m *Metadata
 
 	defer benchmarkRemoveFileSystemDb(b)
+
 	a = testCreateController(testGetBenchmarkName(b))
 	s = []byte(testString)
 
@@ -94,50 +95,5 @@ func BenchmarkDirectInsertHundredThousand(b *testing.B) {
 		}
 
 		benchmarkDirectInsert(100000, a, m)
-	}
-}
-
-func BenchmarkDirectInsertMillion(b *testing.B) {
-	b.Skip()
-	var s []byte
-	var a *Rose
-	var m *Metadata
-
-	defer benchmarkRemoveFileSystemDb(b)
-
-	s = []byte(testString)
-	a = testCreateController(testGetBenchmarkName(b))
-
-	for n := 0; n < b.N; n++ {
-		m = &Metadata{
-			Method: InsertMethodType,
-			Data:   s,
-			Id:     fmt.Sprintf("id-%d", n),
-		}
-
-		benchmarkDirectInsert(1000000, a, m)
-	}
-}
-
-func BenchmarkDirectInsertHundredMillion(b *testing.B) {
-	b.Skip(fmt.Sprintf("Skip %s", testGetBenchmarkName(b)))
-
-	var s []byte
-	var a *Rose
-	var m *Metadata
-
-	defer benchmarkRemoveFileSystemDb(b)
-
-	s = []byte(testString)
-	a = testCreateController(testGetBenchmarkName(b))
-
-	for n := 0; n < b.N; n++ {
-		m = &Metadata{
-			Method: InsertMethodType,
-			Data:   s,
-			Id:     fmt.Sprintf("id-%d", n),
-		}
-
-		benchmarkDirectInsert(100000000, a, m)
 	}
 }

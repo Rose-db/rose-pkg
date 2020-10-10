@@ -338,7 +338,6 @@ func TestMultipleConcurrentRequests(t *testing.T) {
 	}
 }
 
-
 func testCreateController(testName string) *Rose {
 	var a *Rose
 
@@ -379,7 +378,7 @@ func testRemoveFileSystemDb(t *testing.T) {
 func benchmarkRemoveFileSystemDb(b *testing.B) {
 	var dir string
 
-	dir = roseDir()
+	dir = roseDbDir()
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		b.Errorf("%s: Database directory .rose_db was not created in %s", dir, testGetBenchmarkName(b))
 
