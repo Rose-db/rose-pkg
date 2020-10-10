@@ -6,7 +6,7 @@ import (
 	"runtime"
 )
 
-func createDbIfNotExists() {
+func createDbIfNotExists(logging bool) {
 	var dir, db, log string
 	var fsErr RoseError
 
@@ -17,7 +17,9 @@ func createDbIfNotExists() {
 	dirs := [3]string{dir, db, log}
 	updated := 0
 
-	fmt.Println("Creating the database on the filesystem if not exists...")
+	if logging {
+		fmt.Println("Creating the database on the filesystem if not exists...")
+	}
 
 	for _, d := range dirs {
 		if _, err := os.Stat(d); os.IsNotExist(err) {
@@ -36,13 +38,16 @@ func createDbIfNotExists() {
 		}
 	}
 
-	if updated == 3 {
-		fmt.Println("Filesystem database created successfully")
-	} else if updated == 0 {
-		fmt.Println("Filesystem database already exists. Nothing to update")
-	} else {
-		fmt.Println("Some directories for the filesystem database were missing but were successfully updated")
+	if logging {
+		if updated == 3 {
+			fmt.Println("Filesystem database created successfully")
+		} else if updated == 0 {
+			fmt.Println("Filesystem database already exists. Nothing to update")
+		} else {
+			fmt.Println("Some directories for the filesystem database were missing but were successfully updated")
+		}
 	}
+
 }
 // Returns the directory name of the user home directory.
 // Directory returned does not have a leading slash, e.i /path/to/dir

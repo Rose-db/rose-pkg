@@ -88,8 +88,8 @@ func (a *Rose) Delete(m *Metadata) (RoseError, *AppResult) {
 	}
 }
 
-func New() *Rose {
-	createDbIfNotExists()
+func New(log bool) *Rose {
+	createDbIfNotExists(log)
 
 	r := &Rose{
 		Database: newDatabase(),

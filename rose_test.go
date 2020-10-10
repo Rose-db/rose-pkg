@@ -342,7 +342,7 @@ func TestMultipleConcurrentRequests(t *testing.T) {
 func testCreateController(testName string) *Rose {
 	var a *Rose
 
-	a = New()
+	a = New(false)
 
 	return a
 }
