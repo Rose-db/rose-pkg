@@ -98,6 +98,10 @@ func (a *Rose) Delete(m *Metadata) (RoseError, *AppResult) {
 	}
 }
 
+func (a *Rose) Shutdown() {
+	a.JobQueue.Close()
+}
+
 func New(log bool) *Rose {
 	createDbIfNotExists(log)
 

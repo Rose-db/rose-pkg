@@ -21,7 +21,7 @@ func BenchmarkDirectInsertHundred(b *testing.B) {
 
 	defer benchmarkRemoveFileSystemDb(b)
 
-	a = testCreateController(testGetBenchmarkName(b))
+	a = testCreateRose(testGetBenchmarkName(b))
 	s = []byte(testString)
 
 	for n := 0; n < b.N; n++ {
@@ -42,7 +42,7 @@ func BenchmarkDirectInsertThousand(b *testing.B) {
 	defer benchmarkRemoveFileSystemDb(b)
 
 	s = []byte(testString)
-	a = testCreateController(testGetBenchmarkName(b))
+	a = testCreateRose(testGetBenchmarkName(b))
 
 	for n := 0; n < b.N; n++ {
 		m = &Metadata{
@@ -62,7 +62,7 @@ func BenchmarkDirectInsertTenThousand(b *testing.B) {
 	defer benchmarkRemoveFileSystemDb(b)
 
 	s = []byte(testString)
-	a = testCreateController(testGetBenchmarkName(b))
+	a = testCreateRose(testGetBenchmarkName(b))
 
 	for n := 0; n < b.N; n++ {
 		m = &Metadata{
@@ -82,7 +82,7 @@ func BenchmarkDirectInsertHundredThousand(b *testing.B) {
 	defer benchmarkRemoveFileSystemDb(b)
 
 	s = []byte("small test string")
-	a = testCreateController(testGetBenchmarkName(b))
+	a = testCreateRose(testGetBenchmarkName(b))
 
 	for n := 0; n < b.N; n++ {
 		m = &Metadata{

@@ -60,7 +60,7 @@ func (fs *fsDbHandler) createFile(n string) *os.File {
 	return file
 }
 
-func (fs *fsDbHandler) syncAndClose() {
+func (fs *fsDbHandler) SyncAndClose() {
 	var err error
 	var name string
 

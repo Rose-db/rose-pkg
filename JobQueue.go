@@ -19,6 +19,10 @@ func (jb *jobQueue) Add(j *job) {
 	jb.FsDbHandler.Write(j.Entry)
 }
 
+func (jb *jobQueue) Close() {
+	jb.FsDbHandler.SyncAndClose()
+}
+
 func newJobQueue() *jobQueue {
 	return &jobQueue{
 		Num:  0,

@@ -5,9 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
-	"sort"
 	"testing"
-	"time"
 )
 
 func TestDatabaseDirCreated(t *testing.T) {
@@ -15,7 +13,7 @@ func TestDatabaseDirCreated(t *testing.T) {
 	var a *Rose
 
 	defer testRemoveFileSystemDb(t)
-	a = testCreateController(testGetTestName(t))
+	a = testCreateRose(testGetTestName(t))
 
 	m = &Metadata{
 		Data:   []byte{},
@@ -39,7 +37,7 @@ func TestInvalidId(t *testing.T) {
 
 	defer testRemoveFileSystemDb(t)
 
-	a = testCreateController(testGetTestName(t))
+	a = testCreateRose(testGetTestName(t))
 
 	iv = []string{"insert", "read", "delete"}
 
@@ -55,6 +53,8 @@ func TestInvalidId(t *testing.T) {
 			t.Errorf("%s: Invalid error code given. Expected %d, got %d", testGetTestName(t), HttpErrorCode, err.GetCode())
 		}
 	}
+
+	a.Shutdown()
 }
 
 func TestSingleInsert(t *testing.T) {
@@ -67,7 +67,7 @@ func TestSingleInsert(t *testing.T) {
 
 	defer testRemoveFileSystemDb(t)
 
-	a = testCreateController(testGetTestName(t))
+	a = testCreateRose(testGetTestName(t))
 
 	s = []byte("sdčkfjalsčkjfdlsčakdfjlčk")
 
@@ -95,6 +95,8 @@ func TestSingleInsert(t *testing.T) {
 
 		return
 	}
+
+	a.Shutdown()
 }
 
 func TestMultipleInsert(t *testing.T) {
@@ -108,7 +110,7 @@ func TestMultipleInsert(t *testing.T) {
 
 	defer testRemoveFileSystemDb(t)
 
-	a = testCreateController(testGetTestName(t))
+	a = testCreateRose(testGetTestName(t))
 
 	for i := 0; i < 50000; i++ {
 		s = []byte("sdčkfjalsčkjfdlsčakdfjlčk")
@@ -134,25 +136,27 @@ func TestMultipleInsert(t *testing.T) {
 
 		currId++
 	}
+
+	a.Shutdown()
 }
 
 func TestSingleRead(t *testing.T) {
-	var app *Rose
+	var a *Rose
 	var m *Metadata
 	var runErr RoseError
 	var appResult *AppResult
 
 	defer testRemoveFileSystemDb(t)
 
-	app = testCreateController(testGetTestName(t))
+	a = testCreateRose(testGetTestName(t))
 
-	fixtureSingleInsert("id", "id value", app, t, testGetTestName(t))
+	fixtureSingleInsert("id", "id value", a, t, testGetTestName(t))
 
 	m = &Metadata{
 		Id:     "id",
 	}
 
-	runErr, appResult = app.Read(m)
+	runErr, appResult = a.Read(m)
 
 	if runErr != nil {
 		t.Errorf("%s resulted in an error: %s", testGetTestName(t), runErr.Error())
@@ -171,23 +175,25 @@ func TestSingleRead(t *testing.T) {
 
 		return
 	}
+
+	a.Shutdown()
 }
 
 func TestSingleReadNotFound(t *testing.T) {
-	var app *Rose
+	var a *Rose
 	var m *Metadata
 	var runErr RoseError
 	var appResult *AppResult
 
 	defer testRemoveFileSystemDb(t)
 
-	app = testCreateController(testGetTestName(t))
+	a = testCreateRose(testGetTestName(t))
 
 	m = &Metadata{
 		Id:     "id",
 	}
 
-	runErr, appResult = app.Read(m)
+	runErr, appResult = a.Read(m)
 
 	if runErr != nil {
 		t.Errorf("%s resulted in an error: %s", testGetTestName(t), runErr.Error())
@@ -200,68 +206,11 @@ func TestSingleReadNotFound(t *testing.T) {
 
 		return
 	}
+
+	a.Shutdown()
 }
 
-func TestMultipleConcurrentRequests(t *testing.T) {
-	var s []byte
-	var a *Rose
-	var m *Metadata
-
-	var readIds []int
-
-	var appErr RoseError
-	var appResult *AppResult
-
-	defer testRemoveFileSystemDb(t)
-
-	a = testCreateController(testGetTestName(t))
-
-	s = []byte("sdčkfjalsčkjfdlsčakdfjlčk")
-	for i := 0; i < 100; i++ {
-		m = &Metadata{
-			Data:   s,
-			Id:     fmt.Sprintf("id-%d", i),
-		}
-
-		a.Insert(m)
-	}
-
-	// if there is a panic in regards to read/write, increase sleep duration
-	time.Sleep(2 * time.Second)
-
-	for i := 0; i < 100; i++ {
-		m = &Metadata{
-			Data:   s,
-			Id:     fmt.Sprintf("id-%d", i),
-		}
-
-		appErr, appResult = a.Insert(m)
-
-		if appErr != nil {
-			t.Errorf("%s: Rose::Run() returned an error: %s", testGetTestName(t), appErr.Error())
-
-			return
-		}
-
-		readIds = append(readIds, int(appResult.Id))
-	}
-
-	sort.Ints(readIds)
-
-	currId := 0
-
-	for _, v := range readIds {
-		if currId != v {
-			t.Errorf("%s: Invalid idx given. Expected %d, got %d", testGetTestName(t), currId, v)
-
-			return
-		}
-
-		currId++
-	}
-}
-
-func testCreateController(testName string) *Rose {
+func testCreateRose(testName string) *Rose {
 	var a *Rose
 
 	a = New(false)
