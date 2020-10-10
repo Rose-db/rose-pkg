@@ -46,7 +46,7 @@ func (a *Rose) Insert(m *Metadata) (RoseError, *AppResult) {
 
 	return nil, &AppResult{
 		Id:     idx,
-		Method: m.Method,
+		Method: InsertMethodType,
 		Status: FoundResultStatus,
 	}
 }
@@ -67,7 +67,7 @@ func (a *Rose) Read(m *Metadata) (RoseError, *AppResult) {
 	if err != nil {
 		return nil, &AppResult{
 			Id:     0,
-			Method: m.Method,
+			Method: ReadMethodType,
 			Status: NotFoundResultStatus,
 			Reason: err.Error(),
 			Result: "",
@@ -76,7 +76,7 @@ func (a *Rose) Read(m *Metadata) (RoseError, *AppResult) {
 
 	return nil, &AppResult{
 		Id:     res.Idx,
-		Method: m.Method,
+		Method: ReadMethodType,
 		Status: FoundResultStatus,
 		Result: res.Result,
 	}
@@ -93,7 +93,7 @@ func (a *Rose) Delete(m *Metadata) (RoseError, *AppResult) {
 
 	return nil, &AppResult{
 		Id:     1,
-		Method: m.Method,
+		Method: DeleteMethodType,
 		Status: FoundResultStatus,
 	}
 }

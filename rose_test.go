@@ -18,7 +18,6 @@ func TestDatabaseDirCreated(t *testing.T) {
 	a = testCreateController(testGetTestName(t))
 
 	m = &Metadata{
-		Method: "insert",
 		Data:   []byte{},
 		Id: "validid",
 	}
@@ -31,42 +30,6 @@ func TestDatabaseDirCreated(t *testing.T) {
 		return
 	}
 
-}
-
-func TestInvalidMethod(t *testing.T) {
-	var iv []string
-	var m *Metadata
-	var a *Rose
-
-	defer testRemoveFileSystemDb(t)
-
-	a = testCreateController(testGetTestName(t))
-
-	iv = []string{"invalid1", "invalid2"}
-
-	for i := 0; i < len(iv); i++ {
-		m = &Metadata{
-			Method: iv[i],
-			Data:   []byte{},
-			Id: "validid",
-		}
-
-		err, _ := a.Insert(m)
-
-		if err == nil {
-			t.Errorf("%s: ApplicationController::Run() should have returned an IError, nil returned", testGetTestName(t))
-
-			return
-		}
-
-		if err.Type() != httpErrorType {
-			t.Errorf("%s: Invalid error type given. Expected %s, got %s", testGetTestName(t), httpErrorType, err.Type())
-		}
-
-		if err.GetCode() != HttpErrorCode {
-			t.Errorf("%s: Invalid error code given. Expected %d, got %d", testGetTestName(t), HttpErrorCode, err.GetCode())
-		}
-	}
 }
 
 func TestInvalidId(t *testing.T) {
@@ -82,7 +45,6 @@ func TestInvalidId(t *testing.T) {
 
 	for i := 0; i < len(iv); i++ {
 		m = &Metadata{
-			Method: iv[i],
 			Data:   []byte{},
 			Id: "",
 		}
@@ -108,7 +70,6 @@ func TestValidMethod(t *testing.T) {
 
 	for i := 0; i < len(iv); i++ {
 		m = &Metadata{
-			Method: iv[i],
 			Data:   []byte{},
 			Id: "validid",
 		}
@@ -138,7 +99,6 @@ func TestSingleInsert(t *testing.T) {
 	s = []byte("sdčkfjalsčkjfdlsčakdfjlčk")
 
 	m = &Metadata{
-		Method: InsertMethodType,
 		Data:   s,
 		Id:     "id",
 	}
@@ -177,11 +137,10 @@ func TestMultipleInsert(t *testing.T) {
 
 	a = testCreateController(testGetTestName(t))
 
-	for i := 0; i < 500000; i++ {
+	for i := 0; i < 50000; i++ {
 		s = []byte("sdčkfjalsčkjfdlsčakdfjlčk")
 
 		m = &Metadata{
-			Method: InsertMethodType,
 			Data:   s,
 			Id:     fmt.Sprintf("id-%d", i),
 		}
@@ -217,7 +176,6 @@ func TestSingleRead(t *testing.T) {
 	fixtureSingleInsert("id", "id value", app, t, testGetTestName(t))
 
 	m = &Metadata{
-		Method: ReadMethodType,
 		Id:     "id",
 	}
 
@@ -253,7 +211,6 @@ func TestSingleReadNotFound(t *testing.T) {
 	app = testCreateController(testGetTestName(t))
 
 	m = &Metadata{
-		Method: ReadMethodType,
 		Id:     "id",
 	}
 
@@ -273,8 +230,6 @@ func TestSingleReadNotFound(t *testing.T) {
 }
 
 func TestMultipleConcurrentRequests(t *testing.T) {
-	t.Skip()
-
 	var s []byte
 	var a *Rose
 	var m *Metadata
@@ -291,7 +246,6 @@ func TestMultipleConcurrentRequests(t *testing.T) {
 	s = []byte("sdčkfjalsčkjfdlsčakdfjlčk")
 	for i := 0; i < 100; i++ {
 		m = &Metadata{
-			Method: InsertMethodType,
 			Data:   s,
 			Id:     fmt.Sprintf("id-%d", i),
 		}
@@ -304,7 +258,6 @@ func TestMultipleConcurrentRequests(t *testing.T) {
 
 	for i := 0; i < 100; i++ {
 		m = &Metadata{
-			Method: ReadMethodType,
 			Data:   s,
 			Id:     fmt.Sprintf("id-%d", i),
 		}
@@ -418,7 +371,6 @@ func fixtureSingleInsert(id string, value string, a *Rose, t *testing.T, testNam
 	s = []byte(value)
 
 	m = &Metadata{
-		Method: InsertMethodType,
 		Data:   s,
 		Id:     id,
 	}
