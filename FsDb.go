@@ -5,19 +5,19 @@ import (
 	"os"
 )
 
-type fsDbHandler struct {
+type fsDb struct {
 	File *os.File
 }
 
-func newFsDbHandler() *fsDbHandler {
-	a := &fsDbHandler{}
+func newFsDbHandler() *fsDb {
+	a := &fsDb{}
 
 	a.Init()
 
 	return a
 }
 
-func (fs *fsDbHandler) Init() uint8 {
+func (fs *fsDb) Init() uint8 {
 	if fs.File == nil {
 		fs.File = fs.createFile("rose.rose")
 
@@ -27,7 +27,7 @@ func (fs *fsDbHandler) Init() uint8 {
 	return 1
 }
 
-func (fs *fsDbHandler) Write(d *[]byte) {
+func (fs *fsDb) Write(d *[]byte) {
 	var err error
 
 	_, err = fs.File.Write(*d)
@@ -42,7 +42,7 @@ func (fs *fsDbHandler) Write(d *[]byte) {
 	}
 }
 
-func (fs *fsDbHandler) createFile(n string) *os.File {
+func (fs *fsDb) createFile(n string) *os.File {
 	var f string
 	var file *os.File
 
@@ -60,7 +60,7 @@ func (fs *fsDbHandler) createFile(n string) *os.File {
 	return file
 }
 
-func (fs *fsDbHandler) SyncAndClose() {
+func (fs *fsDb) SyncAndClose() {
 	var err error
 	var name string
 

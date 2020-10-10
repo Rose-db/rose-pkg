@@ -7,7 +7,7 @@ import (
 type jobQueue struct {
 	Num uint64
 	Lock *sync.RWMutex
-	FsDbHandler *fsDbHandler
+	FsDbHandler *fsDb
 }
 
 type job struct {
