@@ -27,9 +27,12 @@ func (a *Rose) Insert(m *Metadata) (RoseError, *AppResult) {
 
 	data = &m.Data
 
+	// save the entry under idx into memory
 	idx, _ = a.Database.Insert(m.Id, data)
 
-	a.JobQueue.Add(&job{Data: data})
+	a.JobQueue.Add(&job{
+		Entry: data,
+	})
 
 	return nil, &AppResult{
 		Id:     idx,
@@ -85,17 +88,13 @@ func (a *Rose) Delete(m *Metadata) (RoseError, *AppResult) {
 	}
 }
 
-func (a *Rose) Close() {
-	a.JobQueue.Close()
-}
-
 func New() *Rose {
 	createDbIfNotExists()
 
-	a := &Rose{
+	r := &Rose{
 		Database: newDatabase(),
 		JobQueue: newJobQueue(),
 	}
 
-	return a
+	return r
 }

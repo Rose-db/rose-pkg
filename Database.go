@@ -2,7 +2,6 @@ package rose
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"sync"
 )
@@ -83,9 +82,9 @@ func (d *database) Insert(id string, v *[]uint8) (uint64, uint64) {
 
 	computedIdx = idx + (d.CurrMapIdx * 3000)
 
+	// create the string to be saved as a single row on fs
 	*v = append(*v, byte(10))
-	f := strconv.FormatUint(computedIdx, 10) + " "
-	b := []uint8(f)
+	b := []uint8(id + " ")
 	*v = append(b, *v...)
 
 	m[idx] = v

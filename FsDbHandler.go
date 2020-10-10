@@ -19,7 +19,7 @@ func newFsDbHandler() *fsDbHandler {
 
 func (fs *fsDbHandler) Init() uint8 {
 	if fs.File == nil {
-		fs.File = fs.createFile()
+		fs.File = fs.createFile("rose.rose")
 
 		return 0
 	}
@@ -29,13 +29,12 @@ func (fs *fsDbHandler) Init() uint8 {
 
 func (fs *fsDbHandler) Write(d *[]byte) {
 	var err error
-	var name string
-
-	name = fs.File.Name()
 
 	_, err = fs.File.Write(*d)
 
 	if err != nil {
+		name := fs.File.Name()
+
 		panic(&dbIntegrityError{
 			Code:    DbIntegrityViolationCode,
 			Message: fmt.Sprintf("Database integrity violation. Cannot write to existing file %s with underlying message: %s", name, err.Error()),
@@ -43,11 +42,11 @@ func (fs *fsDbHandler) Write(d *[]byte) {
 	}
 }
 
-func (fs *fsDbHandler) createFile() *os.File {
+func (fs *fsDbHandler) createFile(n string) *os.File {
 	var f string
 	var file *os.File
 
-	f = fmt.Sprintf("%s/db/%s", roseDir(), "rose.rose")
+	f = fmt.Sprintf("%s/db/%s", roseDir(), n)
 
 	file, err := os.Create(f)
 

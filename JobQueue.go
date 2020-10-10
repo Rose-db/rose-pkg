@@ -1,6 +1,8 @@
 package rose
 
-import "sync"
+import (
+	"sync"
+)
 
 type jobQueue struct {
 	Num uint64
@@ -9,19 +11,12 @@ type jobQueue struct {
 }
 
 type job struct {
-	Data *[]byte
+	Entry *[]byte
+	Index *[]byte
 }
 
 func (jb *jobQueue) Add(j *job) {
-	jb.FsDbHandler.Write(j.Data)
-}
-
-func (jb *jobQueue) Close() {
-	for {
-		if jb.Num <= 0 {
-			return
-		}
-	}
+	jb.FsDbHandler.Write(j.Entry)
 }
 
 func newJobQueue() *jobQueue {

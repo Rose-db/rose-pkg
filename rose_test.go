@@ -11,8 +11,6 @@ import (
 )
 
 func TestDatabaseDirCreated(t *testing.T) {
-	t.Skip()
-
 	var m *Metadata
 	var a *Rose
 
@@ -36,8 +34,6 @@ func TestDatabaseDirCreated(t *testing.T) {
 }
 
 func TestInvalidMethod(t *testing.T) {
-	t.Skip()
-
 	var iv []string
 	var m *Metadata
 	var a *Rose
@@ -74,8 +70,6 @@ func TestInvalidMethod(t *testing.T) {
 }
 
 func TestInvalidId(t *testing.T) {
-	t.Skip()
-
 	var iv []string
 	var m *Metadata
 	var a *Rose
@@ -102,8 +96,6 @@ func TestInvalidId(t *testing.T) {
 }
 
 func TestValidMethod(t *testing.T) {
-	t.Skip()
-
 	var iv []string
 	var m *Metadata
 	var a *Rose
@@ -132,8 +124,6 @@ func TestValidMethod(t *testing.T) {
 }
 
 func TestSingleInsert(t *testing.T) {
-	t.Skip()
-
 	var s []byte
 	var a *Rose
 	var m *Metadata
@@ -187,7 +177,7 @@ func TestMultipleInsert(t *testing.T) {
 
 	a = testCreateController(testGetTestName(t))
 
-	for i := 0; i < 500000; i++ {
+	for i := 0; i < 5000; i++ {
 		s = []byte("sdčkfjalsčkjfdlsčakdfjlčk")
 
 		m = &Metadata{
@@ -212,8 +202,6 @@ func TestMultipleInsert(t *testing.T) {
 
 		currId++
 	}
-
-	a.Close()
 }
 
 func TestSingleRead(t *testing.T) {
