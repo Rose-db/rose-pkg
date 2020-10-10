@@ -30,8 +30,18 @@ func (a *Rose) Insert(m *Metadata) (RoseError, *AppResult) {
 	// save the entry under idx into memory
 	idx, _ = a.Database.Insert(m.Id, data)
 
+	// create a copy of the data so that we don't mutate the one
+	// in memory
+	cp := m.Data
+	cpp := &cp
+
+	// create the string to be saved as a single row on fs
+	*cpp = append(*cpp, byte(10))
+	b := []uint8(m.Id + " ")
+	*cpp = append(b, *cpp...)
+
 	a.JobQueue.Add(&job{
-		Entry: data,
+		Entry: cpp,
 	})
 
 	return nil, &AppResult{

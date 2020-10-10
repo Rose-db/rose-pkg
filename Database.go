@@ -67,26 +67,24 @@ func (d *database) Insert(id string, v *[]uint8) (uint64, uint64) {
 
 	d.RWMutex.Lock()
 
-	// r/w operation
+	// r/w operation, create uint64 index
 	idx = d.idFactory.Next()
 
+	// check if the current block exists or need to be created
 	m, ok := d.InternalDb[d.CurrMapIdx]
 
 	if !ok {
+		// current block does not exist, created a new one
 		m = &[3000]*[]uint8{}
 		d.InternalDb[d.CurrMapIdx] = m
 	}
 
-	// r operation
+	// r operation, add index to the index map
 	d.IdLookupMap[id] = idx
 
 	computedIdx = idx + (d.CurrMapIdx * 3000)
 
-	// create the string to be saved as a single row on fs
-	*v = append(*v, byte(10))
-	b := []uint8(id + " ")
-	*v = append(b, *v...)
-
+	// saving the pointer address of the data, not the actual data
 	m[idx] = v
 
 	if idx == 2999 {
@@ -123,7 +121,7 @@ func (d *database) Read(id string) (*dbReadResult, *dbReadError) {
 	// get the map where the id value is
 	m = d.InternalDb[mapId]
 
-	// get the value of id
+	// get the value of id, value is a pointer, not the actual data
 	b = m[idx]
 
 	var sb strings.Builder

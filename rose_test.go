@@ -173,11 +173,11 @@ func TestMultipleInsert(t *testing.T) {
 	var appResult *AppResult
 	var currId uint64
 
-	//defer testRemoveFileSystemDb(t)
+	defer testRemoveFileSystemDb(t)
 
 	a = testCreateController(testGetTestName(t))
 
-	for i := 0; i < 5000; i++ {
+	for i := 0; i < 500000; i++ {
 		s = []byte("sdčkfjalsčkjfdlsčakdfjlčk")
 
 		m = &Metadata{
@@ -205,7 +205,6 @@ func TestMultipleInsert(t *testing.T) {
 }
 
 func TestSingleRead(t *testing.T) {
-	t.Skip()
 	var app *Rose
 	var m *Metadata
 	var runErr RoseError
@@ -244,8 +243,6 @@ func TestSingleRead(t *testing.T) {
 }
 
 func TestSingleReadNotFound(t *testing.T) {
-	t.Skip()
-
 	var app *Rose
 	var m *Metadata
 	var runErr RoseError
