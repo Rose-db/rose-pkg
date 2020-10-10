@@ -32,6 +32,8 @@ func BenchmarkDirectInsertHundred(b *testing.B) {
 
 		benchmarkDirectInsert(100, a, m)
 	}
+
+	a.Shutdown()
 }
 
 func BenchmarkDirectInsertThousand(b *testing.B) {
@@ -52,6 +54,8 @@ func BenchmarkDirectInsertThousand(b *testing.B) {
 
 		benchmarkDirectInsert(1000, a, m)
 	}
+
+	a.Shutdown()
 }
 
 func BenchmarkDirectInsertTenThousand(b *testing.B) {
@@ -72,6 +76,8 @@ func BenchmarkDirectInsertTenThousand(b *testing.B) {
 
 		benchmarkDirectInsert(10000, a, m)
 	}
+
+	a.Shutdown()
 }
 
 func BenchmarkDirectInsertHundredThousand(b *testing.B) {
@@ -81,7 +87,7 @@ func BenchmarkDirectInsertHundredThousand(b *testing.B) {
 
 	defer benchmarkRemoveFileSystemDb(b)
 
-	s = []byte("small test string")
+	s = []byte(testString)
 	a = testCreateRose(testGetBenchmarkName(b))
 
 	for n := 0; n < b.N; n++ {
@@ -92,4 +98,6 @@ func BenchmarkDirectInsertHundredThousand(b *testing.B) {
 
 		benchmarkDirectInsert(100000, a, m)
 	}
+
+	a.Shutdown()
 }
