@@ -57,33 +57,6 @@ func TestInvalidId(t *testing.T) {
 	}
 }
 
-func TestValidMethod(t *testing.T) {
-	var iv []string
-	var m *Metadata
-	var a *Rose
-
-	defer testRemoveFileSystemDb(t)
-
-	a = testCreateController(testGetTestName(t))
-
-	iv = []string{"insert", "read", "delete"}
-
-	for i := 0; i < len(iv); i++ {
-		m = &Metadata{
-			Data:   []byte{},
-			Id: "validid",
-		}
-
-		err, _ := a.Insert(m)
-
-		if err != nil {
-			t.Errorf("%s: ApplicationController::Run() returned an error: %s", testGetTestName(t), err.Error())
-
-			return
-		}
-	}
-}
-
 func TestSingleInsert(t *testing.T) {
 	var s []byte
 	var a *Rose
