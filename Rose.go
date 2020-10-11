@@ -92,7 +92,24 @@ func (a *Rose) Delete(m *Metadata) (*AppResult, RoseError) {
 		return nil, vErr
 	}
 
-	return a.memDb.Delete(m.Id), nil
+	var res *dbDeleteResult
+
+	res = a.memDb.Delete(m.Id)
+
+	if res == nil {
+		return &AppResult{
+			Id:     0,
+			Method: DeleteMethodType,
+			Status: NotFoundResultStatus,
+			Reason: fmt.Sprintf("Rose: Entry with id %s not found", m.Id),
+		}, nil
+	}
+
+	return &AppResult{
+		Id:     res.Id,
+		Method: DeleteMethodType,
+		Status: EntryDeletedStatus,
+	}, nil
 }
 
 func (a *Rose) Shutdown() {

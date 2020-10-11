@@ -1,6 +1,6 @@
 package rose
 
-func SplitMetadataArray(mArr []*Metadata, size int) [][]*Metadata {
+func splitMetadataArray(mArr []*Metadata, size int) [][]*Metadata {
 	min := func(a, b int) int {
 		if a <= b {
 			return a
@@ -18,4 +18,11 @@ func SplitMetadataArray(mArr []*Metadata, size int) [][]*Metadata {
 	}
 
 	return batch
+}
+
+func removeElem(s []int, i int) []int {
+	// s[i] goes to the end, while the element that was in s[i] is replaced with the last element
+	s[len(s)-1], s[i] = s[i], s[len(s)-1]
+	// just return everything except the last element since that is where s[i] is now
+	return s[:len(s)-1]
 }

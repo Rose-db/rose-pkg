@@ -218,6 +218,24 @@ func TestConcurrentInserts(t *testing.T) {
 	a.Shutdown()
 }
 
+func TestDeleteNotFound(t *testing.T) {
+	var a *Rose
+	var runErr RoseError
+	var appResult *AppResult
+
+	defer testRemoveFileSystemDb(t)
+
+	a = testCreateRose(testGetTestName(t))
+
+	appResult, runErr = a.Delete(&Metadata{
+		Id: "id",
+	})
+
+	assertDeleteNotFoundResult(runErr, appResult, t)
+
+	a.Shutdown()
+}
+
 func TestSingleDelete(t *testing.T) {
 	var a *Rose
 	var m *Metadata
@@ -250,6 +268,47 @@ func TestSingleDelete(t *testing.T) {
 	})
 
 	assertSuccessfulDeleteResult(runErr, appResult, t)
+}
+
+func TestConcurrentDelete(t *testing.T) {
+	var a *Rose
+	var m *Metadata
+
+	defer testRemoveFileSystemDb(t)
+
+	a = testCreateRose(testGetTestName(t))
+
+	num := 100000
+	idChan := make(chan string, num)
+
+	for i := 0; i < num; i++ {
+		go func(i int, idChan chan string) {
+			s := []uint8("sdčkfjalsčkjfdlsčakdfjlčk")
+			id := fmt.Sprintf("id-%d", i)
+
+			m = &Metadata{
+				Data:   s,
+				Id:     id,
+			}
+
+			appResult, appErr := a.Insert(m)
+
+			assertSuccessfulInsertResult(appErr, appResult, t)
+
+			idChan<- id
+		}(i, idChan)
+	}
+
+	for i := 0; i < num; i++ {
+		c := <-idChan
+		res, err := a.Delete(&Metadata{
+			Id:  c,
+		})
+
+		assertSuccessfulDeleteResult(err, res, t)
+	}
+
+	a.Shutdown()
 }
 
 func testCreateRose(testName string) *Rose {
@@ -385,5 +444,31 @@ func assertSuccessfulDeleteResult(runErr RoseError, appResult *AppResult, t *tes
 
 	if appResult.Method != DeleteMethodType {
 		t.Errorf("%s invalid method: Got %s, Expected %s", testGetTestName(t), appResult.Method, InsertMethodType)
+	}
+}
+
+func assertDeleteNotFoundResult(runErr RoseError, appResult *AppResult, t *testing.T) {
+	if runErr != nil {
+		t.Errorf("%s: Rose::Delete error occurred. Got error with message: %s", testGetTestName(t), runErr.Error())
+
+		return
+	}
+
+	if appResult.Method != DeleteMethodType {
+		t.Errorf("%s: Rose::Delete Invalid method type. Got %s, Expected %s", testGetTestName(t), appResult.Method, DeleteMethodType)
+
+		return
+	}
+
+	if appResult.Id != 0 {
+		t.Errorf("%s: Rose::Delete Invalid id. Got %d, Expected 0", testGetTestName(t), appResult.Id)
+
+		return
+	}
+
+	if appResult.Status != NotFoundResultStatus {
+		t.Errorf("%s: Rose::Delete Invalid status. Got %s, Expected %s", testGetTestName(t), appResult.Status, EntryDeletedStatus)
+
+		return
 	}
 }

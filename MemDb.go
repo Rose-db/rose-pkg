@@ -1,7 +1,6 @@
 package rose
 
 import (
-	"fmt"
 	"strings"
 	"sync"
 )
@@ -17,7 +16,7 @@ type dbInsertResult struct {
 }
 
 type dbDeleteResult struct {
-	Idx uint64
+	Id uint64
 }
 
 /**
@@ -77,7 +76,6 @@ func (d *memDb) Insert(id string, v *[]uint8) *dbInsertResult {
 	var m *[3000]*[]uint8
 	var computedIdx uint64
 
-
 	// r/w operation, create uint64 index
 	idx = d.idFactory.Next()
 
@@ -109,7 +107,7 @@ func (d *memDb) Insert(id string, v *[]uint8) *dbInsertResult {
 	}
 }
 
-func (d *memDb) Delete(id string) *AppResult {
+func (d *memDb) Delete(id string) *dbDeleteResult {
 	d.RWMutex.Lock()
 
 	var idx, mapId uint64
@@ -118,13 +116,7 @@ func (d *memDb) Delete(id string) *AppResult {
 	idx, ok := d.IdLookupMap[id]
 
 	if !ok {
-		return &AppResult{
-			Id:     0,
-			Method: DeleteMethodType,
-			Status: NotFoundResultStatus,
-			Reason: fmt.Sprintf("Rose: Id %s does not exist", id),
-			Result: "",
-		}
+		return nil
 	}
 
 	mapId = idx / 3000
@@ -138,10 +130,8 @@ func (d *memDb) Delete(id string) *AppResult {
 
 	d.RWMutex.Unlock()
 
-	return &AppResult{
+	return &dbDeleteResult{
 		Id:     idx,
-		Method: DeleteMethodType,
-		Status: EntryDeletedStatus,
 	}
 }
 
