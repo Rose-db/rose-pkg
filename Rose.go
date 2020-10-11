@@ -15,13 +15,13 @@ type AppResult struct {
 	Result string
 }
 
-func (a *Rose) Insert(m *Metadata) (RoseError, *AppResult) {
+func (a *Rose) Insert(m *Metadata) (*AppResult, RoseError) {
 	var vErr RoseError
 
 	vErr = m.validate()
 
 	if vErr != nil {
-		return vErr, nil
+		return nil, vErr
 	}
 
 	var idx uint64
@@ -46,20 +46,20 @@ func (a *Rose) Insert(m *Metadata) (RoseError, *AppResult) {
 		Entry: cpp,
 	})
 
-	return nil, &AppResult{
+	return &AppResult{
 		Id:     idx,
 		Method: InsertMethodType,
 		Status: FoundResultStatus,
-	}
+	}, nil
 }
 
-func (a *Rose) Read(m *Metadata) (RoseError, *AppResult) {
+func (a *Rose) Read(m *Metadata) (*AppResult, RoseError) {
 	var vErr RoseError
 
 	vErr = m.validate()
 
 	if vErr != nil {
-		return vErr, nil
+		return nil, vErr
 	}
 
 	var res *dbReadResult
@@ -67,21 +67,21 @@ func (a *Rose) Read(m *Metadata) (RoseError, *AppResult) {
 	res, err = a.memDb.Read(m.Id)
 
 	if err != nil {
-		return nil, &AppResult{
+		return &AppResult{
 			Id:     0,
 			Method: ReadMethodType,
 			Status: NotFoundResultStatus,
 			Reason: err.Error(),
 			Result: "",
-		}
+		}, nil
 	}
 
-	return nil, &AppResult{
+	return &AppResult{
 		Id:     res.Idx,
 		Method: ReadMethodType,
 		Status: FoundResultStatus,
 		Result: res.Result,
-	}
+	}, nil
 }
 
 func (a *Rose) Delete(m *Metadata) (RoseError, *AppResult) {

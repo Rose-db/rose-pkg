@@ -73,7 +73,7 @@ func createDbIfNotExists(logging bool) {
 
 	a := fmt.Sprintf("%s/db/rose.rose", dir)
 	if _, err := os.Stat(a); os.IsNotExist(err) {
-		f, err := os.OpenFile(a, os.O_RDWR, os.ModeAppend)
+		f, err := os.OpenFile(a, os.O_RDWR|os.O_CREATE, 0666)
 
 		if err != nil {
 			fsErr = &systemError{

@@ -12,23 +12,9 @@ type fsDb struct {
 func newFsDbHandler() *fsDb {
 	a := &fsDb{}
 
-	if a.File == nil {
-		a.File = a.open("rose.rose")
-
-		return a
-	}
+	a.File = a.open("rose.rose")
 
 	return a
-}
-
-func (fs *fsDb) Init() uint8 {
-	if fs.File == nil {
-		fs.File = fs.open("rose.rose")
-
-		return 0
-	}
-
-	return 1
 }
 
 func (fs *fsDb) Write(d *[]byte) {

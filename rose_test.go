@@ -20,7 +20,7 @@ func TestDatabaseDirCreated(t *testing.T) {
 		Id: "validid",
 	}
 
-	err, _ := a.Insert(m)
+	_, err := a.Insert(m)
 
 	if err != nil {
 		t.Errorf("%s: ApplicationController::Run() returned an error: %s", testGetTestName(t), err.Error())
@@ -47,11 +47,14 @@ func TestInvalidId(t *testing.T) {
 			Id: "",
 		}
 
-		err, _ := a.Insert(m)
+		_, err := a.Insert(m)
 
-		if err.GetCode() != HttpErrorCode {
-			t.Errorf("%s: Invalid error code given. Expected %d, got %d", testGetTestName(t), HttpErrorCode, err.GetCode())
+		if err != nil {
+			if err.GetCode() != HttpErrorCode {
+				t.Errorf("%s: Invalid error code given. Expected %d, got %d", testGetTestName(t), HttpErrorCode, err.GetCode())
+			}
 		}
+
 	}
 
 	a.Shutdown()
@@ -76,7 +79,7 @@ func TestSingleInsert(t *testing.T) {
 		Id:     "id",
 	}
 
-	runErr, appResult = a.Insert(m)
+	appResult, runErr = a.Insert(m)
 
 	if runErr != nil {
 		t.Errorf("%s: Rose::Run returned an error: %s", testGetTestName(t), runErr.Error())
@@ -120,7 +123,7 @@ func TestMultipleInsert(t *testing.T) {
 			Id:     fmt.Sprintf("id-%d", i),
 		}
 
-		appErr, appResult = a.Insert(m)
+		appResult, appErr = a.Insert(m)
 
 		if appErr != nil {
 			t.Errorf("%s: Rose::Run() returned an error: %s", testGetTestName(t), appErr.Error())
@@ -156,7 +159,7 @@ func TestSingleRead(t *testing.T) {
 		Id:     "id",
 	}
 
-	runErr, appResult = a.Read(m)
+	appResult, runErr = a.Read(m)
 
 	if runErr != nil {
 		t.Errorf("%s resulted in an error: %s", testGetTestName(t), runErr.Error())
@@ -193,7 +196,7 @@ func TestSingleReadNotFound(t *testing.T) {
 		Id:     "id",
 	}
 
-	runErr, appResult = a.Read(m)
+	appResult, runErr = a.Read(m)
 
 	if runErr != nil {
 		t.Errorf("%s resulted in an error: %s", testGetTestName(t), runErr.Error())
@@ -297,7 +300,7 @@ func fixtureSingleInsert(id string, value string, a *Rose, t *testing.T, testNam
 		Id:     id,
 	}
 
-	appErr, _ = a.Insert(m)
+	_, appErr = a.Insert(m)
 
 	if appErr != nil {
 		panic(fmt.Sprintf("%s: fixtureInsertSingle: Rose failed to Init with message: %s", testName, appErr.Error()))
