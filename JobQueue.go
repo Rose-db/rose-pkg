@@ -23,10 +23,10 @@ func (jb *jobQueue) Close() {
 	jb.FsDbHandler.SyncAndClose()
 }
 
-func newJobQueue() *jobQueue {
+func newJobQueue(fsDb *fsDb) *jobQueue {
 	return &jobQueue{
 		Num:  0,
 		Lock: &sync.RWMutex{},
-		FsDbHandler: newFsDbHandler(),
+		FsDbHandler: fsDb,
 	}
 }

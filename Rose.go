@@ -105,7 +105,7 @@ func (a *Rose) Shutdown() {
 }
 
 func New(log bool) *Rose {
-	createDbIfNotExists(log)
+	fileDb := createDbIfNotExists(log)
 
 	m := newMemoryDb()
 
@@ -113,7 +113,7 @@ func New(log bool) *Rose {
 		fmt.Println("Populating existing filesystem database in memory...")
 	}
 
-	populateDb(m)
+	populateDb(m, fileDb)
 
 	if log {
 		fmt.Println("Filesystem database is populated successfully")
@@ -121,7 +121,7 @@ func New(log bool) *Rose {
 
 	r := &Rose{
 		memDb: m,
-		jobQueue: newJobQueue(),
+		jobQueue: newJobQueue(newFsDb(fileDb)),
 	}
 
 	return r

@@ -9,10 +9,10 @@ type fsDb struct {
 	File *os.File
 }
 
-func newFsDbHandler() *fsDb {
-	a := &fsDb{}
-
-	a.File = a.open("rose.rose")
+func newFsDb(fileDb *os.File) *fsDb {
+	a := &fsDb{
+		File: fileDb,
+	}
 
 	return a
 }

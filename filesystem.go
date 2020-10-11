@@ -7,16 +7,7 @@ import (
 	"runtime"
 )
 
-func populateDb(m *memDb) {
-	fsDbFile := fmt.Sprintf("%s/rose.rose", roseDbDir())
-
-	file, err := os.Open(fsDbFile)
-	if err != nil {
-		panic(err)
-	}
-
-	defer file.Close()
-
+func populateDb(m *memDb, file *os.File) {
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		t := scanner.Text()
@@ -39,9 +30,10 @@ func populateDb(m *memDb) {
 	}
 }
 
-func createDbIfNotExists(logging bool) {
+func createDbIfNotExists(logging bool) *os.File {
 	var dir, db, log string
 	var fsErr RoseError
+	var file *os.File
 
 	dir = roseDir()
 	db = fmt.Sprintf("%s/db", dir)
@@ -65,26 +57,13 @@ func createDbIfNotExists(logging bool) {
 				}
 
 				panic(fsErr)
-
-				return
 			}
 		}
 	}
 
 	a := fmt.Sprintf("%s/db/rose.rose", dir)
 	if _, err := os.Stat(a); os.IsNotExist(err) {
-		f, err := os.OpenFile(a, os.O_RDWR|os.O_CREATE, 0666)
-
-		if err != nil {
-			fsErr = &systemError{
-				Code:    SystemErrorCode,
-				Message: err.Error(),
-			}
-
-			panic(fsErr)
-		}
-
-		err = f.Close()
+		file, err = os.OpenFile(a, os.O_RDWR|os.O_CREATE, 0666)
 
 		if err != nil {
 			fsErr = &systemError{
@@ -106,6 +85,7 @@ func createDbIfNotExists(logging bool) {
 		}
 	}
 
+	return file
 }
 
 // Returns the directory name of the user home directory.
