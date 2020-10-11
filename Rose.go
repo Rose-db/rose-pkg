@@ -49,7 +49,7 @@ func (a *Rose) Insert(m *Metadata) (*AppResult, RoseError) {
 	return &AppResult{
 		Id:     idx,
 		Method: InsertMethodType,
-		Status: FoundResultStatus,
+		Status: OkResultStatus,
 	}, nil
 }
 

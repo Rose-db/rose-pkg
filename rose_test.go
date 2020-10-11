@@ -8,28 +8,6 @@ import (
 	"testing"
 )
 
-func TestDatabaseDirCreated(t *testing.T) {
-	var m *Metadata
-	var a *Rose
-
-	defer testRemoveFileSystemDb(t)
-	a = testCreateRose(testGetTestName(t))
-
-	m = &Metadata{
-		Data:   []uint8{},
-		Id: "validid",
-	}
-
-	_, err := a.Insert(m)
-
-	if err != nil {
-		t.Errorf("%s: ApplicationController::Run() returned an error: %s", testGetTestName(t), err.Error())
-
-		return
-	}
-
-}
-
 func TestInvalidId(t *testing.T) {
 	var iv []string
 	var m *Metadata
@@ -81,17 +59,7 @@ func TestSingleInsert(t *testing.T) {
 
 	appResult, runErr = a.Insert(m)
 
-	if runErr != nil {
-		t.Errorf("%s: Rose::Run returned an error: %s", testGetTestName(t), runErr.Error())
-
-		return
-	}
-
-	if appResult.Status != "ok" {
-		t.Errorf("%s: Rose::Run returned a non ok status but it should return ok", testGetTestName(t))
-
-		return
-	}
+	assertSuccessfulInsertResult(runErr, appResult, t)
 
 	if appResult.Id != 0 {
 		t.Errorf("%s: Rose::Run invalid Id returned on inisert. Got %d, expected %d", testGetTestName(t), appResult.Id, 0)
@@ -125,11 +93,7 @@ func TestMultipleInsert(t *testing.T) {
 
 		appResult, appErr = a.Insert(m)
 
-		if appErr != nil {
-			t.Errorf("%s: Rose::Run() returned an error: %s", testGetTestName(t), appErr.Error())
-
-			return
-		}
+		assertSuccessfulInsertResult(appErr, appResult, t)
 
 		if appResult.Id != currId {
 			t.Errorf("%s: Rose::Run() there has been a discrepancy between generated id and counted id. Got %d, expected %d", testGetTestName(t), appResult.Id, currId)
@@ -208,6 +172,47 @@ func TestSingleReadNotFound(t *testing.T) {
 		t.Errorf("%s invalid result: Expected %s, got %s", testGetTestName(t), NotFoundResultStatus, appResult.Status)
 
 		return
+	}
+
+	a.Shutdown()
+}
+
+func TestConcurrentInserts(t *testing.T) {
+	var a *Rose
+	var m *Metadata
+
+	defer testRemoveFileSystemDb(t)
+
+	a = testCreateRose(testGetTestName(t))
+
+	num := 100000
+	idChan := make(chan string, num)
+
+	for i := 0; i < num; i++ {
+		go func(i int, idChan chan string) {
+			s := []uint8("sdčkfjalsčkjfdlsčakdfjlčk")
+			id := fmt.Sprintf("id-%d", i)
+
+			m = &Metadata{
+				Data:   s,
+				Id:     id,
+			}
+
+			appResult, appErr := a.Insert(m)
+
+			assertSuccessfulInsertResult(appErr, appResult, t)
+
+			idChan<- id
+		}(i, idChan)
+	}
+
+	for i := 0; i < num; i++ {
+		c := <-idChan
+		res, err := a.Read(&Metadata{
+			Id:  c,
+		})
+
+		assertSuccessfulReadResult(err, res, t)
 	}
 
 	a.Shutdown()
@@ -304,5 +309,33 @@ func fixtureSingleInsert(id string, value string, a *Rose, t *testing.T, testNam
 
 	if appErr != nil {
 		panic(fmt.Sprintf("%s: fixtureInsertSingle: Rose failed to Init with message: %s", testName, appErr.Error()))
+	}
+}
+
+func assertSuccessfulInsertResult(runErr RoseError, appResult *AppResult, t *testing.T) {
+	if runErr != nil {
+		t.Errorf("%s resulted in an error: %s", testGetTestName(t), runErr.Error())
+	}
+
+	if appResult.Status != OkResultStatus {
+		t.Errorf("%s invalid result not-found status: %s", testGetTestName(t), appResult.Reason)
+	}
+
+	if appResult.Method != InsertMethodType {
+		t.Errorf("%s invalid method: Got %s, Expected %s", testGetTestName(t), appResult.Method, InsertMethodType)
+	}
+}
+
+func assertSuccessfulReadResult(runErr RoseError, appResult *AppResult, t *testing.T) {
+	if runErr != nil {
+		t.Errorf("%s resulted in an error: %s", testGetTestName(t), runErr.Error())
+	}
+
+	if appResult.Status != FoundResultStatus {
+		t.Errorf("%s invalid result not-found status: %s", testGetTestName(t), appResult.Reason)
+	}
+
+	if appResult.Method != ReadMethodType {
+		t.Errorf("%s invalid method: Got %s, Expected %s", testGetTestName(t), appResult.Method, InsertMethodType)
 	}
 }

@@ -14,7 +14,8 @@ const DbIntegrityViolationCode = 4
 const invalidReadErrorCode = 5
 
 // result status
-const FoundResultStatus = "ok"
+const OkResultStatus = "ok"
+const FoundResultStatus = "found"
 const NotFoundResultStatus = "not_found"
 
 // method types

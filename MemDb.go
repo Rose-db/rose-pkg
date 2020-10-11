@@ -61,11 +61,12 @@ func newMemoryDb() *memDb {
 	- the value is stored in the block with its index
 */
 func (d *memDb) Insert(id string, v *[]uint8) (uint64, uint64) {
+	d.RWMutex.Lock()
+
 	var idx uint64
 	var m *[3000]*[]uint8
 	var computedIdx, mapIdx uint64
 
-	d.RWMutex.Lock()
 
 	// r/w operation, create uint64 index
 	idx = d.idFactory.Next()
@@ -103,6 +104,8 @@ func (d *memDb) Delete(id string) {
 }
 
 func (d *memDb) Read(id string) (*dbReadResult, *dbReadError) {
+	d.RWMutex.Lock()
+
 	var idx uint64
 	var m *[3000]*[]uint8
 	var mapId uint64 = 0
@@ -130,6 +133,8 @@ func (d *memDb) Read(id string) (*dbReadResult, *dbReadError) {
 	for _, p := range *b {
 		sb.WriteByte(p)
 	}
+
+	d.RWMutex.Unlock()
 
 	return &dbReadResult{
 		Idx:    idx,
