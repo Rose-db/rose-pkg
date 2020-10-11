@@ -24,13 +24,13 @@ func (a *Rose) Insert(m *Metadata) (*AppResult, RoseError) {
 		return nil, vErr
 	}
 
-	var idx uint64
+	var res *dbInsertResult
 	var data *[]uint8
 
 	data = &m.Data
 
 	// save the entry under idx into memory
-	idx, _ = a.memDb.Insert(m.Id, data)
+	res = a.memDb.Insert(m.Id, data)
 
 	// create a copy of the data so that we don't mutate the one
 	// in memory
@@ -42,12 +42,12 @@ func (a *Rose) Insert(m *Metadata) (*AppResult, RoseError) {
 	b := []uint8(m.Id + " ")
 	*cpp = append(b, *cpp...)
 
-	a.jobQueue.Add(&job{
+	a.jobQueue.AddSync(&job{
 		Entry: cpp,
 	})
 
 	return &AppResult{
-		Id:     idx,
+		Id:     res.ComputedIdx,
 		Method: InsertMethodType,
 		Status: OkResultStatus,
 	}, nil
@@ -63,16 +63,15 @@ func (a *Rose) Read(m *Metadata) (*AppResult, RoseError) {
 	}
 
 	var res *dbReadResult
-	var err *dbReadError
-	res, err = a.memDb.Read(m.Id)
 
-	if err != nil {
+	res = a.memDb.Read(m.Id)
+
+	if res == nil {
 		return &AppResult{
 			Id:     0,
 			Method: ReadMethodType,
 			Status: NotFoundResultStatus,
-			Reason: err.Error(),
-			Result: "",
+			Reason: fmt.Sprintf("Rose: Entry with id %s not found", m.Id),
 		}, nil
 	}
 
@@ -84,20 +83,16 @@ func (a *Rose) Read(m *Metadata) (*AppResult, RoseError) {
 	}, nil
 }
 
-func (a *Rose) Delete(m *Metadata) (RoseError, *AppResult) {
+func (a *Rose) Delete(m *Metadata) (*AppResult, RoseError) {
 	var vErr RoseError
 
 	vErr = m.validate()
 
 	if vErr != nil {
-		return vErr, nil
+		return nil, vErr
 	}
 
-	return nil, &AppResult{
-		Id:     1,
-		Method: DeleteMethodType,
-		Status: FoundResultStatus,
-	}
+	return a.memDb.Delete(m.Id), nil
 }
 
 func (a *Rose) Shutdown() {

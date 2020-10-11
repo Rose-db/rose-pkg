@@ -218,6 +218,40 @@ func TestConcurrentInserts(t *testing.T) {
 	a.Shutdown()
 }
 
+func TestSingleDelete(t *testing.T) {
+	var a *Rose
+	var m *Metadata
+	var runErr RoseError
+	var appResult *AppResult
+
+	defer testRemoveFileSystemDb(t)
+
+	a = testCreateRose(testGetTestName(t))
+
+	s := []uint8("sdčkfjalsčkjfdlsčakdfjlčk")
+
+	m = &Metadata{
+		Data:   s,
+		Id:     "id",
+	}
+
+	appResult, runErr = a.Insert(m)
+
+	assertSuccessfulInsertResult(runErr, appResult, t)
+
+	if appResult.Id != 0 {
+		t.Errorf("%s: Rose::Run invalid Id returned on inisert. Got %d, expected %d", testGetTestName(t), appResult.Id, 0)
+
+		return
+	}
+
+	appResult, runErr = a.Delete(&Metadata{
+		Id: "id",
+	})
+
+	assertSuccessfulDeleteResult(runErr, appResult, t)
+}
+
 func testCreateRose(testName string) *Rose {
 	var a *Rose
 
@@ -336,6 +370,20 @@ func assertSuccessfulReadResult(runErr RoseError, appResult *AppResult, t *testi
 	}
 
 	if appResult.Method != ReadMethodType {
+		t.Errorf("%s invalid method: Got %s, Expected %s", testGetTestName(t), appResult.Method, InsertMethodType)
+	}
+}
+
+func assertSuccessfulDeleteResult(runErr RoseError, appResult *AppResult, t *testing.T) {
+	if runErr != nil {
+		t.Errorf("%s resulted in an error: %s", testGetTestName(t), runErr.Error())
+	}
+
+	if appResult.Status != EntryDeletedStatus {
+		t.Errorf("%s invalid result not-found status: %s", testGetTestName(t), appResult.Reason)
+	}
+
+	if appResult.Method != DeleteMethodType {
 		t.Errorf("%s invalid method: Got %s, Expected %s", testGetTestName(t), appResult.Method, InsertMethodType)
 	}
 }

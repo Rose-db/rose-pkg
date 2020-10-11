@@ -15,7 +15,7 @@ type job struct {
 	Index *[]uint8
 }
 
-func (jb *jobQueue) Add(j *job) {
+func (jb *jobQueue) AddSync(j *job) {
 	jb.FsDbHandler.Write(j.Entry)
 }
 

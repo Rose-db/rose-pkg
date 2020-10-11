@@ -12,6 +12,14 @@ type dbReadResult struct {
 	Result string
 }
 
+type dbInsertResult struct {
+	ComputedIdx uint64
+}
+
+type dbDeleteResult struct {
+	Idx uint64
+}
+
 /**
 	A database is built with an Database.InternalDb that hold the values of
 	the database in a key value map. Key is a uint while value is a []uint8 ([]byte).
@@ -29,6 +37,7 @@ type memDb struct {
 	// map of user supplied ids to InternalDb indexes
 	// IdLookupMap::string -> idx::uint -> InternalDb[idx] -> []uint8
 	IdLookupMap map[string]uint64
+	FreeIdsList []uint64
 	idFactory *idFactory
 	RWMutex *sync.RWMutex
 
@@ -41,6 +50,7 @@ func newMemoryDb() *memDb {
 	d.InternalDb = make(map[uint64]*[3000]*[]uint8)
 	d.InternalDb[0] = &[3000]*[]uint8{}
 	d.RWMutex = &sync.RWMutex{}
+	d.FreeIdsList = []uint64{}
 
 	d.IdLookupMap = make(map[string]uint64)
 
@@ -60,12 +70,12 @@ func newMemoryDb() *memDb {
 		- if the block does not exist, it is created
 	- the value is stored in the block with its index
 */
-func (d *memDb) Insert(id string, v *[]uint8) (uint64, uint64) {
+func (d *memDb) Insert(id string, v *[]uint8) *dbInsertResult {
 	d.RWMutex.Lock()
 
 	var idx uint64
 	var m *[3000]*[]uint8
-	var computedIdx, mapIdx uint64
+	var computedIdx uint64
 
 
 	// r/w operation, create uint64 index
@@ -92,18 +102,50 @@ func (d *memDb) Insert(id string, v *[]uint8) (uint64, uint64) {
 		d.CurrMapIdx++
 	}
 
-	mapIdx = d.CurrMapIdx
-	
 	d.RWMutex.Unlock()
 
-	return computedIdx, mapIdx
+	return &dbInsertResult{
+		ComputedIdx: computedIdx,
+	}
 }
 
-func (d *memDb) Delete(id string) {
+func (d *memDb) Delete(id string) *AppResult {
+	d.RWMutex.Lock()
 
+	var idx, mapId uint64
+	var m *[3000]*[]uint8
+
+	idx, ok := d.IdLookupMap[id]
+
+	if !ok {
+		return &AppResult{
+			Id:     0,
+			Method: DeleteMethodType,
+			Status: NotFoundResultStatus,
+			Reason: fmt.Sprintf("Rose: Id %s does not exist", id),
+			Result: "",
+		}
+	}
+
+	mapId = idx / 3000
+	// get the map where the id value is
+	m = d.InternalDb[mapId]
+
+	delete(d.IdLookupMap, id)
+	m[idx] = nil
+
+	d.FreeIdsList = append(d.FreeIdsList, idx)
+
+	d.RWMutex.Unlock()
+
+	return &AppResult{
+		Id:     idx,
+		Method: DeleteMethodType,
+		Status: EntryDeletedStatus,
+	}
 }
 
-func (d *memDb) Read(id string) (*dbReadResult, *dbReadError) {
+func (d *memDb) Read(id string) *dbReadResult {
 	d.RWMutex.Lock()
 
 	var idx uint64
@@ -114,10 +156,7 @@ func (d *memDb) Read(id string) (*dbReadResult, *dbReadError) {
 	idx, ok := d.IdLookupMap[id]
 
 	if !ok {
-		return nil, &dbReadError{
-			Code:    invalidReadErrorCode,
-			Message: fmt.Sprintf("Invalid read operation. ID %s not exists", id),
-		}
+		return nil
 	}
 
 	mapId = idx / 3000
@@ -140,5 +179,5 @@ func (d *memDb) Read(id string) (*dbReadResult, *dbReadError) {
 		Idx:    idx,
 		Id:     id,
 		Result: sb.String(),
-	}, nil
+	}
 }

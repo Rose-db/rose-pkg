@@ -16,7 +16,7 @@ func benchmarkAppInsert(i int, a *Rose, m *Metadata) {
 
 func benchmarkMemDbInsert(i int, a *memDb, id string, val []uint8) {
 	for c := 0; c < i; c++ {
-		_, _ = a.Insert(id, &val)
+		_ = a.Insert(id, &val)
 	}
 }
 
