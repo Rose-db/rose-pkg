@@ -16,7 +16,7 @@ func populateDb(m *memDb, file *os.File) {
 			// detect a single space
 			if a == 32 {
 				v := t[i:]
-				b := []byte(v)
+				b := []uint8(v)
 
 				m.Insert(string(t), &b)
 

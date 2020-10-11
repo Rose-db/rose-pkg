@@ -17,7 +17,7 @@ func newFsDb(fileDb *os.File) *fsDb {
 	return a
 }
 
-func (fs *fsDb) Write(d *[]byte) {
+func (fs *fsDb) Write(d *[]uint8) {
 	var err error
 
 	_, err = fs.File.Write(*d)

@@ -38,7 +38,7 @@ func (a *Rose) Insert(m *Metadata) (*AppResult, RoseError) {
 	cpp := &cp
 
 	// create the string to be saved as a single row on fs
-	*cpp = append(*cpp, byte(10))
+	*cpp = append(*cpp, uint8(10))
 	b := []uint8(m.Id + " ")
 	*cpp = append(b, *cpp...)
 

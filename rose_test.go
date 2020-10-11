@@ -16,7 +16,7 @@ func TestDatabaseDirCreated(t *testing.T) {
 	a = testCreateRose(testGetTestName(t))
 
 	m = &Metadata{
-		Data:   []byte{},
+		Data:   []uint8{},
 		Id: "validid",
 	}
 
@@ -43,7 +43,7 @@ func TestInvalidId(t *testing.T) {
 
 	for i := 0; i < len(iv); i++ {
 		m = &Metadata{
-			Data:   []byte{},
+			Data:   []uint8{},
 			Id: "",
 		}
 
@@ -61,7 +61,7 @@ func TestInvalidId(t *testing.T) {
 }
 
 func TestSingleInsert(t *testing.T) {
-	var s []byte
+	var s []uint8
 	var a *Rose
 	var m *Metadata
 
@@ -72,7 +72,7 @@ func TestSingleInsert(t *testing.T) {
 
 	a = testCreateRose(testGetTestName(t))
 
-	s = []byte("sdčkfjalsčkjfdlsčakdfjlčk")
+	s = []uint8("sdčkfjalsčkjfdlsčakdfjlčk")
 
 	m = &Metadata{
 		Data:   s,
@@ -103,7 +103,7 @@ func TestSingleInsert(t *testing.T) {
 }
 
 func TestMultipleInsert(t *testing.T) {
-	var s []byte
+	var s []uint8
 	var a *Rose
 	var m *Metadata
 
@@ -116,7 +116,7 @@ func TestMultipleInsert(t *testing.T) {
 	a = testCreateRose(testGetTestName(t))
 
 	for i := 0; i < 50000; i++ {
-		s = []byte("sdčkfjalsčkjfdlsčakdfjlčk")
+		s = []uint8("sdčkfjalsčkjfdlsčakdfjlčk")
 
 		m = &Metadata{
 			Data:   s,
@@ -290,10 +290,10 @@ func testGetTestName(t *testing.T) string {
 }
 
 func fixtureSingleInsert(id string, value string, a *Rose, t *testing.T, testName string) {
-	var s []byte
+	var s []uint8
 	var m *Metadata
 	var appErr RoseError
-	s = []byte(value)
+	s = []uint8(value)
 
 	m = &Metadata{
 		Data:   s,

@@ -11,8 +11,8 @@ type jobQueue struct {
 }
 
 type job struct {
-	Entry *[]byte
-	Index *[]byte
+	Entry *[]uint8
+	Index *[]uint8
 }
 
 func (jb *jobQueue) Add(j *job) {
