@@ -20,7 +20,7 @@ func splitMetadataArray(mArr []*Metadata, size int) [][]*Metadata {
 	return batch
 }
 
-func removeElem(s []int, i int) []int {
+func removeElem(s []uint64, i int) []uint64 {
 	// s[i] goes to the end, while the element that was in s[i] is replaced with the last element
 	s[len(s)-1], s[i] = s[i], s[len(s)-1]
 	// just return everything except the last element since that is where s[i] is now

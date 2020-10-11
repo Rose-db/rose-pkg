@@ -38,6 +38,56 @@ func TestInvalidId(t *testing.T) {
 	a.Shutdown()
 }
 
+func TestExistingInsertFail(t *testing.T) {
+	var s []uint8
+	var a *Rose
+	var m *Metadata
+
+	var runErr RoseError
+	var appResult *AppResult
+
+	defer testRemoveFileSystemDb(t)
+
+	a = testCreateRose(testGetTestName(t))
+
+	s = []uint8("sdčkfjalsčkjfdlsčakdfjlčk")
+
+	m = &Metadata{
+		Data:   s,
+		Id:     "id",
+	}
+
+	appResult, runErr = a.Insert(m)
+
+	assertSuccessfulInsertResult(runErr, appResult, t)
+
+	appResult, runErr = a.Insert(m)
+
+	if runErr != nil {
+		t.Errorf("%s resulted in an error: %s", testGetTestName(t), runErr.Error())
+
+		return
+	}
+
+	if appResult.Status != NotFoundResultStatus {
+		t.Errorf("%s Invalid result status: Got %s, Expected %s", testGetTestName(t), appResult.Status, NotFoundResultStatus)
+
+		return
+	}
+
+	if appResult.Id != 0 {
+		t.Errorf("%s Invalid result id: Got %d, Expected %d", testGetTestName(t), appResult.Id, 0)
+
+		return
+	}
+
+	if appResult.Method != InsertMethodType {
+		t.Errorf("%s Invalid result method: Got %s, Expected %s", testGetTestName(t), appResult.Method, InsertMethodType)
+
+		return
+	}
+}
+
 func TestSingleInsert(t *testing.T) {
 	var s []uint8
 	var a *Rose
@@ -271,6 +321,7 @@ func TestSingleDelete(t *testing.T) {
 }
 
 func TestConcurrentDelete(t *testing.T) {
+	t.Skip()
 	var a *Rose
 	var m *Metadata
 

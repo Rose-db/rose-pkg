@@ -32,6 +32,14 @@ func (a *Rose) Insert(m *Metadata) (*AppResult, RoseError) {
 	// save the entry under idx into memory
 	res = a.memDb.Insert(m.Id, data)
 
+	if res == nil {
+		return &AppResult{
+			Id:     0,
+			Method: InsertMethodType,
+			Status: NotFoundResultStatus,
+		}, nil
+	}
+
 	// create a copy of the data so that we don't mutate the one
 	// in memory
 	cp := m.Data
