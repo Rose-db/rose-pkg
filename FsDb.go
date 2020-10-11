@@ -12,14 +12,18 @@ type fsDb struct {
 func newFsDbHandler() *fsDb {
 	a := &fsDb{}
 
-	a.Init()
+	if a.File == nil {
+		a.File = a.open("rose.rose")
+
+		return a
+	}
 
 	return a
 }
 
 func (fs *fsDb) Init() uint8 {
 	if fs.File == nil {
-		fs.File = fs.createFile("rose.rose")
+		fs.File = fs.open("rose.rose")
 
 		return 0
 	}
@@ -42,13 +46,13 @@ func (fs *fsDb) Write(d *[]byte) {
 	}
 }
 
-func (fs *fsDb) createFile(n string) *os.File {
+func (fs *fsDb) open(n string) *os.File {
 	var f string
 	var file *os.File
 
 	f = fmt.Sprintf("%s/db/%s", roseDir(), n)
 
-	file, err := os.Create(f)
+	file, err := os.OpenFile(f, os.O_RDWR, os.ModeAppend)
 
 	if err != nil {
 		panic(&dbIntegrityError{

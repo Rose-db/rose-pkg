@@ -1,10 +1,43 @@
 package rose
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"runtime"
 )
+
+func populateDb(m *memDb) {
+	fsDbFile := fmt.Sprintf("%s/rose.rose", roseDbDir())
+
+	file, err := os.Open(fsDbFile)
+	if err != nil {
+		panic(err)
+	}
+
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		t := scanner.Text()
+		buf := []uint8{}
+		for i, a := range t {
+			// detect a single space
+			if a == 32 {
+				v := t[i:]
+				b := []byte(v)
+
+				m.Insert(string(t), &b)
+
+				break
+			}
+
+			buf = append(buf, uint8(a))
+		}
+
+
+	}
+}
 
 func createDbIfNotExists(logging bool) {
 	var dir, db, log string
@@ -38,6 +71,31 @@ func createDbIfNotExists(logging bool) {
 		}
 	}
 
+	a := fmt.Sprintf("%s/db/rose.rose", dir)
+	if _, err := os.Stat(a); os.IsNotExist(err) {
+		f, err := os.OpenFile(a, os.O_RDWR, os.ModeAppend)
+
+		if err != nil {
+			fsErr = &systemError{
+				Code:    SystemErrorCode,
+				Message: err.Error(),
+			}
+
+			panic(fsErr)
+		}
+
+		err = f.Close()
+
+		if err != nil {
+			fsErr = &systemError{
+				Code:    SystemErrorCode,
+				Message: err.Error(),
+			}
+
+			panic(fsErr)
+		}
+	}
+
 	if logging {
 		if updated == 3 {
 			fmt.Println("Filesystem database created successfully")
@@ -49,6 +107,7 @@ func createDbIfNotExists(logging bool) {
 	}
 
 }
+
 // Returns the directory name of the user home directory.
 // Directory returned does not have a leading slash, e.i /path/to/dir
 func userHomeDir() string {

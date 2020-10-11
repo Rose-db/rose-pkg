@@ -1,8 +1,10 @@
 package rose
 
+import "fmt"
+
 type Rose struct {
-	MemDb *memDb
-	JobQueue *jobQueue
+	memDb *memDb
+	jobQueue *jobQueue
 }
 
 type AppResult struct {
@@ -28,7 +30,7 @@ func (a *Rose) Insert(m *Metadata) (RoseError, *AppResult) {
 	data = &m.Data
 
 	// save the entry under idx into memory
-	idx, _ = a.MemDb.Insert(m.Id, data)
+	idx, _ = a.memDb.Insert(m.Id, data)
 
 	// create a copy of the data so that we don't mutate the one
 	// in memory
@@ -40,7 +42,7 @@ func (a *Rose) Insert(m *Metadata) (RoseError, *AppResult) {
 	b := []uint8(m.Id + " ")
 	*cpp = append(b, *cpp...)
 
-	a.JobQueue.Add(&job{
+	a.jobQueue.Add(&job{
 		Entry: cpp,
 	})
 
@@ -62,7 +64,7 @@ func (a *Rose) Read(m *Metadata) (RoseError, *AppResult) {
 
 	var res *dbReadResult
 	var err *dbReadError
-	res, err = a.MemDb.Read(m.Id)
+	res, err = a.memDb.Read(m.Id)
 
 	if err != nil {
 		return nil, &AppResult{
@@ -99,15 +101,27 @@ func (a *Rose) Delete(m *Metadata) (RoseError, *AppResult) {
 }
 
 func (a *Rose) Shutdown() {
-	a.JobQueue.Close()
+	a.jobQueue.Close()
 }
 
 func New(log bool) *Rose {
 	createDbIfNotExists(log)
 
+	m := newMemoryDb()
+
+	if log {
+		fmt.Println("Populating existing filesystem database in memory...")
+	}
+
+	populateDb(m)
+
+	if log {
+		fmt.Println("Filesystem database is populated successfully")
+	}
+
 	r := &Rose{
-		MemDb: newMemoryDb(),
-		JobQueue: newJobQueue(),
+		memDb: m,
+		jobQueue: newJobQueue(),
 	}
 
 	return r
