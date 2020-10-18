@@ -16,6 +16,29 @@ type AppResult struct {
 	Result string
 }
 
+func New(log bool) *Rose {
+	file := createDbIfNotExists(log)
+
+	m := newMemoryDb()
+
+	if log {
+		fmt.Println("Populating existing filesystem database in memory...")
+	}
+
+	populateDb(m, file)
+
+	if log {
+		fmt.Println("Filesystem database is populated successfully")
+	}
+
+	r := &Rose{
+		memDb: m,
+		jobQueue: newJobQueue(newFsDb(file)),
+	}
+
+	return r
+}
+
 func (a *Rose) Insert(m *Metadata) (*AppResult, RoseError) {
 	var vErr RoseError
 
@@ -114,27 +137,4 @@ func (a *Rose) Delete(m *Metadata) (*AppResult, RoseError) {
 
 func (a *Rose) Shutdown() {
 	a.jobQueue.Close()
-}
-
-func New(log bool) *Rose {
-	file := createDbIfNotExists(log)
-
-	m := newMemoryDb()
-
-	if log {
-		fmt.Println("Populating existing filesystem database in memory...")
-	}
-
-	populateDb(m, file)
-
-	if log {
-		fmt.Println("Filesystem database is populated successfully")
-	}
-
-	r := &Rose{
-		memDb: m,
-		jobQueue: newJobQueue(newFsDb(file)),
-	}
-
-	return r
 }

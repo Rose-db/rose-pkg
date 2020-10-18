@@ -19,6 +19,10 @@ func (jb *jobQueue) AddSync(j *job) {
 	jb.FsDbHandler.Write(j.Entry)
 }
 
+func (jb *jobQueue) DeleteSync(j *job) {
+	jb.FsDbHandler.Delete(j.Entry)
+}
+
 func (jb *jobQueue) Close() {
 	jb.FsDbHandler.SyncAndClose()
 }

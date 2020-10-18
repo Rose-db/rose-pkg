@@ -32,6 +32,10 @@ func (fs *fsDb) Write(d *[]uint8) {
 	}
 }
 
+func (fs *fsDb) Delete(uint82 *[]uint8) {
+
+}
+
 func (fs *fsDb) open(n string) *os.File {
 	var f string
 	var file *os.File
