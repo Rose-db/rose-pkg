@@ -32,7 +32,7 @@ func (fs *fsDb) Write(d *[]uint8) {
 	}
 }
 
-func (fs *fsDb) Delete(uint82 *[]uint8) {
+func (fs *fsDb) Delete(id *[]uint8) {
 
 }
 

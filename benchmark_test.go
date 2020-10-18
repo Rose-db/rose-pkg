@@ -28,7 +28,7 @@ func BenchmarkAppInsertTenThousand(b *testing.B) {
 	defer benchmarkRemoveFileSystemDb(b)
 
 	s = []uint8(testString)
-	a = testCreateRose(testGetBenchmarkName(b))
+	a = testCreateRose()
 
 	for n := 0; n < b.N; n++ {
 		m = &Metadata{
@@ -50,7 +50,7 @@ func BenchmarkAppInsertHundredThousand(b *testing.B) {
 	defer benchmarkRemoveFileSystemDb(b)
 
 	s = []uint8(testString)
-	a = testCreateRose(testGetBenchmarkName(b))
+	a = testCreateRose()
 
 	for n := 0; n < b.N; n++ {
 		m = &Metadata{

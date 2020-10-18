@@ -120,6 +120,10 @@ func (a *Rose) Delete(m *Metadata) (*AppResult, RoseError) {
 	}
 
 	res := a.memDb.Delete(m.Id)
+	e := []uint8(m.Id)
+	a.jobQueue.DeleteSync(&job{
+		Entry: &e,
+	})
 
 	if res == false {
 		return &AppResult{
