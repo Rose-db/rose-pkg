@@ -6,7 +6,7 @@ import (
 )
 
 type dbReadResult struct {
-	Idx uint
+	Idx uint16
 	Id string
 	Result string
 }
@@ -24,26 +24,26 @@ type dbReadResult struct {
 	is created with the same size.
  */
 type memDb struct {
-	InternalDb map[uint]*[3000]*[]uint8
+	InternalDb map[uint16]*[3000]*[]uint8
 	// map of user supplied ids to InternalDb indexes
 	// IdLookupMap::string -> idx::uint -> InternalDb[idx] -> []uint8
-	IdLookupMap map[string][2]uint
-	FreeIdsList map[string][2]uint
+	IdLookupMap map[string][2]uint16
+	FreeIdsList map[string][2]uint16
 	idFactory *idFactory
 	RWMutex *sync.RWMutex
 
-	CurrMapIdx uint
+	CurrMapIdx uint16
 }
 
 func newMemoryDb() *memDb {
 	d := &memDb{}
 
-	d.InternalDb = make(map[uint]*[3000]*[]uint8)
+	d.InternalDb = make(map[uint16]*[3000]*[]uint8)
 	d.InternalDb[0] = &[3000]*[]uint8{}
 	d.RWMutex = &sync.RWMutex{}
-	d.FreeIdsList = make(map[string][2]uint)
+	d.FreeIdsList = make(map[string][2]uint16)
 
-	d.IdLookupMap = make(map[string][2]uint)
+	d.IdLookupMap = make(map[string][2]uint16)
 
 	m := newIdFactory()
 
@@ -69,7 +69,7 @@ func (d *memDb) Insert(id string, v *[]uint8) bool {
 		idx := list[0]
 		mapId := list[1]
 
-		d.IdLookupMap[id] = [2]uint{idx, mapId}
+		d.IdLookupMap[id] = [2]uint16{idx, mapId}
 		// we know that the block has to exist since its in the free list
 		// and that means it was deleted
 		m := d.InternalDb[mapId]
@@ -83,7 +83,7 @@ func (d *memDb) Insert(id string, v *[]uint8) bool {
 		return true
 	}
 
-	var idx uint
+	var idx uint16
 	var m *[3000]*[]uint8
 
 	// check if the entry already exists
@@ -99,7 +99,7 @@ func (d *memDb) Insert(id string, v *[]uint8) bool {
 	m = d.getBlock()
 
 	// r operation, add COMPUTED index to the index map
-	d.IdLookupMap[id] = [2]uint{idx, d.CurrMapIdx}
+	d.IdLookupMap[id] = [2]uint16{idx, d.CurrMapIdx}
 
 	// saving the pointer address of the data, not the actual data
 	m[idx] = v
@@ -116,8 +116,8 @@ func (d *memDb) Insert(id string, v *[]uint8) bool {
 func (d *memDb) Delete(id string) bool {
 	d.RWMutex.Lock()
 
-	var idData [2]uint
-	var mapId, idx uint
+	var idData [2]uint16
+	var mapId, idx uint16
 	var m *[3000]*[]uint8
 
 	idData, ok := d.IdLookupMap[id]
@@ -137,7 +137,7 @@ func (d *memDb) Delete(id string) bool {
 	delete(d.IdLookupMap, id)
 	m[idx] = nil
 
-	d.FreeIdsList[id] = [2]uint{idx, mapId}
+	d.FreeIdsList[id] = [2]uint16{idx, mapId}
 
 	d.RWMutex.Unlock()
 
@@ -148,8 +148,8 @@ func (d *memDb) Read(id string) *dbReadResult {
 	d.RWMutex.Lock()
 
 	var m *[3000]*[]uint8
-	var idData [2]uint
-	var mapId, idx uint
+	var idData [2]uint16
+	var mapId, idx uint16
 	var b *[]uint8
 
 	idData, ok := d.IdLookupMap[id]

@@ -20,22 +20,6 @@ func benchmarkMemDbInsert(i int, a *memDb, id string, val []uint8) {
 	}
 }
 
-func BenchmarkMemDbInsertMillion(b *testing.B) {
-	var s []uint8
-	var a *memDb
-
-	defer benchmarkRemoveFileSystemDb(b)
-
-	a = newMemoryDb()
-	s = []uint8(testString)
-
-	for n := 0; n < b.N; n++ {
-		id := fmt.Sprintf("id-%d", n)
-
-		benchmarkMemDbInsert(1000000, a, id, s)
-	}
-}
-
 func BenchmarkAppInsertTenThousand(b *testing.B) {
 	var s []uint8
 	var a *Rose
@@ -78,4 +62,20 @@ func BenchmarkAppInsertHundredThousand(b *testing.B) {
 	}
 
 	a.Shutdown()
+}
+
+func BenchmarkMemDbInsertMillion(b *testing.B) {
+	var s []uint8
+	var a *memDb
+
+	defer benchmarkRemoveFileSystemDb(b)
+
+	a = newMemoryDb()
+	s = []uint8(testString)
+
+	for n := 0; n < b.N; n++ {
+		id := fmt.Sprintf("id-%d", n)
+
+		benchmarkMemDbInsert(1000000, a, id, s)
+	}
 }

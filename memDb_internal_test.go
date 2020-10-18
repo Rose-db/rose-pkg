@@ -66,7 +66,7 @@ func testInsertFixture(m *memDb, num int) []string {
 	return ids
 }
 
-func assertInternalDbValues(m *memDb, expectedMapIdx uint, freeListLen int, t *testing.T) {
+func assertInternalDbValues(m *memDb, expectedMapIdx uint16, freeListLen int, t *testing.T) {
 	if m.CurrMapIdx != expectedMapIdx {
 		t.Errorf("%s: Invalid CurrMapIdx. Got %d, Expected %d", testGetTestName(t), m.CurrMapIdx, expectedMapIdx)
 
