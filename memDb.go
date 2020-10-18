@@ -69,6 +69,7 @@ func (d *memDb) Insert(id string, v *[]uint8) bool {
 		idx := list[0]
 		mapId := list[1]
 
+		d.IdLookupMap[id] = [2]uint{idx, mapId}
 		// we know that the block has to exist since its in the free list
 		// and that means it was deleted
 		m := d.InternalDb[mapId]

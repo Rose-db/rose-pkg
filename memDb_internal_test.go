@@ -98,6 +98,10 @@ func assertInternalDbIntegrity(m *memDb, expectedLen int, expectedCapacity int, 
 	}
 
 	if fullNum != expectedLen {
-		t.Errorf("%s: Invalid InternalDb internal map [0] length. Got %d, Expected %d", testGetTestName(t), fullNum, expectedLen)
+		t.Errorf("%s: Invalid InternalDb internal map length. Got %d, Expected %d", testGetTestName(t), fullNum, expectedLen)
+	}
+
+	if len(m.IdLookupMap) != expectedLen {
+		t.Errorf("%s: Invalid IdLookupMap. Got %d, Expected %d", testGetTestName(t), fullNum, expectedLen)
 	}
 }
