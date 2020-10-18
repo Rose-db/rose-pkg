@@ -17,8 +17,20 @@ func populateDb(m *memDb, file *os.File) {
 			if a == 32 {
 				v := t[i:]
 				b := []uint8(v)
+				i := string(buf)
 
-				m.Insert(string(t), &b)
+				ok := m.Insert(i, &b)
+
+				if ok == false {
+					err := &systemError{
+						Code:    SystemErrorCode,
+						Message: fmt.Sprintf("Rose: Cannot populate database. Corruped entry found with id '%s'", i),
+					}
+
+					panic(err)
+				}
+
+				buf = []uint8{}
 
 				break
 			}
@@ -61,9 +73,10 @@ func createDbIfNotExists(logging bool) *os.File {
 		}
 	}
 
-	a := fmt.Sprintf("%s/db/rose.rose", dir)
-	if _, err := os.Stat(a); os.IsNotExist(err) {
-		file, err = os.OpenFile(a, os.O_RDWR|os.O_CREATE, 0666)
+	// create a function here is ok since we are calling
+	// createDbIfNotExists() only once on startup
+	fn := func(f string, flag int) *os.File {
+		file, err := os.OpenFile(f, flag, 0666)
 
 		if err != nil {
 			fsErr = &systemError{
@@ -73,6 +86,15 @@ func createDbIfNotExists(logging bool) *os.File {
 
 			panic(fsErr)
 		}
+
+		return file
+	}
+
+	a := fmt.Sprintf("%s/db/rose.rose", dir)
+	if _, err := os.Stat(a); os.IsNotExist(err) {
+		file = fn(a, os.O_RDWR|os.O_CREATE)
+	} else {
+		file = fn(a, os.O_RDWR)
 	}
 
 	if logging {

@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
+	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -69,14 +71,8 @@ func TestExistingInsertFail(t *testing.T) {
 		return
 	}
 
-	if appResult.Status != NotFoundResultStatus {
-		t.Errorf("%s Invalid result status: Got %s, Expected %s", testGetTestName(t), appResult.Status, NotFoundResultStatus)
-
-		return
-	}
-
-	if appResult.Id != 0 {
-		t.Errorf("%s Invalid result id: Got %d, Expected %d", testGetTestName(t), appResult.Id, 0)
+	if appResult.Status != DuplicatedIdStatus {
+		t.Errorf("%s Invalid result status: Got %s, Expected %s", testGetTestName(t), appResult.Status, DuplicatedIdStatus)
 
 		return
 	}
@@ -86,6 +82,8 @@ func TestExistingInsertFail(t *testing.T) {
 
 		return
 	}
+
+	a.Shutdown()
 }
 
 func TestSingleInsert(t *testing.T) {
@@ -110,12 +108,6 @@ func TestSingleInsert(t *testing.T) {
 	appResult, runErr = a.Insert(m)
 
 	assertSuccessfulInsertResult(runErr, appResult, t)
-
-	if appResult.Id != 0 {
-		t.Errorf("%s: Rose::Run invalid Id returned on inisert. Got %d, expected %d", testGetTestName(t), appResult.Id, 0)
-
-		return
-	}
 
 	a.Shutdown()
 }
@@ -144,12 +136,6 @@ func TestMultipleInsert(t *testing.T) {
 		appResult, appErr = a.Insert(m)
 
 		assertSuccessfulInsertResult(appErr, appResult, t)
-
-		if appResult.Id != currId {
-			t.Errorf("%s: Rose::Run() there has been a discrepancy between generated id and counted id. Got %d, expected %d", testGetTestName(t), appResult.Id, currId)
-
-			return
-		}
 
 		currId++
 	}
@@ -196,6 +182,59 @@ func TestSingleRead(t *testing.T) {
 	a.Shutdown()
 }
 
+func TestMultipleSyncReads(t *testing.T) {
+	var a *Rose
+	var runErr RoseError
+
+	defer testRemoveFileSystemDb(t)
+
+	a = testCreateRose(testGetTestName(t))
+
+	ids := []string{}
+	for i := 0; i < 100000; i++ {
+		id := fmt.Sprintf("id-%d", i)
+		value := fmt.Sprintf("id-value-%d", i)
+
+		_, err := a.Insert(&Metadata{
+			Id:   id,
+			Data: []uint8(value),
+		})
+
+		if err != nil {
+			t.Errorf("%s resulted in an error: %s", testGetTestName(t), runErr.Error())
+
+			return
+		}
+
+		ids = append(ids, id)
+	}
+
+	for _, id := range ids {
+		res, err := a.Read(&Metadata{
+			Id:  id,
+		})
+
+		if err != nil {
+			t.Errorf("%s resulted in an error: %s", testGetTestName(t), runErr.Error())
+
+			return
+		}
+
+		trueId := strings.Split(id, "-")[1]
+		intId, _ := strconv.Atoi(trueId)
+
+		value := fmt.Sprintf("id-value-%d", intId)
+
+		if res.Result != value {
+			t.Errorf("%s Rose:Read invalid result: Got %s, Expected: %s", testGetTestName(t), res.Result, value)
+
+			return
+		}
+	}
+
+	a.Shutdown()
+}
+
 func TestSingleReadNotFound(t *testing.T) {
 	var a *Rose
 	var m *Metadata
@@ -227,7 +266,7 @@ func TestSingleReadNotFound(t *testing.T) {
 	a.Shutdown()
 }
 
-func TestConcurrentInserts(t *testing.T) {
+func TestConcurrentInsertsAndReads(t *testing.T) {
 	var a *Rose
 	var m *Metadata
 
@@ -236,11 +275,11 @@ func TestConcurrentInserts(t *testing.T) {
 	a = testCreateRose(testGetTestName(t))
 
 	num := 100000
-	idChan := make(chan string, num)
+	idChan := make(chan [2]string, num)
 
 	for i := 0; i < num; i++ {
-		go func(i int, idChan chan string) {
-			s := []uint8("sdčkfjalsčkjfdlsčakdfjlčk")
+		go func(i int, idChan chan [2]string) {
+			s := []uint8(fmt.Sprintf("id-value-%d", i))
 			id := fmt.Sprintf("id-%d", i)
 
 			m = &Metadata{
@@ -252,17 +291,24 @@ func TestConcurrentInserts(t *testing.T) {
 
 			assertSuccessfulInsertResult(appErr, appResult, t)
 
-			idChan<- id
+			idChan<- [2]string{id, string(s)}
 		}(i, idChan)
 	}
 
 	for i := 0; i < num; i++ {
 		c := <-idChan
+
 		res, err := a.Read(&Metadata{
-			Id:  c,
+			Id:  c[0],
 		})
 
 		assertSuccessfulReadResult(err, res, t)
+
+		if res.Result != c[1] {
+			t.Errorf("%s: Rose::Read Invalid result. Got %s, Expected %s", testGetTestName(t), res.Result, c[1])
+
+			return
+		}
 	}
 
 	a.Shutdown()
@@ -307,59 +353,88 @@ func TestSingleDelete(t *testing.T) {
 
 	assertSuccessfulInsertResult(runErr, appResult, t)
 
-	if appResult.Id != 0 {
-		t.Errorf("%s: Rose::Run invalid Id returned on inisert. Got %d, expected %d", testGetTestName(t), appResult.Id, 0)
-
-		return
-	}
-
 	appResult, runErr = a.Delete(&Metadata{
 		Id: "id",
 	})
 
 	assertSuccessfulDeleteResult(runErr, appResult, t)
+
+	appResult, runErr = a.Read(&Metadata{
+		Id:  "id",
+	})
+
+	if runErr != nil {
+		t.Errorf("%s: Rose::Read error with message %s", testGetTestName(t), runErr.Error())
+
+		return
+	}
+
+	if appResult.Status != NotFoundResultStatus {
+		t.Errorf("%s: Rose::Read Invalid read status. Got %s, Expected %s", testGetTestName(t), appResult.Status, NotFoundResultStatus)
+	}
+
+	a.Shutdown()
 }
 
 func TestConcurrentDelete(t *testing.T) {
 	t.Skip()
-	var a *Rose
-	var m *Metadata
+	var r *Rose
+
+	num := 10
+	c := make(chan string, num)
 
 	defer testRemoveFileSystemDb(t)
 
-	a = testCreateRose(testGetTestName(t))
+	r = testCreateRose(testGetTestName(t))
 
-	num := 100000
-	idChan := make(chan string, num)
-
-	for i := 0; i < num; i++ {
-		go func(i int, idChan chan string) {
-			s := []uint8("sdčkfjalsčkjfdlsčakdfjlčk")
-			id := fmt.Sprintf("id-%d", i)
-
-			m = &Metadata{
-				Data:   s,
-				Id:     id,
-			}
-
-			appResult, appErr := a.Insert(m)
-
-			assertSuccessfulInsertResult(appErr, appResult, t)
-
-			idChan<- id
-		}(i, idChan)
-	}
-
-	for i := 0; i < num; i++ {
-		c := <-idChan
-		res, err := a.Delete(&Metadata{
-			Id:  c,
+	produce := func(c chan string, id string) {
+		_, err := r.Insert(&Metadata{
+			Id:  id,
+			Data: []uint8(fmt.Sprintf("value-%s", id)),
 		})
 
-		assertSuccessfulDeleteResult(err, res, t)
+		if err != nil {
+			t.Errorf("Rose: Invalid insert with error: %s", err.Error())
+
+			panic(err)
+		}
+
+		c<- id
 	}
 
-	a.Shutdown()
+	consume := func(id string) {
+		res, err := r.Delete(&Metadata{
+			Id:  id,
+		})
+
+		if err != nil {
+			t.Errorf("Rose: Invalid delete with error: %s", err.Error())
+
+			panic(err)
+		}
+
+		if res.Status != EntryDeletedStatus {
+			t.Errorf("%s: Rose::Delete Invalid delete status. Got %s, Expected %s", testGetTestName(t), res.Status, EntryDeletedStatus)
+		}
+	}
+
+	for i := 0; i < num; i++ {
+		id := fmt.Sprintf("id-%d", i)
+
+		go produce(c, id)
+	}
+
+	curr := 0
+	for a := range c {
+		consume(a)
+		curr++
+
+		if curr == num {
+			break
+		}
+	}
+
+	r.Shutdown()
 }
 
 func testCreateRose(testName string) *Rose {
@@ -507,12 +582,6 @@ func assertDeleteNotFoundResult(runErr RoseError, appResult *AppResult, t *testi
 
 	if appResult.Method != DeleteMethodType {
 		t.Errorf("%s: Rose::Delete Invalid method type. Got %s, Expected %s", testGetTestName(t), appResult.Method, DeleteMethodType)
-
-		return
-	}
-
-	if appResult.Id != 0 {
-		t.Errorf("%s: Rose::Delete Invalid id. Got %d, Expected 0", testGetTestName(t), appResult.Id)
 
 		return
 	}

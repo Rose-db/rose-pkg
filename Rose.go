@@ -1,6 +1,8 @@
 package rose
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Rose struct {
 	memDb *memDb
@@ -8,7 +10,6 @@ type Rose struct {
 }
 
 type AppResult struct {
-	Id uint64
 	Method string
 	Status string
 	Reason string
@@ -24,19 +25,17 @@ func (a *Rose) Insert(m *Metadata) (*AppResult, RoseError) {
 		return nil, vErr
 	}
 
-	var res *dbInsertResult
 	var data *[]uint8
 
 	data = &m.Data
 
 	// save the entry under idx into memory
-	res = a.memDb.Insert(m.Id, data)
+	res := a.memDb.Insert(m.Id, data)
 
-	if res == nil {
+	if res == false {
 		return &AppResult{
-			Id:     0,
 			Method: InsertMethodType,
-			Status: NotFoundResultStatus,
+			Status: DuplicatedIdStatus,
 		}, nil
 	}
 
@@ -55,7 +54,6 @@ func (a *Rose) Insert(m *Metadata) (*AppResult, RoseError) {
 	})
 
 	return &AppResult{
-		Id:     res.ComputedIdx,
 		Method: InsertMethodType,
 		Status: OkResultStatus,
 	}, nil
@@ -76,7 +74,6 @@ func (a *Rose) Read(m *Metadata) (*AppResult, RoseError) {
 
 	if res == nil {
 		return &AppResult{
-			Id:     0,
 			Method: ReadMethodType,
 			Status: NotFoundResultStatus,
 			Reason: fmt.Sprintf("Rose: Entry with id %s not found", m.Id),
@@ -84,7 +81,6 @@ func (a *Rose) Read(m *Metadata) (*AppResult, RoseError) {
 	}
 
 	return &AppResult{
-		Id:     res.Idx,
 		Method: ReadMethodType,
 		Status: FoundResultStatus,
 		Result: res.Result,
@@ -100,13 +96,10 @@ func (a *Rose) Delete(m *Metadata) (*AppResult, RoseError) {
 		return nil, vErr
 	}
 
-	var res *dbDeleteResult
+	res := a.memDb.Delete(m.Id)
 
-	res = a.memDb.Delete(m.Id)
-
-	if res == nil {
+	if res == false {
 		return &AppResult{
-			Id:     0,
 			Method: DeleteMethodType,
 			Status: NotFoundResultStatus,
 			Reason: fmt.Sprintf("Rose: Entry with id %s not found", m.Id),
@@ -114,7 +107,6 @@ func (a *Rose) Delete(m *Metadata) (*AppResult, RoseError) {
 	}
 
 	return &AppResult{
-		Id:     res.Id,
 		Method: DeleteMethodType,
 		Status: EntryDeletedStatus,
 	}, nil
@@ -125,7 +117,7 @@ func (a *Rose) Shutdown() {
 }
 
 func New(log bool) *Rose {
-	fileDb := createDbIfNotExists(log)
+	file := createDbIfNotExists(log)
 
 	m := newMemoryDb()
 
@@ -133,7 +125,7 @@ func New(log bool) *Rose {
 		fmt.Println("Populating existing filesystem database in memory...")
 	}
 
-	populateDb(m, fileDb)
+	populateDb(m, file)
 
 	if log {
 		fmt.Println("Filesystem database is populated successfully")
@@ -141,7 +133,7 @@ func New(log bool) *Rose {
 
 	r := &Rose{
 		memDb: m,
-		jobQueue: newJobQueue(newFsDb(fileDb)),
+		jobQueue: newJobQueue(newFsDb(file)),
 	}
 
 	return r

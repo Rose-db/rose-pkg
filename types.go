@@ -17,6 +17,7 @@ const invalidReadErrorCode = 5
 const OkResultStatus = "ok"
 const FoundResultStatus = "found"
 const NotFoundResultStatus = "not_found"
+const DuplicatedIdStatus = "duplicated_id"
 const EntryDeletedStatus = "deleted"
 
 // method types

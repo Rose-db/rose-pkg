@@ -6,17 +6,9 @@ import (
 )
 
 type dbReadResult struct {
-	Idx uint64
+	Idx uint
 	Id string
 	Result string
-}
-
-type dbInsertResult struct {
-	ComputedIdx uint64
-}
-
-type dbDeleteResult struct {
-	Id uint64
 }
 
 /**
@@ -32,26 +24,26 @@ type dbDeleteResult struct {
 	is created with the same size.
  */
 type memDb struct {
-	InternalDb map[uint64]*[3000]*[]uint8
+	InternalDb map[uint]*[3000]*[]uint8
 	// map of user supplied ids to InternalDb indexes
 	// IdLookupMap::string -> idx::uint -> InternalDb[idx] -> []uint8
-	IdLookupMap map[string]uint64
-	FreeIdsList []uint64
+	IdLookupMap map[string][2]uint
+	FreeIdsList map[string][2]uint
 	idFactory *idFactory
 	RWMutex *sync.RWMutex
 
-	CurrMapIdx uint64
+	CurrMapIdx uint
 }
 
 func newMemoryDb() *memDb {
 	d := &memDb{}
 
-	d.InternalDb = make(map[uint64]*[3000]*[]uint8)
+	d.InternalDb = make(map[uint]*[3000]*[]uint8)
 	d.InternalDb[0] = &[3000]*[]uint8{}
 	d.RWMutex = &sync.RWMutex{}
-	d.FreeIdsList = []uint64{}
+	d.FreeIdsList = make(map[string][2]uint)
 
-	d.IdLookupMap = make(map[string]uint64)
+	d.IdLookupMap = make(map[string][2]uint)
 
 	m := newIdFactory()
 
@@ -69,12 +61,13 @@ func newMemoryDb() *memDb {
 		- if the block does not exist, a new block is created
 	- the value is stored in the block with its index
 */
-func (d *memDb) Insert(id string, v *[]uint8) *dbInsertResult {
+func (d *memDb) Insert(id string, v *[]uint8) bool {
 	d.RWMutex.Lock()
 
-/*	if len(d.FreeIdsList) > 0 {
-		idx := d.FreeIdsList[0]
-		mapId := idx / 3000
+	if len(d.FreeIdsList) > 0 {
+		list := d.FreeIdsList[id]
+		idx := list[0]
+		mapId := list[1]
 
 		// we know that the block has to exist since its in the free list
 		// and that means it was deleted
@@ -82,24 +75,21 @@ func (d *memDb) Insert(id string, v *[]uint8) *dbInsertResult {
 
 		m[idx] = v
 
-		d.FreeIdsList = removeElem(d.FreeIdsList, 0)
-
-		fmt.Println(d.FreeIdsList)
+		delete(d.FreeIdsList, id)
 
 		d.RWMutex.Unlock()
 
-		return &dbInsertResult{
-			ComputedIdx: idx,
-		}
-	}*/
+		return true
+	}
 
-
-	var idx uint64
+	var idx uint
 	var m *[3000]*[]uint8
 
 	// check if the entry already exists
 	if _, ok := d.IdLookupMap[id]; ok {
-		return nil
+		d.RWMutex.Unlock()
+
+		return false
 	}
 
 	// r/w operation, create uint64 index
@@ -107,10 +97,8 @@ func (d *memDb) Insert(id string, v *[]uint8) *dbInsertResult {
 
 	m = d.getBlock()
 
-	// r operation, add index to the index map
-	d.IdLookupMap[id] = idx
-
-	computedIdx := idx + (d.CurrMapIdx * 3000)
+	// r operation, add COMPUTED index to the index map
+	d.IdLookupMap[id] = [2]uint{idx, d.CurrMapIdx}
 
 	// saving the pointer address of the data, not the actual data
 	m[idx] = v
@@ -121,54 +109,59 @@ func (d *memDb) Insert(id string, v *[]uint8) *dbInsertResult {
 
 	d.RWMutex.Unlock()
 
-	return &dbInsertResult{
-		ComputedIdx: computedIdx,
-	}
+	return true
 }
 
-func (d *memDb) Delete(id string) *dbDeleteResult {
+func (d *memDb) Delete(id string) bool {
 	d.RWMutex.Lock()
 
-	var idx, mapId uint64
+	var idData [2]uint
+	var mapId, idx uint
 	var m *[3000]*[]uint8
 
-	idx, ok := d.IdLookupMap[id]
+	idData, ok := d.IdLookupMap[id]
 
 	if !ok {
-		return nil
+		d.RWMutex.Unlock()
+
+		return false
 	}
 
-	mapId = idx / 3000
+	idx = idData[0]
+	mapId = idData[1]
+
 	// get the map where the id value is
 	m = d.InternalDb[mapId]
 
 	delete(d.IdLookupMap, id)
 	m[idx] = nil
 
-	d.FreeIdsList = append(d.FreeIdsList, idx)
+	d.FreeIdsList[id] = [2]uint{idx, mapId}
 
 	d.RWMutex.Unlock()
 
-	return &dbDeleteResult{
-		Id:     idx,
-	}
+	return true
 }
 
 func (d *memDb) Read(id string) *dbReadResult {
 	d.RWMutex.Lock()
 
-	var idx uint64
 	var m *[3000]*[]uint8
-	var mapId uint64 = 0
+	var idData [2]uint
+	var mapId, idx uint
 	var b *[]uint8
 
-	idx, ok := d.IdLookupMap[id]
+	idData, ok := d.IdLookupMap[id]
+
+	idx = idData[0]
+	mapId = idData[1]
 
 	if !ok {
+		d.RWMutex.Unlock()
+
 		return nil
 	}
 
-	mapId = idx / 3000
 	// get the map where the id value is
 	m = d.InternalDb[mapId]
 
