@@ -73,28 +73,11 @@ func createDbIfNotExists(logging bool) *os.File {
 		}
 	}
 
-	// create a function here is ok since we are calling
-	// createDbIfNotExists() only once on startup
-	fn := func(f string, flag int) *os.File {
-		file, err := os.OpenFile(f, flag, 0666)
-
-		if err != nil {
-			fsErr = &systemError{
-				Code:    SystemErrorCode,
-				Message: err.Error(),
-			}
-
-			panic(fsErr)
-		}
-
-		return file
-	}
-
 	a := fmt.Sprintf("%s/db/rose.rose", dir)
 	if _, err := os.Stat(a); os.IsNotExist(err) {
-		file = fn(a, os.O_RDWR|os.O_CREATE)
+		file = createFile(a, os.O_RDWR|os.O_CREATE)
 	} else {
-		file = fn(a, os.O_RDWR)
+		file = createFile(a, os.O_RDWR)
 	}
 
 	if logging {
@@ -105,6 +88,21 @@ func createDbIfNotExists(logging bool) *os.File {
 		} else {
 			fmt.Println("Some directories for the filesystem database were missing but were successfully updated")
 		}
+	}
+
+	return file
+}
+
+func createFile(f string, flag int) *os.File {
+	file, err := os.OpenFile(f, flag, 0666)
+
+	if err != nil {
+		sysErr := &systemError{
+			Code:    SystemErrorCode,
+			Message: err.Error(),
+		}
+
+		panic(sysErr)
 	}
 
 	return file
