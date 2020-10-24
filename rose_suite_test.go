@@ -428,7 +428,7 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	GinkgoIt("Should successfully perform and inspect inserts", func() {
 		m := newMemoryDb()
 
-		testInsertFixture(m,10000)
+		testInsertFixture(m,10000, []uint8{})
 
 		// since block index starts at 0, expected must be 3
 		assertInternalDbValues(m, 3, 0)
@@ -438,7 +438,7 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	GinkgoIt("Should successfully perform and inspect deletes", func() {
 		m := newMemoryDb()
 
-		ids := testInsertFixture(m,10000)
+		ids := testInsertFixture(m,10000, []uint8{})
 
 		// since block index starts at 0, expected must be 3
 		assertInternalDbValues(m, 3, 0)
@@ -455,7 +455,7 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	GinkgoIt("Should successfully perform and inspect delete reallocation", func() {
 		m := newMemoryDb()
 
-		ids := testInsertFixture(m,10000)
+		ids := testInsertFixture(m,10000, []uint8{})
 
 		// since block index starts at 0, expected must be 3
 		assertInternalDbValues(m, 3, 0)
@@ -468,10 +468,22 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		assertInternalDbValues(m, 3, 10000)
 		assertInternalDbIntegrity(m, 0, 4)
 
-		ids = testInsertFixture(m,50000)
+		ids = testInsertFixture(m,50000, []uint8{})
 
 		assertInternalDbValues(m, 16, 0)
 		assertInternalDbIntegrity(m, 50000, 17)
+	})
+})
+
+var _ = GinkgoDescribe("Internal file handling", func() {
+	GinkgoIt("Should scan a file to populate the mem db line by line", func() {
+		d := "test_scanner_file.txt"
+		if _, err := os.Stat(d); os.IsNotExist(err) {
+			err = os.Mkdir(d, os.ModePerm)
+			if err != nil {
+				panic(err)
+			}
+		}
 	})
 })
 
@@ -530,12 +542,16 @@ func testRemoveFileSystemDb() {
 	}
 }
 
-func testInsertFixture(m *memDb, num int) []string {
+func testInsertFixture(m *memDb, num int, value []uint8) []string {
 	ids := []string{}
 	for i := 0; i < num; i++ {
 		id := fmt.Sprintf("id-%d", i)
 		ids = append(ids, id)
-		value := []uint8("sdkfjsdjfsadfjklsajdfkčl")
+
+		if len(value) == 0 {
+			value = []uint8("sdkfjsdjfsadfjklsajdfkčl")
+		}
+
 		m.Insert(id, &value)
 	}
 
