@@ -62,8 +62,7 @@ var _ = GinkgoDescribe("Misc tests", func() {
 })
 
 var _ = GinkgoDescribe("Successfully failing tests", func() {
-	GinkgoIt("Should fail because of an invalid id", func() {
-		var iv []string
+	GinkgoIt("Should fail because of an empty value id", func() {
 		var m *Metadata
 		var a *Rose
 
@@ -71,23 +70,102 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 
 		a = testCreateRose()
 
-		iv = []string{"insert", "read", "delete"}
-
-		for i := 0; i < len(iv); i++ {
-			m = &Metadata{
-				Data:   []uint8{},
-				Id: "",
-			}
-
-			_, err := a.Write(m)
-
-			gomega.Expect(err).NotTo(gomega.BeNil(), err.Error())
-			gomega.Expect(err.GetCode()).To(gomega.Equal(MetadataErrorCode), fmt.Sprintf("MetadataErrorCode should have been returned as RoseError.Status"))
-			gomega.Expect(err.Error()).To(gomega.Equal("Code: 1, Message: Id cannot be an empty string"))
+		m = &Metadata{
+			Data:   []uint8{},
+			Id: "",
 		}
+
+		_, err := a.Write(m)
+
+		if err == nil {
+			ginkgo.Fail("err should not be nil")
+
+			return
+		}
+
+		gomega.Expect(err.GetCode()).To(gomega.Equal(MetadataErrorCode), fmt.Sprintf("MetadataErrorCode should have been returned as RoseError.Status"))
+		gomega.Expect(err.Error()).To(gomega.Equal("Code: 1, Message: Id cannot be an empty string"))
 
 		a.Shutdown()
 	})
+
+	GinkgoIt("Should fail because of too large id", func() {
+		var m *Metadata
+		var a *Rose
+
+		defer testRemoveFileSystemDb()
+
+		a = testCreateRose()
+
+		m = &Metadata{
+			Data:   []uint8{},
+			Id: "ee01a1be-5b8a-4be5-8724-405ee644e07fee01a1be-5b8a-4be5-8724-405ee644e07fee01a1be-5b8a-4be5-8724-405ee644e07fee01a1be-5b8a-4be5-8724-405ee644e07f",
+		}
+
+		_, err := a.Write(m)
+
+
+		if err == nil {
+			ginkgo.Fail("err should not be nil")
+
+			return
+		}
+
+		gomega.Expect(err.GetCode()).To(gomega.Equal(MetadataErrorCode), fmt.Sprintf("MetadataErrorCode should have been returned as RoseError.Status"))
+		gomega.Expect(err.Error()).To(gomega.Equal("Code: 1, Message: Id cannot be larger than 128 bytes, 144 bytes given"))
+
+		a.Shutdown()
+	})
+
+	GinkgoIt("Should fail because data too large > 16MB", func() {
+		var m *Metadata
+		var a *Rose
+
+		defer testRemoveFileSystemDb()
+
+		a = testCreateRose()
+
+		str, fsErr := ioutil.ReadFile("large_value.txt")
+
+		if fsErr != nil {
+			panic(fsErr)
+		}
+
+		// generates a > 16Mb string
+		generateData := func() []uint8 {
+			s := string(str)
+
+			for {
+				s += s
+
+				if len(s) > maxValSize {
+					return []uint8(s)
+				}
+			}
+		}
+
+		d := generateData()
+		
+		m = &Metadata{
+			Data:   d,
+			Id: "ee01a1be-5b8a-4be5-8724-405ee644e07fee01a1be-5b8",
+		}
+
+		_, err := a.Write(m)
+
+
+		if err == nil {
+			ginkgo.Fail("err should not be nil")
+
+			return
+		}
+
+		gomega.Expect(err.GetCode()).To(gomega.Equal(MetadataErrorCode), fmt.Sprintf("MetadataErrorCode should have been returned as RoseError.Status"))
+		gomega.Expect(err.Error()).To(gomega.Equal(fmt.Sprintf("Code: 1, Message: %s", fmt.Sprintf("Data cannot be larger than 16000000 bytes (16MB), %d bytes given", len(string(d))))))
+
+		a.Shutdown()
+	})
+
 
 	GinkgoIt("Should fail if trying to insert data with already existing id", func() {
 		var s []uint8

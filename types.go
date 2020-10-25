@@ -22,3 +22,8 @@ const InsertMethodType = "insert"
 const DeleteMethodType = "delete"
 const ReadMethodType = "read"
 
+// 128B
+const maxIdSize = 128
+// 16MB
+const maxValSize = 16000000
+
