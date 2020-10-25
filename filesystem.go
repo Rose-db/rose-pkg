@@ -1,42 +1,26 @@
 package rose
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"runtime"
 )
 
 func populateDb(m *memDb, file *os.File) {
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		t := scanner.Text()
-		buf := []uint8{}
-		for i, a := range t {
-			// detect a single space
-			if a == 32 {
-				v := t[i:]
-				b := []uint8(v)
-				i := string(buf)
+	reader := NewReader(file)
 
-				ok := m.Insert(i, &b)
+	for {
+		val, ok, err := reader.Read()
 
-				if ok == false {
-					err := &systemError{
-						Code:    SystemErrorCode,
-						Message: fmt.Sprintf("Rose: Cannot populate database. Corruped entry found with id '%s'", i),
-					}
-
-					panic(err)
-				}
-
-				buf = []uint8{}
-
-				break
-			}
-
-			buf = append(buf, uint8(a))
+		if err != nil {
+			panic(err)
 		}
+
+		if !ok {
+			return
+		}
+
+		m.Insert(string(*val.id), val.val)
 	}
 }
 
