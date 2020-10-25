@@ -15,8 +15,8 @@ type job struct {
 	Index *[]uint8
 }
 
-func (jb *jobQueue) AddSync(j *job) {
-	jb.FsDbHandler.Write(j.Entry)
+func (jb *jobQueue) AddSync(j *job) RoseError {
+	return jb.FsDbHandler.Write(j.Entry)
 }
 
 func (jb *jobQueue) DeleteSync(j *job) {

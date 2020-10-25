@@ -17,7 +17,7 @@ func newFsDb(fileDb *os.File) *fsDb {
 	return a
 }
 
-func (fs *fsDb) Write(d *[]uint8) {
+func (fs *fsDb) Write(d *[]uint8) RoseError {
 	var err error
 
 	_, err = fs.File.Write(*d)
@@ -25,36 +25,20 @@ func (fs *fsDb) Write(d *[]uint8) {
 	if err != nil {
 		name := fs.File.Name()
 
-		panic(&dbIntegrityError{
+		return &dbIntegrityError{
 			Code:    DbIntegrityViolationCode,
 			Message: fmt.Sprintf("Database integrity violation. Cannot write to existing file %s with underlying message: %s", name, err.Error()),
-		})
+		}
 	}
+
+	return nil
 }
 
 func (fs *fsDb) Delete(id *[]uint8) {
 
 }
 
-func (fs *fsDb) open(n string) *os.File {
-	var f string
-	var file *os.File
-
-	f = fmt.Sprintf("%s/db/%s", roseDir(), n)
-
-	file, err := os.OpenFile(f, os.O_RDWR, os.ModeAppend)
-
-	if err != nil {
-		panic(&dbIntegrityError{
-			Code:    DbIntegrityViolationCode,
-			Message: fmt.Sprintf("Database integrity violation. Cannot create file %s with underlying message: %s", f, err.Error()),
-		})
-	}
-
-	return file
-}
-
-func (fs *fsDb) SyncAndClose() {
+func (fs *fsDb) SyncAndClose() RoseError {
 	var err error
 	var name string
 
@@ -62,19 +46,21 @@ func (fs *fsDb) SyncAndClose() {
 	err = fs.File.Sync()
 
 	if err != nil {
-		panic(&dbIntegrityError{
+		return &dbIntegrityError{
 			Code:    DbIntegrityViolationCode,
 			Message: fmt.Sprintf("Database integrity violation. Database file system problem for file %s with underlying message: %s", name, err.Error()),
-		})
+		}
 	}
 
 	err = fs.File.Close()
 
 	if err != nil {
-		panic(&dbIntegrityError{
+		return &dbIntegrityError{
 			Code:    DbIntegrityViolationCode,
 			Message: fmt.Sprintf("Database integrity violation. Cannot close file %s with underlying message: %s", name, err.Error()),
-		})
+		}
 	}
+
+	return nil
 }
 

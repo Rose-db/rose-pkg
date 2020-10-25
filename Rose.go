@@ -16,8 +16,12 @@ type AppResult struct {
 	Result string
 }
 
-func New(log bool) *Rose {
-	file := createDbIfNotExists(log)
+func New(log bool) (*Rose, RoseError) {
+	file, err := createDbIfNotExists(log)
+
+	if err != nil {
+		return nil, err
+	}
 
 	m := newMemoryDb()
 
@@ -25,7 +29,11 @@ func New(log bool) *Rose {
 		fmt.Println("Populating existing filesystem database in memory...")
 	}
 
-	populateDb(m, file)
+	err = populateDb(m, file)
+
+	if err != nil {
+		return nil, err
+	}
 
 	if log {
 		fmt.Println("Filesystem database is populated successfully")
@@ -36,7 +44,7 @@ func New(log bool) *Rose {
 		jobQueue: newJobQueue(newFsDb(file)),
 	}
 
-	return r
+	return r, nil
 }
 
 func (a *Rose) Write(m *Metadata) (*AppResult, RoseError) {
@@ -62,9 +70,13 @@ func (a *Rose) Write(m *Metadata) (*AppResult, RoseError) {
 		}, nil
 	}
 
-	a.jobQueue.AddSync(&job{
+	err := a.jobQueue.AddSync(&job{
 		Entry: prepareData(m.Id, m.Data),
 	})
+
+	if err != nil {
+		return nil, err
+	}
 
 	return &AppResult{
 		Method: InsertMethodType,

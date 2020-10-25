@@ -27,8 +27,8 @@ var GinkgoIt = ginkgo.It
 var _ = GinkgoDescribe("Misc tests", func() {
 	GinkgoIt("Should generate ids in expected order", func() {
 		var fac *idFactory
-		var iterations int = 0
-		var currId uint16 = 0
+		var iterations int
+		var currId uint16
 
 		fac = newIdFactory()
 
@@ -248,7 +248,7 @@ var _ = GinkgoDescribe("Read tests", func() {
 
 		a = testCreateRose()
 
-		ids := []string{}
+		ids := make([]string, 0)
 		for i := 0; i < 100000; i++ {
 			id := fmt.Sprintf("id-%d", i)
 			value := fmt.Sprintf("id-value-%d", i)
@@ -481,21 +481,29 @@ var _ = GinkgoDescribe("Internal file handling", func() {
 		maxLines := 100000
 
 		populateTestFile := func(f string, maxLines int) {
-			file := createFile(f, os.O_RDWR|os.O_CREATE)
+			file, err := createFile(f, os.O_RDWR|os.O_CREATE)
+
+			if err != nil {
+				panic(err)
+			}
 
 			fsDb := newFsDb(file)
 
 			for i := 0; i < maxLines; i++ {
 				id := fmt.Sprintf("id-%d", i)
-				v := fmt.Sprintf("value-%d", i);
+				v := fmt.Sprintf("value-%d", i)
 				value := []uint8(v)
 
 				d := prepareData(id, value)
 
-				fsDb.Write(d)
+				if err := fsDb.Write(d); err != nil {
+					panic(err)
+				}
 			}
 
-			fsDb.SyncAndClose()
+			if err := fsDb.SyncAndClose(); err != nil {
+				panic(err)
+			}
 		}
 
 		populateTestFile(d, maxLines)
@@ -557,7 +565,11 @@ func testFixtureSingleInsert(id string, value string, a *Rose) {
 func testCreateRose() *Rose {
 	var a *Rose
 
-	a = New(false)
+	a, err := New(false)
+
+	if err != nil {
+		panic(err)
+	}
 
 	return a
 }
@@ -592,7 +604,7 @@ func testRemoveFileSystemDb() {
 }
 
 func testInsertFixture(m *memDb, num int, value []uint8) []string {
-	ids := []string{}
+	ids := make([]string, 0)
 	for i := 0; i < num; i++ {
 		id := fmt.Sprintf("id-%d", i)
 		ids = append(ids, id)

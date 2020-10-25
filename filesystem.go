@@ -6,27 +6,30 @@ import (
 	"runtime"
 )
 
-func populateDb(m *memDb, file *os.File) {
+func populateDb(m *memDb, file *os.File) RoseError {
 	reader := NewReader(file)
 
 	for {
 		val, ok, err := reader.Read()
 
 		if err != nil {
-			panic(err)
+			return &dbIntegrityError{
+				Code:    DbIntegrityViolationCode,
+				Message: fmt.Sprintf("Database integrity violation. Cannot populate database with message: %s", err.Error()),
+			}
 		}
 
 		if !ok {
-			return
+			return nil
 		}
 
 		m.Write(string(*val.id), val.val)
 	}
 }
 
-func createDbIfNotExists(logging bool) *os.File {
+func createDbIfNotExists(logging bool) (*os.File, RoseError) {
 	var dir, db, log string
-	var fsErr RoseError
+	var err RoseError
 	var file *os.File
 
 	dir = roseDir()
@@ -43,23 +46,29 @@ func createDbIfNotExists(logging bool) *os.File {
 	for _, d := range dirs {
 		if _, err := os.Stat(d); os.IsNotExist(err) {
 			updated++
-			err = os.Mkdir(d, os.ModePerm)
-			if err != nil {
-				fsErr = &systemError{
+			fsErr := os.Mkdir(d, os.ModePerm)
+			if fsErr != nil {
+				return nil, &systemError{
 					Code:    SystemErrorCode,
-					Message: err.Error(),
+					Message: fsErr.Error(),
 				}
-
-				panic(fsErr)
 			}
 		}
 	}
 
 	a := fmt.Sprintf("%s/db/rose.rose", dir)
-	if _, err := os.Stat(a); os.IsNotExist(err) {
-		file = createFile(a, os.O_RDWR|os.O_CREATE)
+	if _, fsErr := os.Stat(a); os.IsNotExist(fsErr) {
+		file, err = createFile(a, os.O_RDWR|os.O_CREATE)
+
+		if err != nil {
+			return nil, err
+		}
 	} else {
-		file = createFile(a, os.O_RDWR)
+		file, err = createFile(a, os.O_RDWR)
+
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if logging {
@@ -72,10 +81,10 @@ func createDbIfNotExists(logging bool) *os.File {
 		}
 	}
 
-	return file
+	return file, nil
 }
 
-func createFile(f string, flag int) *os.File {
+func createFile(f string, flag int) (*os.File, RoseError) {
 	file, err := os.OpenFile(f, flag, 0666)
 
 	if err != nil {
@@ -84,10 +93,10 @@ func createFile(f string, flag int) *os.File {
 			Message: err.Error(),
 		}
 
-		panic(sysErr)
+		return nil, sysErr
 	}
 
-	return file
+	return file, nil
 }
 
 // Returns the directory name of the user home directory.

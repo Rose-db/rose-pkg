@@ -21,11 +21,6 @@ type httpError struct {
 	Message string
 }
 
-type dbReadError struct {
-	Code int
-	Message string
-}
-
 type dbIntegrityError struct {
 	Code int
 	Message string
@@ -83,23 +78,5 @@ func (e *httpError) GetCode() int {
 }
 
 func (e *httpError) JSON() map[string]interface{} {
-	return map[string]interface{}{}
-}
-
-
-
-func (e *dbReadError) Error() string {
-	return fmt.Sprintf("Code: %d, Message: %s", e.Code, e.Message)
-}
-
-func (e *dbReadError) Type() string {
-	return httpErrorType
-}
-
-func (e *dbReadError) GetCode() int {
-	return HttpErrorCode
-}
-
-func (e *dbReadError) JSON() map[string]interface{} {
 	return map[string]interface{}{}
 }

@@ -6,6 +6,16 @@ import (
 	"os"
 )
 
+type reader struct {
+	internalReader *bufio.Reader
+	reader io.Reader
+}
+
+type idValue struct {
+	id *[]uint8
+	val *[]uint8
+}
+
 func NewReader(r *os.File) *reader {
 	a := bufio.NewReader(r)
 	return &reader{
@@ -21,6 +31,14 @@ func (s *reader) Read() (*idValue, bool, error) {
 	for {
 		b, err := s.internalReader.ReadByte()
 
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			return nil, true, err
+		}
+
 		if !idFound {
 			if b == 32 {
 				idFound = true
@@ -29,8 +47,8 @@ func (s *reader) Read() (*idValue, bool, error) {
 			}
 		} else {
 			if b == 10 {
-				a := idBuff[1:len(idBuff)]
-				b := valBuff[1:len(valBuff)]
+				a := idBuff[1:]
+				b := valBuff[1:]
 				return &idValue{
 					id:  &a,
 					val: &b,
@@ -38,14 +56,6 @@ func (s *reader) Read() (*idValue, bool, error) {
 			}
 
 			valBuff = append(valBuff, b)
-		}
-
-		if err == io.EOF {
-			break
-		}
-
-		if err != nil {
-			return nil, true, err
 		}
 	}
 
