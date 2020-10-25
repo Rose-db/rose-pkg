@@ -66,8 +66,6 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 		var m *Metadata
 		var a *Rose
 
-		defer testRemoveFileSystemDb()
-
 		a = testCreateRose()
 
 		m = &Metadata{
@@ -91,13 +89,13 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 		if err != nil {
 			panic(err)
 		}
+
+		testRemoveFileSystemDb()
 	})
 
 	GinkgoIt("Should fail because of too large id", func() {
 		var m *Metadata
 		var a *Rose
-
-		defer testRemoveFileSystemDb()
 
 		a = testCreateRose()
 
@@ -123,13 +121,13 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 		if err != nil {
 			panic(err)
 		}
+
+		testRemoveFileSystemDb()
 	})
 
 	GinkgoIt("Should fail because data too large > 16MB", func() {
 		var m *Metadata
 		var a *Rose
-
-		defer testRemoveFileSystemDb()
 
 		a = testCreateRose()
 
@@ -175,6 +173,8 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 		if err != nil {
 			panic(err)
 		}
+
+		testRemoveFileSystemDb()
 	})
 
 
@@ -182,8 +182,6 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 		var s []uint8
 		var a *Rose
 		var m *Metadata
-
-		defer testRemoveFileSystemDb()
 
 		a = testCreateRose()
 
@@ -211,13 +209,13 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 		if err != nil {
 			panic(err)
 		}
+
+		testRemoveFileSystemDb()
 	})
 
 	GinkgoIt("Should fail to read a document if not exists", func() {
 		var a *Rose
 		var m *Metadata
-
-		defer testRemoveFileSystemDb()
 
 		a = testCreateRose()
 
@@ -235,12 +233,12 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 		if err != nil {
 			panic(err)
 		}
+
+		testRemoveFileSystemDb()
 	})
 
 	GinkgoIt("Should fail to delete a document if not exist", func() {
 		var a *Rose
-
-		defer testRemoveFileSystemDb()
 
 		a = testCreateRose()
 
@@ -257,6 +255,8 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 		if err != nil {
 			panic(err)
 		}
+
+		testRemoveFileSystemDb()
 	})
 })
 
@@ -265,8 +265,6 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 		var s []uint8
 		var a *Rose
 		var m *Metadata
-
-		defer testRemoveFileSystemDb()
 
 		a = testCreateRose()
 
@@ -288,6 +286,8 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 		if err != nil {
 			panic(err)
 		}
+
+		testRemoveFileSystemDb()
 	})
 
 	GinkgoIt("Should insert multiple values", func() {
@@ -298,8 +298,6 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 		var err RoseError
 		var res *AppResult
 		var currId uint64
-
-		defer testRemoveFileSystemDb()
 
 		a = testCreateRose()
 
@@ -325,6 +323,8 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 		if err != nil {
 			panic(err)
 		}
+
+		testRemoveFileSystemDb()
 	})
 })
 
@@ -333,11 +333,12 @@ var _ = GinkgoDescribe("Read tests", func() {
 		var a *Rose
 		var m *Metadata
 
-		defer testRemoveFileSystemDb()
-
 		a = testCreateRose()
 
-		testFixtureSingleInsert("id", "id value", a)
+
+		id := "id"
+		data := "id value"
+		testFixtureSingleInsert(id, data, a)
 
 		m = &Metadata{
 			Id:     "id",
@@ -353,19 +354,24 @@ var _ = GinkgoDescribe("Read tests", func() {
 		if err != nil {
 			panic(err)
 		}
+
+		assertInsertedDataOnFsDb(len(id + " " + data + "\n"))
+
+		testRemoveFileSystemDb()
 	})
 
 	GinkgoIt("Should perform multiple reads", func() {
 		var a *Rose
 
-		defer testRemoveFileSystemDb()
-
 		a = testCreateRose()
 
 		ids := make([]string, 0)
+		fsData := ""
 		for i := 0; i < 100000; i++ {
 			id := fmt.Sprintf("id-%d", i)
 			value := fmt.Sprintf("id-value-%d", i)
+
+			fsData += id + " " + value + "\n"
 
 			_, err := a.Write(&Metadata{
 				Id:   id,
@@ -397,13 +403,47 @@ var _ = GinkgoDescribe("Read tests", func() {
 		if err != nil {
 			panic(err)
 		}
+
+		testRemoveFileSystemDb()
+	})
+
+	GinkgoIt("Should assert fs db integrity after multiple inserts", func() {
+		var a *Rose
+
+		a = testCreateRose()
+
+		ids := make([]string, 0)
+		fsData := ""
+		for i := 0; i < 4578; i++ {
+			id := fmt.Sprintf("id-%d", i)
+			value := fmt.Sprintf("id-value-%d", i)
+
+			fsData += string(*prepareData(id, []uint8(value)))
+
+			_, err := a.Write(&Metadata{
+				Id:   id,
+				Data: []uint8(value),
+			})
+
+			gomega.Expect(err).To(gomega.BeNil())
+
+			ids = append(ids, id)
+		}
+
+		err := a.Shutdown()
+
+		if err != nil {
+			panic(err)
+		}
+
+		assertInsertedDataOnFsDb(len(fsData))
+
+		testRemoveFileSystemDb()
 	})
 
 	GinkgoIt("Should delete a single document", func() {
 		var a *Rose
 		var m *Metadata
-
-		defer testRemoveFileSystemDb()
 
 		a = testCreateRose()
 
@@ -440,6 +480,8 @@ var _ = GinkgoDescribe("Read tests", func() {
 		if err != nil {
 			panic(err)
 		}
+
+		testRemoveFileSystemDb()
 	})
 })
 
@@ -448,8 +490,6 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 		var r *Rose
 		num := 100000
 		c := make(chan string, num)
-
-		defer testRemoveFileSystemDb()
 
 		r = testCreateRose()
 
@@ -496,6 +536,8 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 		if err != nil {
 			panic(err)
 		}
+
+		testRemoveFileSystemDb()
 	})
 
 	GinkgoIt("Should delete documents concurrently", func() {
@@ -503,8 +545,6 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 		num := 100000
 		c := make(chan string, num)
-
-		defer testRemoveFileSystemDb()
 
 		r = testCreateRose()
 
@@ -551,6 +591,8 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 		if err != nil {
 			panic(err)
 		}
+
+		testRemoveFileSystemDb()
 	})
 })
 
@@ -769,5 +811,29 @@ func assertInternalDbIntegrity(m *memDb, expectedLen int, expectedCapacity int) 
 
 	gomega.Expect(fullNum).To(gomega.Equal(expectedLen))
 	gomega.Expect(len(m.IdLookupMap)).To(gomega.Equal(expectedLen))
+}
+
+func assertInsertedDataOnFsDb(expected int) {
+	db := fmt.Sprintf("%s/%s", roseDbDir(), "rose.rose")
+
+	file, err := os.Open(db)
+
+	if err != nil {
+		panic(err)
+	}
+
+	internalFsData, err := ioutil.ReadAll(file)
+
+	if err != nil {
+		panic(err)
+	}
+
+	gomega.Expect(expected).To(gomega.Equal(len(string(internalFsData))))
+
+	err = file.Close()
+
+	if err != nil {
+		panic(err)
+	}
 }
 
