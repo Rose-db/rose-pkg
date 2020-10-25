@@ -11,8 +11,8 @@ type Metadata struct {
 
 func (m *Metadata) validate() RoseError {
 	if m.Id == "" {
-		return &httpError{
-			Code:    HttpErrorCode,
+		return &metadataError{
+			Code:    MetadataErrorCode,
 			Message: fmt.Sprintf("Id cannot be an empty string"),
 		}
 	}

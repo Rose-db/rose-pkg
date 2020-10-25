@@ -2,10 +2,10 @@ package rose
 
 // error types
 const systemErrorType = "system_error"
-const httpErrorType = "http_error"
+const metadataErrorType = "metadata_error"
 
 // application error codes
-const HttpErrorCode = 1
+const MetadataErrorCode = 1
 const SystemErrorCode = 2
 const InvalidRequestCode = 3
 const DbIntegrityViolationCode = 4

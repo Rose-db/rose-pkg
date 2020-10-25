@@ -62,7 +62,7 @@ var _ = GinkgoDescribe("Misc tests", func() {
 })
 
 var _ = GinkgoDescribe("Successfully failing tests", func() {
-	GinkgoIt("Should fail with invalid id data type", func() {
+	GinkgoIt("Should fail because of an invalid id", func() {
 		var iv []string
 		var m *Metadata
 		var a *Rose
@@ -82,7 +82,8 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 			_, err := a.Write(m)
 
 			gomega.Expect(err).NotTo(gomega.BeNil(), err.Error())
-			gomega.Expect(err.GetCode()).To(gomega.Equal(HttpErrorCode), fmt.Sprintf("HttpErrorCode should have been returned as RoseError.Status"))
+			gomega.Expect(err.GetCode()).To(gomega.Equal(MetadataErrorCode), fmt.Sprintf("MetadataErrorCode should have been returned as RoseError.Status"))
+			gomega.Expect(err.Error()).To(gomega.Equal("Code: 1, Message: Id cannot be an empty string"))
 		}
 
 		a.Shutdown()
