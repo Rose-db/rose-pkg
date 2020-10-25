@@ -23,8 +23,8 @@ func (jb *jobQueue) DeleteSync(j *job) {
 	jb.FsDbHandler.Delete(j.Entry)
 }
 
-func (jb *jobQueue) Close() {
-	jb.FsDbHandler.SyncAndClose()
+func (jb *jobQueue) Close() RoseError {
+	return jb.FsDbHandler.SyncAndClose()
 }
 
 func newJobQueue(fsDb *fsDb) *jobQueue {

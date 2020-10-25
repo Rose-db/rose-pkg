@@ -145,14 +145,13 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 		}
 
 		d := generateData()
-		
+
 		m = &Metadata{
 			Data:   d,
 			Id: "ee01a1be-5b8a-4be5-8724-405ee644e07fee01a1be-5b8",
 		}
 
 		_, err := a.Write(m)
-
 
 		if err == nil {
 			ginkgo.Fail("err should not be nil")
@@ -260,7 +259,11 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 		gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
 
-		a.Shutdown()
+		err = a.Shutdown()
+
+		if err != nil {
+			panic(err)
+		}
 	})
 
 	GinkgoIt("Should insert multiple values", func() {
@@ -293,7 +296,11 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 			currId++
 		}
 
-		a.Shutdown()
+		err = a.Shutdown()
+
+		if err != nil {
+			panic(err)
+		}
 	})
 })
 
@@ -317,7 +324,11 @@ var _ = GinkgoDescribe("Read tests", func() {
 		gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
 		gomega.Expect(res.Result).To(gomega.Equal("id value"))
 
-		a.Shutdown()
+		err = a.Shutdown()
+
+		if err != nil {
+			panic(err)
+		}
 	})
 
 	GinkgoIt("Should perform multiple reads", func() {
@@ -357,7 +368,11 @@ var _ = GinkgoDescribe("Read tests", func() {
 			gomega.Expect(res.Result).To(gomega.Equal(value))
 		}
 
-		a.Shutdown()
+		err := a.Shutdown()
+
+		if err != nil {
+			panic(err)
+		}
 	})
 
 	GinkgoIt("Should delete a single document", func() {
@@ -396,7 +411,11 @@ var _ = GinkgoDescribe("Read tests", func() {
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
 
-		a.Shutdown()
+		err = a.Shutdown()
+
+		if err != nil {
+			panic(err)
+		}
 	})
 })
 
@@ -448,7 +467,11 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			}
 		}
 
-		r.Shutdown()
+		err := r.Shutdown()
+
+		if err != nil {
+			panic(err)
+		}
 	})
 
 	GinkgoIt("Should delete documents concurrently", func() {
@@ -499,7 +522,11 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			}
 		}
 
-		r.Shutdown()
+		err := r.Shutdown()
+
+		if err != nil {
+			panic(err)
+		}
 	})
 })
 

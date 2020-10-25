@@ -141,6 +141,6 @@ func (a *Rose) Delete(m *Metadata) (*AppResult, RoseError) {
 	}, nil
 }
 
-func (a *Rose) Shutdown() {
-	a.jobQueue.Close()
+func (a *Rose) Shutdown() RoseError {
+	return a.jobQueue.Close()
 }
