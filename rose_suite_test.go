@@ -86,7 +86,11 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 		gomega.Expect(err.GetCode()).To(gomega.Equal(MetadataErrorCode), fmt.Sprintf("MetadataErrorCode should have been returned as RoseError.Status"))
 		gomega.Expect(err.Error()).To(gomega.Equal("Code: 1, Message: Id cannot be an empty string"))
 
-		a.Shutdown()
+		err = a.Shutdown()
+
+		if err != nil {
+			panic(err)
+		}
 	})
 
 	GinkgoIt("Should fail because of too large id", func() {
@@ -114,7 +118,11 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 		gomega.Expect(err.GetCode()).To(gomega.Equal(MetadataErrorCode), fmt.Sprintf("MetadataErrorCode should have been returned as RoseError.Status"))
 		gomega.Expect(err.Error()).To(gomega.Equal("Code: 1, Message: Id cannot be larger than 128 bytes, 144 bytes given"))
 
-		a.Shutdown()
+		err = a.Shutdown()
+
+		if err != nil {
+			panic(err)
+		}
 	})
 
 	GinkgoIt("Should fail because data too large > 16MB", func() {
@@ -162,7 +170,11 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 		gomega.Expect(err.GetCode()).To(gomega.Equal(MetadataErrorCode), fmt.Sprintf("MetadataErrorCode should have been returned as RoseError.Status"))
 		gomega.Expect(err.Error()).To(gomega.Equal(fmt.Sprintf("Code: 1, Message: %s", fmt.Sprintf("Data cannot be larger than 16000000 bytes (16MB), %d bytes given", len(string(d))))))
 
-		a.Shutdown()
+		err = a.Shutdown()
+
+		if err != nil {
+			panic(err)
+		}
 	})
 
 
@@ -194,7 +206,11 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 		gomega.Expect(res.Status).To(gomega.Equal(DuplicatedIdStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
 
-		a.Shutdown()
+		err = a.Shutdown()
+
+		if err != nil {
+			panic(err)
+		}
 	})
 
 	GinkgoIt("Should fail to read a document if not exists", func() {
@@ -214,7 +230,11 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
 
-		a.Shutdown()
+		err = a.Shutdown()
+
+		if err != nil {
+			panic(err)
+		}
 	})
 
 	GinkgoIt("Should fail to delete a document if not exist", func() {
@@ -232,7 +252,11 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 		gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 		gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
 
-		a.Shutdown()
+		err = a.Shutdown()
+
+		if err != nil {
+			panic(err)
+		}
 	})
 })
 
