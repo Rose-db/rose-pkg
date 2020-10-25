@@ -37,8 +37,6 @@ func populateDb(m *memDb, file *os.File) {
 
 			buf = append(buf, uint8(a))
 		}
-
-
 	}
 }
 

@@ -1,5 +1,10 @@
 package rose
 
+import (
+	"bufio"
+	"io"
+)
+
 // error types
 const systemErrorType = "system_error"
 const httpErrorType = "http_error"
@@ -24,4 +29,14 @@ const EntryDeletedStatus = "deleted"
 const InsertMethodType = "insert"
 const DeleteMethodType = "delete"
 const ReadMethodType = "read"
+
+type reader struct {
+	internalReader *bufio.Reader
+	reader io.Reader
+}
+
+type idValue struct {
+	id *[]uint8
+	val *[]uint8
+}
 

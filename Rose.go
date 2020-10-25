@@ -62,18 +62,8 @@ func (a *Rose) Insert(m *Metadata) (*AppResult, RoseError) {
 		}, nil
 	}
 
-	// create a copy of the data so that we don't mutate the one
-	// in memory
-	cp := m.Data
-	cpp := &cp
-
-	// create the string to be saved as a single row on fs
-	*cpp = append(*cpp, uint8(10))
-	b := []uint8(m.Id + " ")
-	*cpp = append(b, *cpp...)
-
 	a.jobQueue.AddSync(&job{
-		Entry: cpp,
+		Entry: prepareData(m.Id, m.Data),
 	})
 
 	return &AppResult{

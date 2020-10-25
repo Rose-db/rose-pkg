@@ -478,11 +478,60 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 var _ = GinkgoDescribe("Internal file handling", func() {
 	GinkgoIt("Should scan a file to populate the mem db line by line", func() {
 		d := "test_scanner_file.txt"
-		if _, err := os.Stat(d); os.IsNotExist(err) {
-			err = os.Mkdir(d, os.ModePerm)
-			if err != nil {
-				panic(err)
+		maxLines := 100000
+
+		populateTestFile := func(f string, maxLines int) {
+			file := createFile(f, os.O_RDWR|os.O_CREATE)
+
+			fsDb := newFsDb(file)
+
+			for i := 0; i < maxLines; i++ {
+				id := fmt.Sprintf("id-%d", i)
+				v := fmt.Sprintf("value-%d", i);
+				value := []uint8(v)
+
+				d := prepareData(id, value)
+
+				fsDb.Write(d)
 			}
+
+			fsDb.SyncAndClose()
+		}
+
+		populateTestFile(d, maxLines)
+
+		file, err := os.OpenFile(d, os.O_RDONLY, 0666)
+
+		if err != nil {
+			ginkgo.Fail(fmt.Sprintf("Test failed with error: %s", err.Error()))
+		}
+
+		r := NewReader(file)
+
+		curr := 0
+		for {
+			val, ok, err := r.Read()
+
+			if err != nil {
+				ginkgo.Fail(fmt.Sprintf("Error reading scanner with error: %s", err.Error()))
+
+				return
+			}
+
+			if !ok {
+				break
+			}
+
+			gomega.Expect(string(*val.id)).To(gomega.Equal(fmt.Sprintf("id-%d", curr)))
+			gomega.Expect(string(*val.val)).To(gomega.Equal(fmt.Sprintf("value-%d", curr)))
+
+			curr++
+		}
+
+		err = os.Remove(d)
+
+		if err != nil {
+			ginkgo.Fail(fmt.Sprintf("Failed removing file %s", d))
 		}
 	})
 })

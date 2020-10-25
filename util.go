@@ -26,3 +26,14 @@ func removeElem(s []uint64, i int) []uint64 {
 	// just return everything except the last element since that is where s[i] is now
 	return s[:len(s)-1]
 }
+
+func prepareData(id string, data []uint8) *[]uint8 {
+	cpp := &data
+
+	// create the string to be saved as a single row on fs
+	*cpp = append(*cpp, uint8(10))
+	b := []uint8(id + " ")
+	*cpp = append(b, *cpp...)
+
+	return cpp
+}
