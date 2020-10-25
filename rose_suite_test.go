@@ -79,7 +79,7 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 				Id: "",
 			}
 
-			_, err := a.Insert(m)
+			_, err := a.Write(m)
 
 			gomega.Expect(err).NotTo(gomega.BeNil(), err.Error())
 			gomega.Expect(err.GetCode()).To(gomega.Equal(HttpErrorCode), fmt.Sprintf("HttpErrorCode should have been returned as RoseError.Status"))
@@ -104,13 +104,13 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 			Id:     "id",
 		}
 
-		res, err := a.Insert(m)
+		res, err := a.Write(m)
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
 
-		res, err = a.Insert(m)
+		res, err = a.Write(m)
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(DuplicatedIdStatus))
@@ -175,7 +175,7 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 			Id:     "id",
 		}
 
-		res, err := a.Insert(m)
+		res, err := a.Write(m)
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
@@ -205,7 +205,7 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 				Id:     fmt.Sprintf("id-%d", i),
 			}
 
-			res, err = a.Insert(m)
+			res, err = a.Write(m)
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
@@ -253,7 +253,7 @@ var _ = GinkgoDescribe("Read tests", func() {
 			id := fmt.Sprintf("id-%d", i)
 			value := fmt.Sprintf("id-value-%d", i)
 
-			_, err := a.Insert(&Metadata{
+			_, err := a.Write(&Metadata{
 				Id:   id,
 				Data: []uint8(value),
 			})
@@ -296,7 +296,7 @@ var _ = GinkgoDescribe("Read tests", func() {
 			Id:     "id",
 		}
 
-		res, err := a.Insert(m)
+		res, err := a.Write(m)
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
@@ -334,7 +334,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 		produce := func(c chan string, id string) {
 			defer ginkgo.GinkgoRecover()
 
-			_, err := r.Insert(&Metadata{
+			_, err := r.Write(&Metadata{
 				Id:  id,
 				Data: []uint8(fmt.Sprintf("value-%s", id)),
 			})
@@ -385,7 +385,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 		produce := func(c chan string, id string) {
 			defer ginkgo.GinkgoRecover()
 
-			_, err := r.Insert(&Metadata{
+			_, err := r.Write(&Metadata{
 				Id:  id,
 				Data: []uint8(fmt.Sprintf("value-%s", id)),
 			})
@@ -547,7 +547,7 @@ func testFixtureSingleInsert(id string, value string, a *Rose) {
 		Id:     id,
 	}
 
-	_, appErr = a.Insert(m)
+	_, appErr = a.Write(m)
 
 	if appErr != nil {
 		panic(appErr)
@@ -601,7 +601,7 @@ func testInsertFixture(m *memDb, num int, value []uint8) []string {
 			value = []uint8("sdkfjsdjfsadfjklsajdfkčl")
 		}
 
-		m.Insert(id, &value)
+		m.Write(id, &value)
 	}
 
 	return ids

@@ -39,7 +39,7 @@ func New(log bool) *Rose {
 	return r
 }
 
-func (a *Rose) Insert(m *Metadata) (*AppResult, RoseError) {
+func (a *Rose) Write(m *Metadata) (*AppResult, RoseError) {
 	var vErr RoseError
 
 	vErr = m.validate()
@@ -53,7 +53,7 @@ func (a *Rose) Insert(m *Metadata) (*AppResult, RoseError) {
 	data = &m.Data
 
 	// save the entry under idx into memory
-	res := a.memDb.Insert(m.Id, data)
+	res := a.memDb.Write(m.Id, data)
 
 	if res == false {
 		return &AppResult{

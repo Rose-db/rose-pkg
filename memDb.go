@@ -61,7 +61,7 @@ func newMemoryDb() *memDb {
 		- if the block does not exist, a new block is created
 	- the value is stored in the block with its index
 */
-func (d *memDb) Insert(id string, v *[]uint8) bool {
+func (d *memDb) Write(id string, v *[]uint8) bool {
 	d.RWMutex.Lock()
 
 	if len(d.FreeIdsList) > 0 {

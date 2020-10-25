@@ -20,7 +20,7 @@ func populateDb(m *memDb, file *os.File) {
 			return
 		}
 
-		m.Insert(string(*val.id), val.val)
+		m.Write(string(*val.id), val.val)
 	}
 }
 

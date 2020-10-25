@@ -10,13 +10,13 @@ var testString string = "Lorem ipsum dolor sit amet, consectetur adipiscing elit
 
 func benchmarkAppInsert(i int, a *Rose, m *Metadata) {
 	for c := 0; c < i; c++ {
-		_, _ = a.Insert(m)
+		_, _ = a.Write(m)
 	}
 }
 
 func benchmarkMemDbInsert(i int, a *memDb, id string, val []uint8) {
 	for c := 0; c < i; c++ {
-		_ = a.Insert(id, &val)
+		_ = a.Write(id, &val)
 	}
 }
 
