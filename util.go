@@ -30,10 +30,28 @@ func removeElem(s []uint64, i int) []uint64 {
 func prepareData(id string, data []uint8) *[]uint8 {
 	cpp := &data
 
+	// surround the data with delimiters
+	*cpp = append([]uint8{91, 35, 91}, *cpp...)
+	*cpp = append(*cpp, []uint8{93, 35, 93}...)
 	// create the string to be saved as a single row on fs
 	*cpp = append(*cpp, uint8(10))
-	b := []uint8(id + " ")
+	b := []uint8("[#[" + id + "]#]")
+	// prepend id
 	*cpp = append(b, *cpp...)
 
 	return cpp
+}
+
+func appendByte(slice []uint8, data ...uint8) []uint8 {
+	m := len(slice)
+	n := m + len(data)
+	if n > cap(slice) { // if necessary, reallocate
+		// allocate double what's needed, for future growth.
+		newSlice := make([]uint8, (n+1)*2)
+		copy(newSlice, slice)
+		slice = newSlice
+	}
+	slice = slice[0:n]
+	copy(slice[m:n], data)
+	return slice
 }

@@ -335,7 +335,6 @@ var _ = GinkgoDescribe("Read tests", func() {
 
 		a = testCreateRose()
 
-
 		id := "id"
 		data := "id value"
 		testFixtureSingleInsert(id, data, a)
@@ -355,7 +354,7 @@ var _ = GinkgoDescribe("Read tests", func() {
 			panic(err)
 		}
 
-		assertInsertedDataOnFsDb(len(id + " " + data + "\n"))
+		assertInsertedDataOnFsDb(len(*prepareData(id, []uint8(data))))
 
 		testRemoveFileSystemDb()
 	})
@@ -707,12 +706,14 @@ var _ = GinkgoDescribe("Internal file handling", func() {
 
 			curr++
 		}
-
+		
 		err = os.Remove(d)
 
 		if err != nil {
 			ginkgo.Fail(fmt.Sprintf("Failed removing file %s", d))
 		}
+
+		gomega.Expect(curr > 0).To(gomega.Equal(true))
 	})
 })
 
