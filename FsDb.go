@@ -6,13 +6,15 @@ import (
 )
 
 type fsDb struct {
+	Num uint16
+	Path string
 	File *os.File
 }
 
-func newFsDb() (*fsDb, RoseError) {
-	a := roseBlockFile(1)
+func newFsDb(b uint16) (*fsDb, RoseError) {
+	a := roseBlockFile(b)
 
-	file, err := createFile(a, os.O_RDWR)
+	file, err := createFile(a, os.O_RDWR|os.O_CREATE)
 
 	if err != nil {
 		return nil, err
@@ -20,10 +22,19 @@ func newFsDb() (*fsDb, RoseError) {
 
 	return &fsDb{
 		File: file,
+		Path: a,
 	}, nil
 }
 
 func (fs *fsDb) Write(d *[]uint8) RoseError {
+	if fs.File == nil {
+		err := fs.WakeUp()
+
+		if err != nil {
+			return err
+		}
+	}
+
 	var err error
 
 	_, err = fs.File.Write(*d)
@@ -36,6 +47,34 @@ func (fs *fsDb) Write(d *[]uint8) RoseError {
 			Message: fmt.Sprintf("Database integrity violation. Cannot write to existing file %s with underlying message: %s", name, err.Error()),
 		}
 	}
+
+	fs.Num++
+
+	if fs.Num == 3001 {
+		return fs.Sleep()
+	}
+
+	return nil
+}
+
+func (fs *fsDb) Sleep() RoseError {
+	if err := fs.SyncAndClose(); err != nil {
+		return err
+	}
+
+	fs.File = nil
+
+	return nil
+}
+
+func (fs *fsDb) WakeUp() RoseError {
+	file, err := createFile(fs.Path, os.O_RDWR)
+
+	if err != nil {
+		return err
+	}
+
+	fs.File = file
 
 	return nil
 }

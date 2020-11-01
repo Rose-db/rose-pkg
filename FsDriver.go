@@ -1,36 +1,53 @@
 package rose
 
 type fsDriver struct {
-	FsDbHandler *fsDb
+	Handlers map[uint16]*fsDb
+	CurrentHandler *fsDb
 }
 
 type job struct {
 	Entry *[]uint8
 }
 
-func (d *fsDriver) NewBlock(b int) {
-
+func newFsDriver() *fsDriver {
+	return &fsDriver{
+		Handlers: make(map[uint16]*fsDb),
+	}
 }
 
-func (d *fsDriver) Save(j *[]*job) RoseError {
+func (d *fsDriver) Save(j *[]*job, mapIdx uint16) RoseError {
 	if len(*j) == 1 {
+		var err RoseError
 		job := (*j)[0]
-		return d.FsDbHandler.Write(job.Entry)
+		handler, ok := d.Handlers[mapIdx]
+
+		if !ok {
+			handler, err = newFsDb(mapIdx)
+
+			if err != nil {
+				return err
+			}
+
+			d.Handlers[mapIdx] = handler
+		}
+
+		return handler.Write(job.Entry)
 	}
 
 	return nil
 }
 
 func (d *fsDriver) DeleteSync(j *job) {
-	d.FsDbHandler.Delete(j.Entry)
 }
 
 func (d *fsDriver) Close() RoseError {
-	return d.FsDbHandler.SyncAndClose()
-}
+	for _, handler := range d.Handlers {
+		err := handler.SyncAndClose()
 
-func newFsDriver(fsDb *fsDb) *fsDriver {
-	return &fsDriver{
-		FsDbHandler: fsDb,
+		if err != nil {
+			return err
+		}
 	}
+
+	return nil
 }

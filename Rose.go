@@ -17,11 +17,20 @@ type AppResult struct {
 }
 
 func New(log bool) (*Rose, RoseError) {
-	err := createDbIfNotExists(log)
+	comm := make(chan string)
+	errChan := make(chan RoseError)
+	go createDbIfNotExists(log, comm, errChan)
+
+	for msg := range comm {
+		fmt.Println(msg)
+	}
+
+	err := <-errChan
 
 	if err != nil {
 		return nil, err
 	}
+
 
 	m := newMemoryDb()
 
@@ -39,15 +48,9 @@ func New(log bool) (*Rose, RoseError) {
 		fmt.Println("Filesystem database is populated successfully")
 	}
 
-	fsDb, err := newFsDb()
-
-	if err != nil {
-		return nil, err
-	}
-
 	r := &Rose{
 		memDb: m,
-		driver: newFsDriver(fsDb),
+		driver: newFsDriver(),
 	}
 
 	return r, nil
@@ -81,7 +84,7 @@ func (a *Rose) Write(m *Metadata) (*AppResult, RoseError) {
 		&job{Entry: prepareData(m.Id, m.Data)},
 	}
 
-	err := a.driver.Save(&jobs)
+	err := a.driver.Save(&jobs, a.memDb.CurrMapIdx)
 
 	if err != nil {
 		return nil, err

@@ -2,48 +2,60 @@ package rose
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"runtime"
 )
 
 func populateDb(m *memDb) RoseError {
-	a := roseBlockFile(1)
-
-	file, err := createFile(a, os.O_RDWR)
-
-	if err != nil {
-		return err
-	}
-
-	reader := NewReader(file)
-
-	for {
-		val, ok, err := reader.Read()
-
-		if err != nil {
-			return &dbIntegrityError{
-				Code:    DbIntegrityViolationCode,
-				Message: fmt.Sprintf("Database integrity violation. Cannot populate database with message: %s", err.Error()),
-			}
-		}
-
-		if !ok {
-			break
-		}
-
-		m.Write(string(*val.id), val.val)
-	}
-
-	fsErr := closeFile(file)
+	files, fsErr := ioutil.ReadDir(roseDbDir())
 
 	if fsErr != nil {
-		return fsErr
+		return &systemError{
+			Code:    SystemErrorCode,
+			Message: fsErr.Error(),
+		}
+	}
+
+	for _, f := range files {
+		db := fmt.Sprintf("%s/%s", roseDbDir(), f.Name())
+
+		file, err := createFile(db, os.O_RDONLY)
+
+		if err != nil {
+			return err
+		}
+
+		reader := NewReader(file)
+
+		for {
+			val, ok, err := reader.Read()
+
+			if err != nil {
+				return &dbIntegrityError{
+					Code:    DbIntegrityViolationCode,
+					Message: fmt.Sprintf("Database integrity violation. Cannot populate database with message: %s", err.Error()),
+				}
+			}
+
+			if !ok {
+				break
+			}
+
+			m.Write(string(*val.id), val.val)
+		}
+
+		fsErr := closeFile(file)
+
+		if fsErr != nil {
+			return fsErr
+		}
 	}
 
 	return nil
 }
 
-func createDbIfNotExists(logging bool) RoseError {
+func createDbIfNotExists(logging bool, comm chan string, errChan chan RoseError) {
 	var dir, db, log string
 	var err RoseError
 	var file *os.File
@@ -56,7 +68,7 @@ func createDbIfNotExists(logging bool) RoseError {
 	updated := 0
 
 	if logging {
-		fmt.Println("Creating the database on the filesystem if not exists...")
+		comm<- "Creating the database on the filesystem if not exists..."
 	}
 
 	// Create rose directories
@@ -65,41 +77,65 @@ func createDbIfNotExists(logging bool) RoseError {
 			updated++
 			fsErr := os.Mkdir(d, os.ModePerm)
 			if fsErr != nil {
-				return &systemError{
+				close(comm)
+
+				errChan<- &systemError{
 					Code:    SystemErrorCode,
 					Message: fsErr.Error(),
 				}
+
+				close(errChan)
+
+				return
 			}
 		}
 	}
 
+	if logging && updated > 0 && updated != 3 {
+		comm<- "Some directories were missing. They have been created again."
+	}
+
+	created := false
 	// create first block file
-	a := roseBlockFile(1)
+	a := roseBlockFile(0)
 	if _, fsErr := os.Stat(a); os.IsNotExist(fsErr) {
 		file, err = createFile(a, os.O_RDWR|os.O_CREATE)
 
 		if err != nil {
-			return err
+			close(comm)
+
+			errChan<- err
+
+			close(errChan)
+
+			return
 		}
+
+		created = true
 	}
 
 	if logging {
-		if updated == 3 {
-			fmt.Println("Filesystem database created successfully")
-		} else if updated == 0 {
-			fmt.Println("Filesystem database already exists. Nothing to update")
+		if created {
+			comm<- "Filesystem database created for the first time"
+
+			err = closeFile(file)
+
+			if err != nil {
+				close(comm)
+
+				errChan<- err
+
+				close(errChan)
+
+				return
+			}
 		} else {
-			fmt.Println("Some directories for the filesystem database were missing but were successfully updated")
+			comm<- "Filesystem database already exists. Nothing to update"
 		}
 	}
 
-	err = closeFile(file)
-
-	if err != nil {
-		return err
-	}
-
-	return nil
+	close(comm)
+	close(errChan)
 }
 
 func createFile(f string, flag int) (*os.File, RoseError) {
@@ -167,6 +203,6 @@ func roseDbDir() string {
 	return fmt.Sprintf("%s/.rose_db/db", userHomeDir())
 }
 
-func roseBlockFile(block int) string {
+func roseBlockFile(block uint16) string {
 	return fmt.Sprintf("%s/block_%d.rose", roseDbDir(), block)
 }
