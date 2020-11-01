@@ -34,22 +34,10 @@ func populateDb(m *memDb) RoseError {
 		m.Write(string(*val.id), val.val)
 	}
 
-	fsErr := file.Sync()
+	fsErr := closeFile(file)
 
 	if fsErr != nil {
-		return &systemError{
-			Code:    SystemErrorCode,
-			Message: fsErr.Error(),
-		}
-	}
-
-	fsErr = file.Close()
-
-	if fsErr != nil {
-		return &systemError{
-			Code:    SystemErrorCode,
-			Message: fsErr.Error(),
-		}
+		return fsErr
 	}
 
 	return nil
