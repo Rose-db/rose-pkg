@@ -9,12 +9,18 @@ type fsDb struct {
 	File *os.File
 }
 
-func newFsDb(fileDb *os.File) *fsDb {
-	a := &fsDb{
-		File: fileDb,
+func newFsDb() (*fsDb, RoseError) {
+	a := roseBlockFile(1)
+
+	file, err := createFile(a, os.O_RDWR)
+
+	if err != nil {
+		return nil, err
 	}
 
-	return a
+	return &fsDb{
+		File: file,
+	}, nil
 }
 
 func (fs *fsDb) Write(d *[]uint8) RoseError {

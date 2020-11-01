@@ -8,16 +8,25 @@ type job struct {
 	Entry *[]uint8
 }
 
-func (jb *fsDriver) AddSync(j *job) RoseError {
-	return jb.FsDbHandler.Write(j.Entry)
+func (d *fsDriver) NewBlock(b int) {
+
 }
 
-func (jb *fsDriver) DeleteSync(j *job) {
-	jb.FsDbHandler.Delete(j.Entry)
+func (d *fsDriver) Save(j *[]*job) RoseError {
+	if len(*j) == 1 {
+		job := (*j)[0]
+		return d.FsDbHandler.Write(job.Entry)
+	}
+
+	return nil
 }
 
-func (jb *fsDriver) Close() RoseError {
-	return jb.FsDbHandler.SyncAndClose()
+func (d *fsDriver) DeleteSync(j *job) {
+	d.FsDbHandler.Delete(j.Entry)
+}
+
+func (d *fsDriver) Close() RoseError {
+	return d.FsDbHandler.SyncAndClose()
 }
 
 func newFsDriver(fsDb *fsDb) *fsDriver {

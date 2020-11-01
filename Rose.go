@@ -6,7 +6,7 @@ import (
 
 type Rose struct {
 	memDb *memDb
-	jobQueue *jobQueue
+	driver *fsDriver
 }
 
 type AppResult struct {
@@ -17,7 +17,7 @@ type AppResult struct {
 }
 
 func New(log bool) (*Rose, RoseError) {
-	file, err := createDbIfNotExists(log)
+	err := createDbIfNotExists(log)
 
 	if err != nil {
 		return nil, err
@@ -29,7 +29,7 @@ func New(log bool) (*Rose, RoseError) {
 		fmt.Println("Populating existing filesystem database in memory...")
 	}
 
-	err = populateDb(m, file)
+	err = populateDb(m)
 
 	if err != nil {
 		return nil, err
@@ -39,9 +39,15 @@ func New(log bool) (*Rose, RoseError) {
 		fmt.Println("Filesystem database is populated successfully")
 	}
 
+	fsDb, err := newFsDb()
+
+	if err != nil {
+		return nil, err
+	}
+
 	r := &Rose{
 		memDb: m,
-		jobQueue: newJobQueue(newFsDb(file)),
+		driver: newFsDriver(fsDb),
 	}
 
 	return r, nil
@@ -71,9 +77,11 @@ func (a *Rose) Write(m *Metadata) (*AppResult, RoseError) {
 		}, nil
 	}
 
-	err := a.jobQueue.AddSync(&job{
-		Entry: prepareData(m.Id, m.Data),
-	})
+	jobs := []*job{
+		&job{Entry: prepareData(m.Id, m.Data)},
+	}
+
+	err := a.driver.Save(&jobs)
 
 	if err != nil {
 		return nil, err
@@ -124,7 +132,7 @@ func (a *Rose) Delete(m *Metadata) (*AppResult, RoseError) {
 
 	res := a.memDb.Delete(m.Id)
 	e := []uint8(m.Id)
-	a.jobQueue.DeleteSync(&job{
+	a.driver.DeleteSync(&job{
 		Entry: &e,
 	})
 
@@ -143,5 +151,5 @@ func (a *Rose) Delete(m *Metadata) (*AppResult, RoseError) {
 }
 
 func (a *Rose) Shutdown() RoseError {
-	return a.jobQueue.Close()
+	return a.driver.Close()
 }

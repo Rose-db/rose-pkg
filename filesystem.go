@@ -6,7 +6,15 @@ import (
 	"runtime"
 )
 
-func populateDb(m *memDb, file *os.File) RoseError {
+func populateDb(m *memDb) RoseError {
+	a := roseBlockFile(1)
+
+	file, err := createFile(a, os.O_RDWR)
+
+	if err != nil {
+		return err
+	}
+
 	reader := NewReader(file)
 
 	for {
@@ -20,14 +28,34 @@ func populateDb(m *memDb, file *os.File) RoseError {
 		}
 
 		if !ok {
-			return nil
+			break
 		}
 
 		m.Write(string(*val.id), val.val)
 	}
+
+	fsErr := file.Sync()
+
+	if fsErr != nil {
+		return &systemError{
+			Code:    SystemErrorCode,
+			Message: fsErr.Error(),
+		}
+	}
+
+	fsErr = file.Close()
+
+	if fsErr != nil {
+		return &systemError{
+			Code:    SystemErrorCode,
+			Message: fsErr.Error(),
+		}
+	}
+
+	return nil
 }
 
-func createDbIfNotExists(logging bool) (*os.File, RoseError) {
+func createDbIfNotExists(logging bool) RoseError {
 	var dir, db, log string
 	var err RoseError
 	var file *os.File
@@ -43,12 +71,13 @@ func createDbIfNotExists(logging bool) (*os.File, RoseError) {
 		fmt.Println("Creating the database on the filesystem if not exists...")
 	}
 
+	// Create rose directories
 	for _, d := range dirs {
 		if _, err := os.Stat(d); os.IsNotExist(err) {
 			updated++
 			fsErr := os.Mkdir(d, os.ModePerm)
 			if fsErr != nil {
-				return nil, &systemError{
+				return &systemError{
 					Code:    SystemErrorCode,
 					Message: fsErr.Error(),
 				}
@@ -56,18 +85,13 @@ func createDbIfNotExists(logging bool) (*os.File, RoseError) {
 		}
 	}
 
+	// create first block file
 	a := roseBlockFile(1)
 	if _, fsErr := os.Stat(a); os.IsNotExist(fsErr) {
 		file, err = createFile(a, os.O_RDWR|os.O_CREATE)
 
 		if err != nil {
-			return nil, err
-		}
-	} else {
-		file, err = createFile(a, os.O_RDWR)
-
-		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
@@ -81,7 +105,13 @@ func createDbIfNotExists(logging bool) (*os.File, RoseError) {
 		}
 	}
 
-	return file, nil
+	err = closeFile(file)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func createFile(f string, flag int) (*os.File, RoseError) {
@@ -97,6 +127,28 @@ func createFile(f string, flag int) (*os.File, RoseError) {
 	}
 
 	return file, nil
+}
+
+func closeFile(file *os.File) RoseError {
+	fsErr := file.Sync()
+
+	if fsErr != nil {
+		return &systemError{
+			Code:    SystemErrorCode,
+			Message: fsErr.Error(),
+		}
+	}
+
+	fsErr = file.Close()
+
+	if fsErr != nil {
+		return &systemError{
+			Code:    SystemErrorCode,
+			Message: fsErr.Error(),
+		}
+	}
+
+	return nil
 }
 
 // Returns the directory name of the user home directory.
