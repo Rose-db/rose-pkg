@@ -17,7 +17,14 @@ type readerData struct {
 	id *[]uint8
 	val *[]uint8
 }
+/**
+	This reader is only to be used on populating the database since
+	its specially created for that specific reason.
 
+	This struct does not have a Close method since, internally it is
+	using bufio.Reader which does not have any Close method. Also,
+	the os.File is used after this reader gets its job done
+ */
 func NewReader(r *os.File) *reader {
 	a := bufio.NewReader(r)
 	return &reader{
@@ -26,7 +33,10 @@ func NewReader(r *os.File) *reader {
 		buf: make([]uint8, 1),
 	}
 }
-
+/**
+	Reads a single line in a file. Every call to Read() return a single
+	line in a file until io.EOF is reached
+ */
 func (s *reader) Read() (*readerData, bool, RoseError) {
 	ok, err := s.populateBuffer()
 
