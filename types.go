@@ -22,6 +22,12 @@ const InsertMethodType = "insert"
 const DeleteMethodType = "delete"
 const ReadMethodType = "read"
 
+// memory db status types
+const FreeListQueryStatus = 1
+const NotExistsStatus = 2
+const NewBlockCreatedStatus = 3
+const NormalExecutionStatus = 4
+
 // 128B
 const maxIdSize = 128
 // 16MB

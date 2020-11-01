@@ -61,7 +61,7 @@ func newMemoryDb() *memDb {
 		- if the block does not exist, a new block is created
 	- the value is stored in the block with its index
 */
-func (d *memDb) Write(id string, v *[]uint8) bool {
+func (d *memDb) Write(id string, v *[]uint8) int {
 	d.RWMutex.Lock()
 
 	if len(d.FreeIdsList) > 0 {
@@ -80,7 +80,7 @@ func (d *memDb) Write(id string, v *[]uint8) bool {
 
 		d.RWMutex.Unlock()
 
-		return true
+		return FreeListQueryStatus
 	}
 
 	var idx uint16
@@ -90,13 +90,13 @@ func (d *memDb) Write(id string, v *[]uint8) bool {
 	if _, ok := d.IdLookupMap[id]; ok {
 		d.RWMutex.Unlock()
 
-		return false
+		return NotExistsStatus
 	}
 
 	// r/w operation, create uint64 index
 	idx = d.idFactory.Next()
 
-	m = d.getBlock()
+	m, created := d.getBlock()
 
 	// r operation, add COMPUTED index to the index map
 	d.IdLookupMap[id] = [2]uint16{idx, d.CurrMapIdx}
@@ -110,7 +110,11 @@ func (d *memDb) Write(id string, v *[]uint8) bool {
 
 	d.RWMutex.Unlock()
 
-	return true
+	if created {
+		return NewBlockCreatedStatus
+	}
+	
+	return NormalExecutionStatus
 }
 
 func (d *memDb) Delete(id string) bool {
@@ -185,7 +189,7 @@ func (d *memDb) Read(id string) *dbReadResult {
 	}
 }
 
-func (d *memDb) getBlock() *[3000]*[]uint8 {
+func (d *memDb) getBlock() (*[3000]*[]uint8, bool) {
 	// check if the current block exists or need to be created
 	m, ok := d.InternalDb[d.CurrMapIdx]
 
@@ -193,7 +197,9 @@ func (d *memDb) getBlock() *[3000]*[]uint8 {
 		// current block does not exist, created a new one
 		m = &[3000]*[]uint8{}
 		d.InternalDb[d.CurrMapIdx] = m
+
+		return m, true
 	}
 
-	return m
+	return m, false
 }
