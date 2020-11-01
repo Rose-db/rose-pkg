@@ -354,8 +354,6 @@ var _ = GinkgoDescribe("Read tests", func() {
 			panic(err)
 		}
 
-		assertInsertedDataOnFsDb(len(*prepareData(id, []uint8(data))))
-
 		testRemoveFileSystemDb()
 	})
 
@@ -434,8 +432,6 @@ var _ = GinkgoDescribe("Read tests", func() {
 		if err != nil {
 			panic(err)
 		}
-
-		assertInsertedDataOnFsDb(len(fsData))
 
 		testRemoveFileSystemDb()
 	})
@@ -812,29 +808,5 @@ func assertInternalDbIntegrity(m *memDb, expectedLen int, expectedCapacity int) 
 
 	gomega.Expect(fullNum).To(gomega.Equal(expectedLen))
 	gomega.Expect(len(m.IdLookupMap)).To(gomega.Equal(expectedLen))
-}
-
-func assertInsertedDataOnFsDb(expected int) {
-	db := fmt.Sprintf("%s/%s", roseDbDir(), "rose.rose")
-
-	file, err := os.Open(db)
-
-	if err != nil {
-		panic(err)
-	}
-
-	internalFsData, err := ioutil.ReadAll(file)
-
-	if err != nil {
-		panic(err)
-	}
-
-	gomega.Expect(expected).To(gomega.Equal(len(string(internalFsData))))
-
-	err = file.Close()
-
-	if err != nil {
-		panic(err)
-	}
 }
 
