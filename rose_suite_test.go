@@ -344,8 +344,10 @@ var _ = GinkgoDescribe("Read tests", func() {
 		}
 
 		res, err := a.Read(m)
+
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
+		gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
 		gomega.Expect(res.Result).To(gomega.Equal("id value"))
 
 		err = a.Shutdown()
@@ -367,12 +369,14 @@ var _ = GinkgoDescribe("Read tests", func() {
 			id := fmt.Sprintf("id-%d", i)
 			value := fmt.Sprintf("id-value-%d", i)
 
-			_, err := a.Write(&Metadata{
+			res, err := a.Write(&Metadata{
 				Id:   id,
 				Data: []uint8(value),
 			})
 
 			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
 
 			ids = append(ids, id)
 		}
@@ -383,6 +387,8 @@ var _ = GinkgoDescribe("Read tests", func() {
 			})
 
 			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
 
 			trueId := strings.Split(id, "-")[1]
 			intId, _ := strconv.Atoi(trueId)
@@ -408,19 +414,21 @@ var _ = GinkgoDescribe("Read tests", func() {
 
 		ids := make([]string, 0)
 		fsData := ""
-		for i := 0; i < 4578; i++ {
+		for i := 0; i < 10000; i++ {
 			id := fmt.Sprintf("id-%d", i)
 			value := fmt.Sprintf("id-value-%d", i)
 			data := []uint8(value)
 
 			fsData += string(*prepareData(id, data))
 
-			_, err := a.Write(&Metadata{
+			res, err := a.Write(&Metadata{
 				Id:   id,
 				Data: []uint8(value),
 			})
 
 			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
 
 			ids = append(ids, id)
 		}
@@ -467,6 +475,7 @@ var _ = GinkgoDescribe("Read tests", func() {
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
+		gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
 
 		err = a.Shutdown()
 
@@ -482,54 +491,52 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 	GinkgoIt("Should concurrently insert and read", func() {
 		var r *Rose
 		num := 100000
-		c := make(chan string, num)
+		c := make(chan int, num)
 
 		r = testCreateRose()
 
-		produce := func(c chan string, id string) {
+		produce := func(c chan int, id int) {
 			defer ginkgo.GinkgoRecover()
 
-			_, err := r.Write(&Metadata{
-				Id:  id,
-				Data: []uint8(fmt.Sprintf("value-%s", id)),
+			res, err := r.Write(&Metadata{
+				Id:  fmt.Sprintf("id-%d", id),
+				Data: []uint8(fmt.Sprintf("value-%d", id)),
 			})
 
 			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
 
 			c<- id
 		}
 
-		consume := func(id string) {
+		consume := func(id int) {
 			res, err := r.Read(&Metadata{
-				Id:  id,
-			})
-
-			if err != nil {
-				panic(err)
-			}
-
-			if res.Status != FoundResultStatus {
-				panic("Did not find result")
-			}
-		}
-
-		for i := 0; i < num; i++ {
-			id := fmt.Sprintf("id-%d", i)
-
-			go produce(c, id)
-		}
-
-		curr := 0
-		for a := range c {
-			consume(a)
-			curr++
-
-			res, err := r.Read(&Metadata{
-				Id:  a,
+				Id:  fmt.Sprintf("id-%d", id),
 			})
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
+			gomega.Expect(res.Result).To(gomega.Equal(fmt.Sprintf("value-%d", id)))
+		}
+
+		for i := 0; i < num; i++ {
+			go produce(c, i)
+		}
+
+		curr := 0
+		for id := range c {
+			consume(id)
+			curr++
+
+			res, err := r.Read(&Metadata{
+				Id:  fmt.Sprintf("id-%d", id),
+			})
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
+			gomega.Expect(res.Result).To(gomega.Equal(fmt.Sprintf("value-%d", id)))
 
 			if curr == num {
 				break
@@ -556,12 +563,14 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 		produce := func(c chan string, id string) {
 			defer ginkgo.GinkgoRecover()
 
-			_, err := r.Write(&Metadata{
+			res, err := r.Write(&Metadata{
 				Id:  id,
 				Data: []uint8(fmt.Sprintf("value-%s", id)),
 			})
 
 			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
 
 			c<- id
 		}
@@ -573,6 +582,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(EntryDeletedStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 		}
 
 		for i := 0; i < num; i++ {
@@ -592,6 +602,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
 
 
 			if curr == num {
@@ -741,7 +752,9 @@ func testInsertFixture(m *memDb, num int, value []uint8) []string {
 			value = []uint8("sdkfjsdjfsadfjklsajdfkčl")
 		}
 
-		m.Write(id, value)
+		_, err := m.Write(id, value)
+
+		gomega.Expect(err).To(gomega.BeNil())
 	}
 
 	return ids
