@@ -199,6 +199,11 @@ func (d *memDb) Read(id string) *dbReadResult {
 	}
 }
 
+/**
+	PRIVATE METHOD. DO NOT USE IN CLIENT CODE
+
+	Save the data on the filesystem
+ */
 func (d *memDb) saveOnFs(id string, v []uint8) RoseError {
 	jobs := []*job{
 		&job{Entry: prepareData(id, v)},
@@ -207,6 +212,11 @@ func (d *memDb) saveOnFs(id string, v []uint8) RoseError {
 	return d.FsDriver.Save(&jobs, d.CurrMapIdx)
 }
 
+/**
+	PRIVATE METHOD. DO NOT USE IN CLIENT CODE
+
+	Returns an existing memory block if exists. If not, creates a new one and returns it
+ */
 func (d *memDb) getBlock() (*[3000]*[]uint8, bool) {
 	// check if the current block exists or need to be created
 	m, ok := d.InternalDb[d.CurrMapIdx]
