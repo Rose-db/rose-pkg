@@ -127,7 +127,7 @@ func (d *Db) Write(id string, v []uint8) (int, RoseError) {
 	return NormalExecutionStatus, nil
 }
 
-func (d *Db) Delete(id string) bool {
+func (d *Db) Delete(id string) (bool, RoseError) {
 	d.RWMutex.Lock()
 
 	var idData [2]uint16
@@ -139,7 +139,14 @@ func (d *Db) Delete(id string) bool {
 	if !ok {
 		d.RWMutex.Unlock()
 
-		return false
+		return false, nil
+	}
+
+	a := []uint8(id)
+	err := d.deleteFromFs(&a, mapId)
+
+	if err != nil {
+		return false, err
 	}
 
 	idx = idData[0]
@@ -155,7 +162,7 @@ func (d *Db) Delete(id string) bool {
 
 	d.RWMutex.Unlock()
 
-	return true
+	return true, nil
 }
 
 func (d *Db) Read(id string) *dbReadResult {
@@ -210,6 +217,14 @@ func (d *Db) saveOnFs(id string, v []uint8) RoseError {
 	}
 
 	return d.FsDriver.Save(&jobs, d.CurrMapIdx)
+}
+
+func (d *Db) deleteFromFs(id *[]uint8, mapIdx uint16) RoseError {
+	jobs := []*job{
+		&job{Entry: id},
+	}
+
+	return d.FsDriver.MarkDeleted(&jobs, d.CurrMapIdx)
 }
 
 /**

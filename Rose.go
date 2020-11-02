@@ -121,7 +121,11 @@ func (a *Rose) Delete(m *Metadata) (*AppResult, RoseError) {
 		return nil, vErr
 	}
 
-	res := a.Db.Delete(m.Id)
+	res, err := a.Db.Delete(m.Id)
+
+	if err != nil {
+		return nil, err
+	}
 
 	if res == false {
 		return &AppResult{

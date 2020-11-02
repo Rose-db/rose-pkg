@@ -72,8 +72,16 @@ func (fs *fsDb) WakeUp() RoseError {
 	return nil
 }
 
-func (fs *fsDb) Delete(id *[]uint8) {
+func (fs *fsDb) Delete(id *[]uint8) RoseError {
+	if fs.File == nil {
+		if err := fs.WakeUp(); err != nil {
+			return err
+		}
+	}
 
+
+
+	return nil
 }
 
 func (fs *fsDb) SyncAndClose() RoseError {
