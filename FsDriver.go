@@ -29,9 +29,11 @@ func (d *fsDriver) Save(j *[]*job, mapIdx uint16) RoseError {
 			}
 
 			d.Handlers[mapIdx] = handler
+
+			d.CurrentHandler = handler
 		}
 
-		return handler.Write(job.Entry)
+		return d.CurrentHandler.Write(job.Entry)
 	}
 
 	return nil

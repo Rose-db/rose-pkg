@@ -14,12 +14,6 @@ func benchmarkAppInsert(i int, a *Rose, m *Metadata) {
 	}
 }
 
-func benchmarkMemDbInsert(i int, a *memDb, id string, val []uint8) {
-	for c := 0; c < i; c++ {
-		_ = a.Write(id, &val)
-	}
-}
-
 func BenchmarkAppInsertTenThousand(b *testing.B) {
 	var s []uint8
 	var a *Rose
@@ -39,7 +33,11 @@ func BenchmarkAppInsertTenThousand(b *testing.B) {
 		benchmarkAppInsert(10000, a, m)
 	}
 
-	a.Shutdown()
+	err := a.Shutdown()
+
+	if err != nil {
+		panic(err)
+	}
 }
 
 func BenchmarkAppInsertHundredThousand(b *testing.B) {
@@ -61,21 +59,61 @@ func BenchmarkAppInsertHundredThousand(b *testing.B) {
 		benchmarkAppInsert(100000, a, m)
 	}
 
-	a.Shutdown()
+	err := a.Shutdown()
+
+	if err != nil {
+		panic(err)
+	}
 }
 
-func BenchmarkMemDbInsertMillion(b *testing.B) {
+func BenchmarkAppInsertMillion(b *testing.B) {
 	var s []uint8
-	var a *memDb
+	var a *Rose
+	var m *Metadata
 
 	defer benchmarkRemoveFileSystemDb(b)
 
-	a = newMemoryDb()
 	s = []uint8(testString)
+	a = testCreateRose()
 
 	for n := 0; n < b.N; n++ {
-		id := fmt.Sprintf("id-%d", n)
+		m = &Metadata{
+			Data:   s,
+			Id:     fmt.Sprintf("id-%d", n),
+		}
 
-		benchmarkMemDbInsert(1000000, a, id, s)
+		benchmarkAppInsert(1000000, a, m)
+	}
+
+	err := a.Shutdown()
+
+	if err != nil {
+		panic(err)
+	}
+}
+
+func BenchmarkAppInsertTenMillion(b *testing.B) {
+	var s []uint8
+	var a *Rose
+	var m *Metadata
+
+	defer benchmarkRemoveFileSystemDb(b)
+
+	s = []uint8(testString)
+	a = testCreateRose()
+
+	for n := 0; n < b.N; n++ {
+		m = &Metadata{
+			Data:   s,
+			Id:     fmt.Sprintf("id-%d", n),
+		}
+
+		benchmarkAppInsert(10000000, a, m)
+	}
+
+	err := a.Shutdown()
+
+	if err != nil {
+		panic(err)
 	}
 }

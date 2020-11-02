@@ -6,7 +6,6 @@ import (
 
 type Rose struct {
 	memDb *memDb
-	driver *fsDriver
 }
 
 type AppResult struct {
@@ -32,7 +31,7 @@ func New(log bool) (*Rose, RoseError) {
 	}
 
 
-	m := newMemoryDb()
+	m := newMemoryDb(newFsDriver())
 
 	if log {
 		fmt.Println("Populating existing filesystem database in memory...")
@@ -50,7 +49,6 @@ func New(log bool) (*Rose, RoseError) {
 
 	r := &Rose{
 		memDb: m,
-		driver: newFsDriver(),
 	}
 
 	return r, nil
@@ -65,29 +63,15 @@ func (a *Rose) Write(m *Metadata) (*AppResult, RoseError) {
 		return nil, vErr
 	}
 
-	var data *[]uint8
-
-	data = &m.Data
-
 	// save the entry under idx into memory
 
-	status := a.memDb.Write(m.Id, data)
+	status := a.memDb.Write(m.Id, m.Data)
 
 	if status == NotExistsStatus {
 		return &AppResult{
 			Method: InsertMethodType,
 			Status: DuplicatedIdStatus,
 		}, nil
-	}
-
-	jobs := []*job{
-		&job{Entry: prepareData(m.Id, m.Data)},
-	}
-
-	err := a.driver.Save(&jobs, a.memDb.CurrMapIdx)
-
-	if err != nil {
-		return nil, err
 	}
 
 	return &AppResult{
@@ -134,10 +118,6 @@ func (a *Rose) Delete(m *Metadata) (*AppResult, RoseError) {
 	}
 
 	res := a.memDb.Delete(m.Id)
-	e := []uint8(m.Id)
-	a.driver.DeleteSync(&job{
-		Entry: &e,
-	})
 
 	if res == false {
 		return &AppResult{
@@ -154,5 +134,5 @@ func (a *Rose) Delete(m *Metadata) (*AppResult, RoseError) {
 }
 
 func (a *Rose) Shutdown() RoseError {
-	return a.driver.Close()
+	return nil
 }

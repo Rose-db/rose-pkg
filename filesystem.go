@@ -42,7 +42,7 @@ func populateDb(m *memDb) RoseError {
 				break
 			}
 
-			m.Write(string(*val.id), val.val)
+			m.Write(string(val.id), val.val)
 		}
 
 		fsErr := closeFile(file)

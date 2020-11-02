@@ -33,10 +33,14 @@ type memDb struct {
 	RWMutex *sync.RWMutex
 
 	CurrMapIdx uint16
+
+	FsDriver *fsDriver
 }
 
-func newMemoryDb() *memDb {
-	d := &memDb{}
+func newMemoryDb(fsDriver *fsDriver) *memDb {
+	d := &memDb{
+		FsDriver: fsDriver,
+	}
 
 	d.InternalDb = make(map[uint16]*[3000]*[]uint8)
 	d.InternalDb[0] = &[3000]*[]uint8{}
@@ -61,7 +65,7 @@ func newMemoryDb() *memDb {
 		- if the block does not exist, a new block is created
 	- the value is stored in the block with its index
 */
-func (d *memDb) Write(id string, v *[]uint8) int {
+func (d *memDb) Write(id string, v []uint8) int {
 	d.RWMutex.Lock()
 
 	if len(d.FreeIdsList) > 0 {
@@ -74,7 +78,7 @@ func (d *memDb) Write(id string, v *[]uint8) int {
 		// and that means it was deleted
 		m := d.InternalDb[mapId]
 
-		m[idx] = v
+		m[idx] = &v
 
 		delete(d.FreeIdsList, id)
 
@@ -101,8 +105,18 @@ func (d *memDb) Write(id string, v *[]uint8) int {
 	// r operation, add COMPUTED index to the index map
 	d.IdLookupMap[id] = [2]uint16{idx, d.CurrMapIdx}
 
+	jobs := []*job{
+		&job{Entry: prepareData(id, v)},
+	}
+
+	err := d.FsDriver.Save(&jobs, d.CurrMapIdx)
+
+	if err != nil {
+		panic(err)
+	}
+
 	// saving the pointer address of the data, not the actual data
-	m[idx] = v
+	m[idx] = &v
 
 	if idx == 2999 {
 		d.CurrMapIdx++

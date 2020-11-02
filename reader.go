@@ -14,8 +14,8 @@ type reader struct {
 }
 
 type readerData struct {
-	id *[]uint8
-	val *[]uint8
+	id []uint8
+	val []uint8
 }
 /**
 	This reader is only to be used on populating the database since
@@ -89,8 +89,8 @@ func (s *reader) getData() *readerData {
 	b = b[1:]
 
 	return &readerData{
-		id:  &a,
-		val: &b,
+		id:  a,
+		val: b,
 	}
 }
 

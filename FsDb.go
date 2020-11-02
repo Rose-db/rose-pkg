@@ -6,7 +6,6 @@ import (
 )
 
 type fsDb struct {
-	Num uint16
 	Path string
 	File *os.File
 }
@@ -46,12 +45,6 @@ func (fs *fsDb) Write(d *[]uint8) RoseError {
 			Code:    DbIntegrityViolationCode,
 			Message: fmt.Sprintf("Database integrity violation. Cannot write to existing file %s with underlying message: %s", name, err.Error()),
 		}
-	}
-
-	fs.Num++
-
-	if fs.Num == 3001 {
-		return fs.Sleep()
 	}
 
 	return nil

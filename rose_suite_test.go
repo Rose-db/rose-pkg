@@ -411,8 +411,9 @@ var _ = GinkgoDescribe("Read tests", func() {
 		for i := 0; i < 4578; i++ {
 			id := fmt.Sprintf("id-%d", i)
 			value := fmt.Sprintf("id-value-%d", i)
+			data := []uint8(value)
 
-			fsData += string(*prepareData(id, []uint8(value)))
+			fsData += string(*prepareData(id, data))
 
 			_, err := a.Write(&Metadata{
 				Id:   id,
@@ -479,12 +480,8 @@ var _ = GinkgoDescribe("Read tests", func() {
 
 var _ = GinkgoDescribe("Concurrency tests", func() {
 	GinkgoIt("Should concurrently insert and read", func() {
-		ginkgo.Skip("")
-
-		testRemoveFileSystemDb()
-
 		var r *Rose
-		num := 1000
+		num := 100000
 		c := make(chan string, num)
 
 		r = testCreateRose()
@@ -502,10 +499,41 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			c<- id
 		}
 
+		consume := func(id string) {
+			res, err := r.Read(&Metadata{
+				Id:  id,
+			})
+
+			if err != nil {
+				panic(err)
+			}
+
+			if res.Status != FoundResultStatus {
+				panic("Did not find result")
+			}
+		}
+
 		for i := 0; i < num; i++ {
 			id := fmt.Sprintf("id-%d", i)
 
 			go produce(c, id)
+		}
+
+		curr := 0
+		for a := range c {
+			consume(a)
+			curr++
+
+			res, err := r.Read(&Metadata{
+				Id:  a,
+			})
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
+
+			if curr == num {
+				break
+			}
 		}
 
 		err := r.Shutdown()
@@ -514,12 +542,10 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			panic(err)
 		}
 
-		//testRemoveFileSystemDb()
+		testRemoveFileSystemDb()
 	})
 
 	GinkgoIt("Should delete documents concurrently", func() {
-		ginkgo.Skip("")
-
 		var r *Rose
 
 		num := 100000
@@ -560,6 +586,14 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			consume(a)
 			curr++
 
+			res, err := r.Read(&Metadata{
+				Id:  a,
+			})
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
+
+
 			if curr == num {
 				break
 			}
@@ -577,17 +611,23 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	GinkgoIt("Should successfully perform and inspect inserts", func() {
-		m := newMemoryDb()
+		r := testCreateRose()
+
+		m := r.memDb
 
 		testInsertFixture(m,10000, []uint8{})
 
 		// since block index starts at 0, expected must be 3
 		assertInternalDbValues(m, 3, 0)
 		assertInternalDbIntegrity(m, 10000, 4)
+
+		testRemoveFileSystemDb()
 	})
 
 	GinkgoIt("Should successfully perform and inspect deletes", func() {
-		m := newMemoryDb()
+		r := testCreateRose()
+
+		m := r.memDb
 
 		ids := testInsertFixture(m,10000, []uint8{})
 
@@ -601,10 +641,14 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 
 		assertInternalDbValues(m, 3, 10000)
 		assertInternalDbIntegrity(m, 0, 4)
+
+		testRemoveFileSystemDb()
 	})
 
 	GinkgoIt("Should successfully perform and inspect delete reallocation", func() {
-		m := newMemoryDb()
+		r := testCreateRose()
+
+		m := r.memDb
 
 		ids := testInsertFixture(m,10000, []uint8{})
 
@@ -623,6 +667,8 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 
 		assertInternalDbValues(m, 16, 0)
 		assertInternalDbIntegrity(m, 50000, 17)
+
+		testRemoveFileSystemDb()
 	})
 })
 
@@ -695,7 +741,7 @@ func testInsertFixture(m *memDb, num int, value []uint8) []string {
 			value = []uint8("sdkfjsdjfsadfjklsajdfkčl")
 		}
 
-		m.Write(id, &value)
+		m.Write(id, value)
 	}
 
 	return ids
