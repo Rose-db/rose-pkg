@@ -94,6 +94,28 @@ func (s *reader) getData() *readerData {
 	}
 }
 
+func (s *reader) getId() string {
+	a := make([]uint8, 1)
+
+	for i := 0; i < len(s.buf); i++ {
+		if s.buf[i] == 91 && s.buf[i+1] == 35 && s.buf[i+2] == 91 {
+			i = i+2
+
+			continue
+		}
+
+		if s.buf[i] == 93 && s.buf[i+1] == 35 && s.buf[i+2] == 93 {
+			break
+		}
+
+		a = appendByte(a, s.buf[i])
+	}
+
+	a = a[1:]
+
+	return string(a)
+}
+
 func (s *reader) populateBuffer() (bool, RoseError) {
 	for {
 		b, err := s.internalReader.ReadByte()

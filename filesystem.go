@@ -42,7 +42,11 @@ func populateDb(m *Db) RoseError {
 				break
 			}
 
-			m.Write(string(val.id), val.val)
+			_, err = m.Write(string(val.id), val.val)
+
+			if err != nil {
+				return err
+			}
 		}
 
 		fsErr := closeFile(file)
