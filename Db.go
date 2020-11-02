@@ -23,7 +23,7 @@ type dbReadResult struct {
 	Blocks can hold up to 3000 indexes (value). When the reach max size, a new map
 	is created with the same size.
  */
-type memDb struct {
+type Db struct {
 	InternalDb map[uint16]*[3000]*[]uint8
 	// map of user supplied ids to InternalDb indexes
 	// IdLookupMap::string -> idx::uint -> InternalDb[idx] -> []uint8
@@ -37,8 +37,8 @@ type memDb struct {
 	FsDriver *fsDriver
 }
 
-func newMemoryDb(fsDriver *fsDriver) *memDb {
-	d := &memDb{
+func newMemoryDb(fsDriver *fsDriver) *Db {
+	d := &Db{
 		FsDriver: fsDriver,
 	}
 
@@ -65,7 +65,7 @@ func newMemoryDb(fsDriver *fsDriver) *memDb {
 		- if the block does not exist, a new block is created
 	- the value is stored in the block with its index
 */
-func (d *memDb) Write(id string, v []uint8) (int, RoseError) {
+func (d *Db) Write(id string, v []uint8) (int, RoseError) {
 	d.RWMutex.Lock()
 
 	if len(d.FreeIdsList) > 0 {
@@ -127,7 +127,7 @@ func (d *memDb) Write(id string, v []uint8) (int, RoseError) {
 	return NormalExecutionStatus, nil
 }
 
-func (d *memDb) Delete(id string) bool {
+func (d *Db) Delete(id string) bool {
 	d.RWMutex.Lock()
 
 	var idData [2]uint16
@@ -158,7 +158,7 @@ func (d *memDb) Delete(id string) bool {
 	return true
 }
 
-func (d *memDb) Read(id string) *dbReadResult {
+func (d *Db) Read(id string) *dbReadResult {
 	d.RWMutex.Lock()
 
 	var m *[3000]*[]uint8
@@ -204,7 +204,7 @@ func (d *memDb) Read(id string) *dbReadResult {
 
 	Save the data on the filesystem
  */
-func (d *memDb) saveOnFs(id string, v []uint8) RoseError {
+func (d *Db) saveOnFs(id string, v []uint8) RoseError {
 	jobs := []*job{
 		&job{Entry: prepareData(id, v)},
 	}
@@ -217,7 +217,7 @@ func (d *memDb) saveOnFs(id string, v []uint8) RoseError {
 
 	Returns an existing memory block if exists. If not, creates a new one and returns it
  */
-func (d *memDb) getBlock() (*[3000]*[]uint8, bool) {
+func (d *Db) getBlock() (*[3000]*[]uint8, bool) {
 	// check if the current block exists or need to be created
 	m, ok := d.InternalDb[d.CurrMapIdx]
 

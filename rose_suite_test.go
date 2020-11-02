@@ -624,7 +624,7 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	GinkgoIt("Should successfully perform and inspect inserts", func() {
 		r := testCreateRose()
 
-		m := r.memDb
+		m := r.Db
 
 		testInsertFixture(m,10000, []uint8{})
 
@@ -638,7 +638,7 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	GinkgoIt("Should successfully perform and inspect deletes", func() {
 		r := testCreateRose()
 
-		m := r.memDb
+		m := r.Db
 
 		ids := testInsertFixture(m,10000, []uint8{})
 
@@ -659,7 +659,7 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	GinkgoIt("Should successfully perform and inspect delete reallocation", func() {
 		r := testCreateRose()
 
-		m := r.memDb
+		m := r.Db
 
 		ids := testInsertFixture(m,10000, []uint8{})
 
@@ -742,7 +742,7 @@ func testRemoveFileSystemDb() {
 	}
 }
 
-func testInsertFixture(m *memDb, num int, value []uint8) []string {
+func testInsertFixture(m *Db, num int, value []uint8) []string {
 	ids := make([]string, 0)
 	for i := 0; i < num; i++ {
 		id := fmt.Sprintf("id-%d", i)
@@ -760,12 +760,12 @@ func testInsertFixture(m *memDb, num int, value []uint8) []string {
 	return ids
 }
 
-func assertInternalDbValues(m *memDb, expectedMapIdx uint16, freeListLen int) {
+func assertInternalDbValues(m *Db, expectedMapIdx uint16, freeListLen int) {
 	gomega.Expect(m.CurrMapIdx).To(gomega.Equal(expectedMapIdx))
 	gomega.Expect(len(m.FreeIdsList)).To(gomega.Equal(freeListLen))
 }
 
-func assertInternalDbIntegrity(m *memDb, expectedLen int, expectedCapacity int) {
+func assertInternalDbIntegrity(m *Db, expectedLen int, expectedCapacity int) {
 	gomega.Expect(len(m.InternalDb)).To(gomega.Equal(expectedCapacity))
 
 	fullNum := 0

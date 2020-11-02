@@ -7,7 +7,7 @@ import (
 	"runtime"
 )
 
-func populateDb(m *memDb) RoseError {
+func populateDb(m *Db) RoseError {
 	files, fsErr := ioutil.ReadDir(roseDbDir())
 
 	if fsErr != nil {
