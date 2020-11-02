@@ -65,7 +65,11 @@ func (a *Rose) Write(m *Metadata) (*AppResult, RoseError) {
 
 	// save the entry under idx into memory
 
-	status := a.memDb.Write(m.Id, m.Data)
+	status, err := a.memDb.Write(m.Id, m.Data)
+
+	if err != nil {
+		return nil, err
+	}
 
 	if status == NotExistsStatus {
 		return &AppResult{

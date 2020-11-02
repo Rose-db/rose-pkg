@@ -65,7 +65,7 @@ func newMemoryDb(fsDriver *fsDriver) *memDb {
 		- if the block does not exist, a new block is created
 	- the value is stored in the block with its index
 */
-func (d *memDb) Write(id string, v []uint8) int {
+func (d *memDb) Write(id string, v []uint8) (int, RoseError) {
 	d.RWMutex.Lock()
 
 	if len(d.FreeIdsList) > 0 {
@@ -84,7 +84,7 @@ func (d *memDb) Write(id string, v []uint8) int {
 
 		d.RWMutex.Unlock()
 
-		return FreeListQueryStatus
+		return FreeListQueryStatus, nil
 	}
 
 	var idx uint16
@@ -94,7 +94,7 @@ func (d *memDb) Write(id string, v []uint8) int {
 	if _, ok := d.IdLookupMap[id]; ok {
 		d.RWMutex.Unlock()
 
-		return NotExistsStatus
+		return NotExistsStatus, nil
 	}
 
 	// r/w operation, create uint64 index
@@ -112,7 +112,7 @@ func (d *memDb) Write(id string, v []uint8) int {
 	err := d.FsDriver.Save(&jobs, d.CurrMapIdx)
 
 	if err != nil {
-		panic(err)
+		return 0, err
 	}
 
 	// saving the pointer address of the data, not the actual data
@@ -125,10 +125,10 @@ func (d *memDb) Write(id string, v []uint8) int {
 	d.RWMutex.Unlock()
 
 	if created {
-		return NewBlockCreatedStatus
+		return NewBlockCreatedStatus, nil
 	}
 	
-	return NormalExecutionStatus
+	return NormalExecutionStatus, nil
 }
 
 func (d *memDb) Delete(id string) bool {
