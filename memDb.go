@@ -105,11 +105,7 @@ func (d *memDb) Write(id string, v []uint8) (int, RoseError) {
 	// r operation, add COMPUTED index to the index map
 	d.IdLookupMap[id] = [2]uint16{idx, d.CurrMapIdx}
 
-	jobs := []*job{
-		&job{Entry: prepareData(id, v)},
-	}
-
-	err := d.FsDriver.Save(&jobs, d.CurrMapIdx)
+	err := d.saveOnFs(id, v)
 
 	if err != nil {
 		return 0, err
@@ -201,6 +197,14 @@ func (d *memDb) Read(id string) *dbReadResult {
 		Id:     id,
 		Result: sb.String(),
 	}
+}
+
+func (d *memDb) saveOnFs(id string, v []uint8) RoseError {
+	jobs := []*job{
+		&job{Entry: prepareData(id, v)},
+	}
+
+	return d.FsDriver.Save(&jobs, d.CurrMapIdx)
 }
 
 func (d *memDb) getBlock() (*[3000]*[]uint8, bool) {
