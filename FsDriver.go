@@ -42,12 +42,12 @@ func (d *fsDriver) MarkDeleted(j *[]*job, mapIdx uint16) RoseError {
 	return nil
 }
 
-func (d *fsDriver) Close() RoseError {
+func (d *fsDriver) Shutdown() RoseError {
 	for _, handler := range d.Handlers {
-		err := handler.SyncAndClose()
-
-		if err != nil {
-			return err
+		if handler.File != nil {
+			if err := handler.SyncAndClose(); err != nil {
+				return err
+			}
 		}
 	}
 

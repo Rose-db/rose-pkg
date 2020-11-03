@@ -206,6 +206,10 @@ func (d *Db) Read(id string) *dbReadResult {
 	}
 }
 
+func (d *Db) Shutdown() RoseError {
+	return d.FsDriver.Shutdown()
+}
+
 /**
 	PRIVATE METHOD. DO NOT USE IN CLIENT CODE
 

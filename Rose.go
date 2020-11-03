@@ -142,5 +142,5 @@ func (a *Rose) Delete(m *Metadata) (*AppResult, RoseError) {
 }
 
 func (a *Rose) Shutdown() RoseError {
-	return nil
+	return a.Db.Shutdown()
 }

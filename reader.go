@@ -13,7 +13,7 @@ type lineReader struct {
 	buf []uint8
 }
 
-type readerData struct {
+type lineReaderData struct {
 	id []uint8
 	val []uint8
 }
@@ -41,7 +41,7 @@ func NewLineReader(r *os.File) *lineReader {
 	Reads a single line in a file. Every call to Read() return a single
 	line in a file until io.EOF is reached
  */
-func (s *lineReader) Read() (*readerData, bool, RoseError) {
+func (s *lineReader) Read() (*lineReaderData, bool, RoseError) {
 	ok, err := s.populateBuffer()
 
 	if !ok {
@@ -63,7 +63,7 @@ func (s *lineReader) Read() (*readerData, bool, RoseError) {
 	return d, true, nil
 }
 
-func (s *lineReader) getData() *readerData {
+func (s *lineReader) getData() *lineReaderData {
 	a := make([]uint8, 1)
 	b := make([]uint8, 1)
 
@@ -96,7 +96,7 @@ func (s *lineReader) getData() *readerData {
 	a = a[1:]
 	b = b[1:]
 
-	return &readerData{
+	return &lineReaderData{
 		id:  a,
 		val: b,
 	}
