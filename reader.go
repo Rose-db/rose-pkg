@@ -103,6 +103,8 @@ func (s *lineReader) getData() *lineReaderData {
 }
 
 func (s *lineReader) populateBuffer() (bool, RoseError) {
+	d := ""
+	skip := false
 	for {
 		b, err := s.internalReader.ReadByte()
 
@@ -118,7 +120,23 @@ func (s *lineReader) populateBuffer() (bool, RoseError) {
 		}
 
 		if b == 10 {
+			if skip == true {
+				skip = false
+
+				continue
+			}
+
 			break
+		}
+
+		if skip {
+			continue
+		}
+
+		d += string(b)
+
+		if len(d) == 9 && d == "[{[del]}]" {
+			skip = true
 		}
 
 		s.buf = appendByte(s.buf, b)
