@@ -23,7 +23,11 @@ type readerData struct {
 
 	This struct does not have a Close method since, internally it is
 	using bufio.Reader which does not have any Close method. Also,
-	the os.File is used after this reader gets its job done
+	the os.File is used after this reader gets its job done.
+
+	This reader is also a one-off reader which means you can use it only
+	once to iterate contents of the file. After that, you cannot use it again
+	and you have to create a new one.
  */
 func NewLineReader(r *os.File) *lineReader {
 	a := bufio.NewReader(r)
@@ -41,6 +45,10 @@ func (s *lineReader) Read() (*readerData, bool, RoseError) {
 	ok, err := s.populateBuffer()
 
 	if !ok {
+		s.internalReader = nil
+		s.reader = nil
+		s.buf = nil
+
 		return nil, false, nil
 	}
 
