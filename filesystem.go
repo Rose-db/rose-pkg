@@ -26,7 +26,7 @@ func populateDb(m *Db) RoseError {
 			return err
 		}
 
-		reader := NewReader(file)
+		reader := NewLineReader(file)
 
 		for {
 			val, ok, err := reader.Read()

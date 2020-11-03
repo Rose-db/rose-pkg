@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-type reader struct {
+type lineReader struct {
 	internalReader *bufio.Reader
 	reader io.ReadCloser
 	buf []uint8
@@ -25,9 +25,9 @@ type readerData struct {
 	using bufio.Reader which does not have any Close method. Also,
 	the os.File is used after this reader gets its job done
  */
-func NewReader(r *os.File) *reader {
+func NewLineReader(r *os.File) *lineReader {
 	a := bufio.NewReader(r)
-	return &reader{
+	return &lineReader{
 		reader: r,
 		internalReader: a,
 		buf: make([]uint8, 1),
@@ -37,7 +37,7 @@ func NewReader(r *os.File) *reader {
 	Reads a single line in a file. Every call to Read() return a single
 	line in a file until io.EOF is reached
  */
-func (s *reader) Read() (*readerData, bool, RoseError) {
+func (s *lineReader) Read() (*readerData, bool, RoseError) {
 	ok, err := s.populateBuffer()
 
 	if !ok {
@@ -55,7 +55,7 @@ func (s *reader) Read() (*readerData, bool, RoseError) {
 	return d, true, nil
 }
 
-func (s *reader) getData() *readerData {
+func (s *lineReader) getData() *readerData {
 	a := make([]uint8, 1)
 	b := make([]uint8, 1)
 
@@ -94,7 +94,7 @@ func (s *reader) getData() *readerData {
 	}
 }
 
-func (s *reader) populateBuffer() (bool, RoseError) {
+func (s *lineReader) populateBuffer() (bool, RoseError) {
 	for {
 		b, err := s.internalReader.ReadByte()
 
