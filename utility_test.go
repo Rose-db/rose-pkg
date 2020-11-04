@@ -8,12 +8,12 @@ import (
 	"testing"
 )
 
-func benchmarkRemoveFileSystemDb(b *testing.B) {
+func benchmarkRemoveFileSystemDb() {
 	var dir string
 
 	dir = roseDbDir()
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		b.Errorf("%s: Database directory .rose_db was not created in %s", dir, testGetBenchmarkName(b))
+		panic(err)
 
 		return
 	}
@@ -21,7 +21,7 @@ func benchmarkRemoveFileSystemDb(b *testing.B) {
 	files, err := ioutil.ReadDir(dir)
 
 	if err != nil {
-		b.Errorf("%s: Removing %s failed with message %s", dir, testGetBenchmarkName(b), err.Error())
+		panic(err)
 
 		return
 	}
@@ -30,7 +30,7 @@ func benchmarkRemoveFileSystemDb(b *testing.B) {
 		err = os.Remove(fmt.Sprintf("%s/%s", dir, f.Name()))
 
 		if err != nil {
-			b.Errorf("%s: Removing %s failed with message %s", dir, testGetBenchmarkName(b), err.Error())
+			panic(err)
 
 			return
 		}

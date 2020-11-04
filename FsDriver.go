@@ -37,8 +37,6 @@ func (d *fsDriver) MarkDeleted(j *[]*job, mapIdx uint16) RoseError {
 
 	if len(*j) == 1 {
 		return d.CurrentHandler.Delete((*j)[0].Entry)
-
-
 	}
 
 	return nil

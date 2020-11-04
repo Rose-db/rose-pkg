@@ -1,7 +1,6 @@
 package rose
 
 import (
-	"strings"
 	"sync"
 )
 
@@ -190,19 +189,12 @@ func (d *Db) Read(id string) *dbReadResult {
 	// get the value of id, value is a pointer, not the actual data
 	b = m[idx]
 
-	var sb strings.Builder
-	sb.Grow(len(*b))
-
-	for _, p := range *b {
-		sb.WriteByte(p)
-	}
-
 	d.RWMutex.Unlock()
 
 	return &dbReadResult{
 		Idx:    idx,
 		Id:     id,
-		Result: sb.String(),
+		Result: string(*b),
 	}
 }
 
