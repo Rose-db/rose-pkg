@@ -5,11 +5,17 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 )
 
 type lineReader struct {
 	internalReader *bufio.Reader
 	reader io.ReadCloser
+	buf []uint8
+}
+
+type offsetReader struct {
+	internalReader *bufio.Reader
 	buf []uint8
 }
 
@@ -143,6 +149,65 @@ func (s *lineReader) populateBuffer() (bool, RoseError) {
 	}
 
 	s.buf = s.buf[1:]
+
+	return true, nil
+}
+
+func NewOffsetReader(f *os.File) *offsetReader {
+	a := bufio.NewReader(f)
+	return &offsetReader{
+		internalReader: a,
+		buf:            make([]uint8, 1),
+	}
+}
+
+func (r *offsetReader) GetOffset(id string) (uint64, RoseError) {
+	for {
+		status, err := r.populateBuffer()
+
+		if err != nil {
+			return 0, err
+		}
+
+		if !status {
+			return 0, nil
+		}
+
+		if status {
+			buf := string(r.buf)
+
+			s := strings.Split(buf, "[##]{{}#]")
+
+			if s[0] == id {
+				return uint64(len(s[0]) + len(s[1]) + len(delim) + 1), nil
+			}
+		}
+	}
+}
+
+func (r *offsetReader) populateBuffer() (bool, RoseError) {
+	for {
+		b, err := r.internalReader.ReadByte()
+
+		if err == io.EOF {
+			return false, nil
+		}
+
+		if err != nil {
+			return false, &dbIntegrityError{
+				Code:    DbIntegrityViolationCode,
+				Message: fmt.Sprintf("Unable to read filesystem database with message: %s", err.Error()),
+			}
+		}
+
+		if b == 10 {
+			break
+		}
+
+		r.buf = appendByte(r.buf, b)
+	}
+
+	r.buf = r.buf[1:]
 
 	return true, nil
 }

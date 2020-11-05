@@ -55,6 +55,16 @@ func (d *fsDriver) Shutdown() RoseError {
 }
 
 func (d *fsDriver) loadHandler(mapIdx uint16) RoseError {
+	if d.CurrentHandler != nil && d.CurrentHandlerIdx == mapIdx {
+		return nil
+	}
+
+	if d.CurrentHandler != nil {
+		if err := d.CurrentHandler.Sleep(); err != nil {
+			return err
+		}
+	}
+
 	handler, ok := d.Handlers[mapIdx]
 
 	if !ok {

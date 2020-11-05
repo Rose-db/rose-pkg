@@ -28,7 +28,7 @@ func removeElem(s []uint64, i int) []uint64 {
 }
 
 func prepareData(id string, data []uint8) *[]uint8 {
-	i := id + delim + string(data)
+	i := id + delim + string(data) + "\n"
 	a := []uint8(i)
 
 	return &a
