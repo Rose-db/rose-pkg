@@ -623,7 +623,10 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		assertInternalDbIntegrity(m, 10000, 4)
 
 		for _, id := range ids {
-			m.Delete(id)
+			status, err := m.Delete(id)
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(status).To(gomega.Equal(true))
 		}
 
 		assertInternalDbValues(m, 3, 10000)
@@ -648,7 +651,10 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		assertInternalDbIntegrity(m, 10000, 4)
 
 		for _, id := range ids {
-			m.Delete(id)
+			status, err := m.Delete(id)
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(status).To(gomega.Equal(true))
 		}
 
 		assertInternalDbValues(m, 3, 10000)

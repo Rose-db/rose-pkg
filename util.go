@@ -28,16 +28,10 @@ func removeElem(s []uint64, i int) []uint64 {
 }
 
 func prepareData(id string, data []uint8) *[]uint8 {
-	// surround the data with delimiters
-	data = append([]uint8{91, 35, 91}, data...)
-	data = append(data, []uint8{93, 35, 93}...)
-	// create the string to be saved as a single row on fs
-	data = append(data, uint8(10))
-	b := []uint8("[#[" + id + "]#]")
-	// prepend id
-	data = append(b, data...)
+	i := id + delim + string(data)
+	a := []uint8(i)
 
-	return &data
+	return &a
 }
 
 func appendByte(slice []uint8, data ...uint8) []uint8 {

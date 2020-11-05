@@ -69,8 +69,8 @@ func (s *lineReader) getData() *lineReaderData {
 
 	idFull := false
 	for i := 0; i < len(s.buf); i++ {
-		if s.buf[i] == 91 && s.buf[i+1] == 35 && s.buf[i+2] == 91 {
-			i = i+2
+		if s.buf[i] == 91 && s.buf[i+1] == 35 && s.buf[i+2] == 35 && s.buf[i+3] == 93 && s.buf[i+4] == 123 && s.buf[i+5] == 123 && s.buf[i+6] == 125 && s.buf[i+7] == 35 && s.buf[i+8] == 93 {
+			i = i+7
 
 			continue
 		}
