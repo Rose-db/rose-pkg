@@ -85,7 +85,11 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 		gomega.Expect(err.Error()).To(gomega.Equal("Code: 1, Message: Id cannot be an empty string"))
 
 		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
 			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
 		}
 
 		testRemoveFileSystemDb()
@@ -115,7 +119,11 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 		gomega.Expect(err.Error()).To(gomega.Equal("Code: 1, Message: Id cannot be larger than 128 bytes, 144 bytes given"))
 
 		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
 			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
 		}
 
 		testRemoveFileSystemDb()
@@ -165,7 +173,11 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 		gomega.Expect(err.Error()).To(gomega.Equal(fmt.Sprintf("Code: 1, Message: %s", fmt.Sprintf("Data cannot be larger than 16000000 bytes (16MB), %d bytes given", len(string(d))))))
 
 		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
 			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
 		}
 
 		testRemoveFileSystemDb()
@@ -199,7 +211,11 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 		gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
 
 		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
 			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
 		}
 
 		testRemoveFileSystemDb()
@@ -221,7 +237,11 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 		gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
 
 		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
 			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
 		}
 
 		testRemoveFileSystemDb()
@@ -241,7 +261,11 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 		gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
 
 		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
 			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
 		}
 
 		testRemoveFileSystemDb()
@@ -338,7 +362,6 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 
 		a = testCreateRose()
 
-
 		m = &Metadata{
 			Data:   s,
 			Id:     "id",
@@ -351,7 +374,11 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 		gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
 
 		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
 			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
 		}
 
 		testRemoveFileSystemDb()
@@ -386,7 +413,11 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 		}
 
 		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
 			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
 		}
 
 		testRemoveFileSystemDb()
@@ -416,7 +447,11 @@ var _ = GinkgoDescribe("Read tests", func() {
 		gomega.Expect(res.Result).To(gomega.Equal("id value"))
 
 		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
 			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
 		}
 
 		testRemoveFileSystemDb()
@@ -462,7 +497,11 @@ var _ = GinkgoDescribe("Read tests", func() {
 		}
 
 		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
 			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
 		}
 
 		testRemoveFileSystemDb()
@@ -495,7 +534,11 @@ var _ = GinkgoDescribe("Read tests", func() {
 		}
 
 		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
 			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
 		}
 
 		testRemoveFileSystemDb()
@@ -537,7 +580,11 @@ var _ = GinkgoDescribe("Read tests", func() {
 		gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
 
 		if err = a.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
 			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
 		}
 
 		testRemoveFileSystemDb()
@@ -601,7 +648,11 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 		}
 
 		if err := r.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
 			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
 		}
 
 		testRemoveFileSystemDb()
@@ -666,7 +717,11 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 		}
 
 		if err := r.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
 			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
 		}
 
 		testRemoveFileSystemDb()
@@ -686,7 +741,11 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		assertInternalDbIntegrity(m, 10000, 4)
 
 		if err := r.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
 			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
 		}
 
 		testRemoveFileSystemDb()
@@ -714,7 +773,11 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		assertInternalDbIntegrity(m, 0, 4)
 
 		if err := r.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
 			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
 		}
 
 		testRemoveFileSystemDb()
@@ -747,7 +810,11 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		assertInternalDbIntegrity(m, 50000, 17)
 
 		if err := r.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
 			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
 		}
 
 		testRemoveFileSystemDb()
