@@ -42,7 +42,7 @@ func populateDb(m *Db) RoseError {
 				break
 			}
 
-			_, err = m.Write(string(val.id), val.val)
+			_, err = m.Write(string(val.id), val.val, false)
 
 			if err != nil {
 				return err

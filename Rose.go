@@ -65,13 +65,13 @@ func (a *Rose) Write(m *Metadata) (*AppResult, RoseError) {
 
 	// save the entry under idx into memory
 
-	status, err := a.Db.Write(m.Id, m.Data)
+	status, err := a.Db.Write(m.Id, m.Data, true)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if status == NotExistsStatus {
+	if status == ExistsStatus {
 		return &AppResult{
 			Method: InsertMethodType,
 			Status: DuplicatedIdStatus,

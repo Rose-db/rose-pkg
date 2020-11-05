@@ -70,41 +70,16 @@ func (s *lineReader) Read() (*lineReaderData, bool, RoseError) {
 }
 
 func (s *lineReader) getData() *lineReaderData {
-	a := make([]uint8, 1)
-	b := make([]uint8, 1)
+	buf := string(s.buf)
 
-	idFull := false
-	for i := 0; i < len(s.buf); i++ {
-		if s.buf[i] == 91 && s.buf[i+1] == 35 && s.buf[i+2] == 35 && s.buf[i+3] == 93 && s.buf[i+4] == 123 && s.buf[i+5] == 123 && s.buf[i+6] == 125 && s.buf[i+7] == 35 && s.buf[i+8] == 93 {
-			i = i+7
+	split := strings.Split(buf, delim)
 
-			continue
-		}
-
-		if s.buf[i] == 93 && s.buf[i+1] == 35 && s.buf[i+2] == 93 {
-			if !idFull {
-				idFull = true
-				i = i+2
-
-				continue
-			} else {
-				break
-			}
-		}
-
-		if !idFull {
-			a = appendByte(a, s.buf[i])
-		} else {
-			b = appendByte(b, s.buf[i])
-		}
-	}
-
-	a = a[1:]
-	b = b[1:]
+	a := split[0]
+	b := split[1]
 
 	return &lineReaderData{
-		id:  a,
-		val: b,
+		id:  []uint8(a),
+		val: []uint8(b),
 	}
 }
 
@@ -161,26 +136,32 @@ func NewOffsetReader(f *os.File) *offsetReader {
 	}
 }
 
-func (r *offsetReader) GetOffset(id string) (uint64, RoseError) {
+func (r *offsetReader) GetOffset(id string) (bool, uint64, RoseError)  {
+	var offset uint64 = 0
+
 	for {
 		status, err := r.populateBuffer()
 
 		if err != nil {
-			return 0, err
+			return false, 0, err
 		}
 
 		if !status {
-			return 0, nil
+			return false, 0, nil
 		}
 
 		if status {
 			buf := string(r.buf)
 
-			s := strings.Split(buf, "[##]{{}#]")
+			s := strings.Split(buf, delim)
 
 			if s[0] == id {
-				return uint64(len(s[0]) + len(s[1]) + len(delim) + 1), nil
+				return true, offset, nil
+			} else {
+				offset += uint64(len(buf))
 			}
+
+			r.buf = make([]uint8, 1)
 		}
 	}
 }
@@ -201,6 +182,8 @@ func (r *offsetReader) populateBuffer() (bool, RoseError) {
 		}
 
 		if b == 10 {
+			r.buf = appendByte(r.buf, b)
+
 			break
 		}
 

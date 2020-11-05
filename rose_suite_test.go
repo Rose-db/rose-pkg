@@ -742,7 +742,7 @@ func testInsertFixture(m *Db, num int, value []uint8) []string {
 			value = []uint8("sdkfjsdjfsadfjklsajdfkčl")
 		}
 
-		_, err := m.Write(id, value)
+		_, err := m.Write(id, value, true)
 
 		gomega.Expect(err).To(gomega.BeNil())
 	}

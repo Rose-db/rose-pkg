@@ -57,15 +57,14 @@ func (fs *fsDb) Delete(id *[]uint8) RoseError {
 		}
 	}
 
-	or := NewOffsetReader(fs.File)
+/*	or := NewOffsetReader(fs.File)
 
-	offset, err := or.GetOffset(string(*id))
+	found, offset, err := or.GetOffset(string(*id))
 
 	if err != nil {
 		return err
-	}
+	}*/
 
-	offset = offset
 	return nil
 }
 

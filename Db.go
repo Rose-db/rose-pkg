@@ -64,7 +64,7 @@ func newMemoryDb(fsDriver *fsDriver) *Db {
 		- if the block does not exist, a new block is created
 	- the value is stored in the block with its index
 */
-func (d *Db) Write(id string, v []uint8) (int, RoseError) {
+func (d *Db) Write(id string, v []uint8, fsWrite bool) (int, RoseError) {
 	d.RWMutex.Lock()
 
 	if len(d.FreeIdsList) > 0 {
@@ -93,7 +93,7 @@ func (d *Db) Write(id string, v []uint8) (int, RoseError) {
 	if _, ok := d.IdLookupMap[id]; ok {
 		d.RWMutex.Unlock()
 
-		return NotExistsStatus, nil
+		return ExistsStatus, nil
 	}
 
 	// r/w operation, create uint64 index
@@ -104,10 +104,12 @@ func (d *Db) Write(id string, v []uint8) (int, RoseError) {
 	// r operation, add COMPUTED index to the index map
 	d.IdLookupMap[id] = [2]uint16{idx, d.CurrMapIdx}
 
-	err := d.saveOnFs(id, v)
+	if fsWrite {
+		err := d.saveOnFs(id, v)
 
-	if err != nil {
-		return 0, err
+		if err != nil {
+			return 0, err
+		}
 	}
 
 	// saving the pointer address of the data, not the actual data

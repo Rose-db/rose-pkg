@@ -24,7 +24,7 @@ const ReadMethodType = "read"
 
 // memory db status types
 const FreeListQueryStatus = 1
-const NotExistsStatus = 2
+const ExistsStatus = 2
 const NewBlockCreatedStatus = 3
 const NormalExecutionStatus = 4
 
