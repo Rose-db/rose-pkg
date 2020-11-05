@@ -248,6 +248,32 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 })
 
+var _ = GinkgoDescribe("Population tests", func() {
+	GinkgoIt("Should assert block number based on different write numbers", func() {
+		s := []uint8("sdčkfjalsčkjfdlsčakdfjlčk")
+		a := testCreateRose()
+
+		for i := 0; i < 100000; i++ {
+			id := fmt.Sprintf("id-%d", i)
+			res, err := a.Write(&Metadata{
+				Id:   id,
+				Data: s,
+			})
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
+		}
+
+		dirs, err := ioutil.ReadDir(roseDbDir())
+
+		gomega.Expect(err).To(gomega.BeNil())
+		gomega.Expect(len(dirs)).To(gomega.Equal(100000 / 3000 + 1))
+
+		testRemoveFileSystemDb()
+	})
+})
+
 var _ = GinkgoDescribe("Insertion tests", func() {
 	GinkgoIt("Should insert a single piece of data", func() {
 		var s []uint8
@@ -256,7 +282,6 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 
 		a = testCreateRose()
 
-		s = []uint8("sdčkfjalsčkjfdlsčakdfjlčk")
 
 		m = &Metadata{
 			Data:   s,
