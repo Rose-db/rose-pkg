@@ -5,7 +5,7 @@ import (
 )
 
 type Rose struct {
-	Db *Db
+	db *Db
 }
 
 type AppResult struct {
@@ -48,7 +48,7 @@ func New(log bool) (*Rose, RoseError) {
 	}
 
 	r := &Rose{
-		Db: m,
+		db: m,
 	}
 
 	return r, nil
@@ -65,7 +65,7 @@ func (a *Rose) Write(m *Metadata) (*AppResult, RoseError) {
 
 	// save the entry under idx into memory
 
-	status, err := a.Db.Write(m.Id, m.Data, true)
+	status, err := a.db.Write(m.Id, m.Data, true)
 
 	if err != nil {
 		return nil, err
@@ -95,7 +95,7 @@ func (a *Rose) Read(m *Metadata) (*AppResult, RoseError) {
 
 	var res *dbReadResult
 
-	res = a.Db.Read(m.Id)
+	res = a.db.Read(m.Id)
 
 	if res == nil {
 		return &AppResult{
@@ -121,7 +121,7 @@ func (a *Rose) Delete(m *Metadata) (*AppResult, RoseError) {
 		return nil, vErr
 	}
 
-	res, err := a.Db.Delete(m.Id)
+	res, err := a.db.Delete(m.Id)
 
 	if err != nil {
 		return nil, err
@@ -142,5 +142,5 @@ func (a *Rose) Delete(m *Metadata) (*AppResult, RoseError) {
 }
 
 func (a *Rose) Shutdown() RoseError {
-	return a.Db.Shutdown()
+	return a.db.Shutdown()
 }

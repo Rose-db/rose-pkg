@@ -136,8 +136,8 @@ func NewOffsetReader(f *os.File) *offsetReader {
 	}
 }
 
-func (r *offsetReader) GetOffset(id string) (bool, uint64, RoseError)  {
-	var offset uint64 = 0
+func (r *offsetReader) GetOffset(id string) (bool, int64, RoseError)  {
+	var offset int64 = 0
 
 	for {
 		status, err := r.populateBuffer()
@@ -158,7 +158,7 @@ func (r *offsetReader) GetOffset(id string) (bool, uint64, RoseError)  {
 			if s[0] == id {
 				return true, offset, nil
 			} else {
-				offset += uint64(len(buf))
+				offset += int64(len(buf))
 			}
 
 			r.buf = make([]uint8, 1)

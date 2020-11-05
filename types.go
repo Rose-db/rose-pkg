@@ -34,3 +34,4 @@ const maxIdSize = 128
 const maxValSize = 16000000
 
 const delim = "[##]{{}#]"
+const delMark = "{[{del}]}"

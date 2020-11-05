@@ -57,13 +57,42 @@ func (fs *fsDb) Delete(id *[]uint8) RoseError {
 		}
 	}
 
-/*	or := NewOffsetReader(fs.File)
+	_, e := fs.File.Seek(0, 0)
+
+	if e != nil {
+		return &dbIntegrityError{
+			Code:    DbIntegrityViolationCode,
+			Message: fmt.Sprintf("Unable to delete %s: %s", string(*id), e.Error()),
+		}
+	}
+
+	or := NewOffsetReader(fs.File)
 
 	found, offset, err := or.GetOffset(string(*id))
 
 	if err != nil {
 		return err
-	}*/
+	}
+
+	if found {
+		_, oe := fs.File.Seek(offset, 0)
+
+		if oe != nil {
+			return &dbIntegrityError{
+				Code:    DbIntegrityViolationCode,
+				Message: fmt.Sprintf("Unable to delete %s: %s", string(*id), oe.Error()),
+			}
+		}
+
+		_, e := fs.File.Write([]uint8(delMark))
+
+		if e != nil {
+			return &dbIntegrityError{
+				Code:    DbIntegrityViolationCode,
+				Message: fmt.Sprintf("Unable to delete %s: %s", string(*id), e.Error()),
+			}
+		}
+	}
 
 	return nil
 }
