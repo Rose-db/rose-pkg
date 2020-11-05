@@ -51,6 +51,8 @@ func (d *fsDriver) Shutdown() RoseError {
 		}
 	}
 
+	d.Handlers = make(map[uint16]*fsDb)
+
 	return nil
 }
 

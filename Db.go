@@ -41,17 +41,7 @@ func newMemoryDb(fsDriver *fsDriver) *Db {
 		FsDriver: fsDriver,
 	}
 
-	d.InternalDb = make(map[uint16]*[3000]*[]uint8)
-	d.InternalDb[0] = &[3000]*[]uint8{}
-	d.RWMutex = &sync.RWMutex{}
-	d.FreeIdsList = make(map[string][2]uint16)
-
-	d.IdLookupMap = make(map[string][2]uint16)
-
-	m := newIdFactory()
-
-	d.idFactory = m
-	d.CurrMapIdx = 0
+	d.init()
 
 	return d
 }
@@ -201,6 +191,8 @@ func (d *Db) Read(id string) *dbReadResult {
 }
 
 func (d *Db) Shutdown() RoseError {
+	d.init()
+
 	return d.FsDriver.Shutdown()
 }
 
@@ -243,4 +235,16 @@ func (d *Db) getBlock() (*[3000]*[]uint8, bool) {
 	}
 
 	return m, false
+}
+
+func (d *Db) init() {
+	d.InternalDb = make(map[uint16]*[3000]*[]uint8)
+	d.InternalDb[0] = &[3000]*[]uint8{}
+	d.RWMutex = &sync.RWMutex{}
+	d.FreeIdsList = make(map[string][2]uint16)
+
+	d.IdLookupMap = make(map[string][2]uint16)
+
+	d.idFactory = newIdFactory()
+	d.CurrMapIdx = 0
 }

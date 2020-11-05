@@ -252,8 +252,9 @@ var _ = GinkgoDescribe("Population tests", func() {
 	GinkgoIt("Should assert block number based on different write numbers", func() {
 		s := []uint8("sdčkfjalsčkjfdlsčakdfjlčk")
 		a := testCreateRose()
+		n := 100000
 
-		for i := 0; i < 100000; i++ {
+		for i := 0; i < n; i++ {
 			id := fmt.Sprintf("id-%d", i)
 			res, err := a.Write(&Metadata{
 				Id:   id,
@@ -268,7 +269,7 @@ var _ = GinkgoDescribe("Population tests", func() {
 		dirs, err := ioutil.ReadDir(roseDbDir())
 
 		gomega.Expect(err).To(gomega.BeNil())
-		gomega.Expect(len(dirs)).To(gomega.Equal(100000 / 3000 + 1))
+		gomega.Expect(len(dirs)).To(gomega.Equal(n / 3000 + 1))
 
 		testRemoveFileSystemDb()
 	})
