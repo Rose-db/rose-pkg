@@ -385,6 +385,34 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 		gomega.Expect(roseBlockFile(1)).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
 
+		for i := 3002; i < 6002; i++ {
+			id := fmt.Sprintf("id-%d", i)
+			res, err := a.Write(&Metadata{
+				Id:   id,
+				Data: s,
+			})
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
+		}
+
+		gomega.Expect(roseBlockFile(2)).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
+
+		for i := 6002; i < 9002; i++ {
+			id := fmt.Sprintf("id-%d", i)
+			res, err := a.Write(&Metadata{
+				Id:   id,
+				Data: s,
+			})
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
+		}
+
+		gomega.Expect(roseBlockFile(3)).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
+
 
 		for i := 0; i < 2500; i++ {
 			id := fmt.Sprintf("id-%d", i)
@@ -411,6 +439,32 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 		}
 
 		gomega.Expect(roseBlockFile(1)).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
+
+		for i := 3002; i < 6002; i++ {
+			id := fmt.Sprintf("id-%d", i)
+			res, err := a.Delete(&Metadata{
+				Id:   id,
+			})
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(EntryDeletedStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
+		}
+
+		gomega.Expect(roseBlockFile(2)).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
+
+		for i := 6002; i < 9002; i++ {
+			id := fmt.Sprintf("id-%d", i)
+			res, err := a.Delete(&Metadata{
+				Id:   id,
+			})
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(EntryDeletedStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
+		}
+
+		gomega.Expect(roseBlockFile(3)).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
 
 		if err := a.Shutdown(); err != nil {
 			testRemoveFileSystemDb()
