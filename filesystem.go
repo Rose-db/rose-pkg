@@ -42,6 +42,13 @@ func populateDb(m *Db) RoseError {
 				break
 			}
 
+			if val == nil {
+				return &dbIntegrityError{
+					Code:    DbIntegrityViolationCode,
+					Message: fmt.Sprintf("Database integrity violation. Cannot populate database. Invalid row encountered."),
+				}
+			}
+
 			_, err = m.Write(string(val.id), val.val, false)
 
 			if err != nil {

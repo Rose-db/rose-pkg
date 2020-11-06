@@ -74,6 +74,10 @@ func (s *lineReader) getData() *lineReaderData {
 
 	split := strings.Split(buf, delim)
 
+	if len(split) != 2 {
+		return nil
+	}
+
 	a := split[0]
 	b := split[1]
 
