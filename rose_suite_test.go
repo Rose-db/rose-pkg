@@ -272,7 +272,7 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 })
 
-var _ = GinkgoDescribe("Population tests", func() {
+var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 	GinkgoIt("Should assert block number based on different write numbers", func() {
 		s := []uint8("sdčkfjalsčkjfdlsčakdfjlčk")
 		a := testCreateRose()
@@ -341,6 +341,76 @@ var _ = GinkgoDescribe("Population tests", func() {
 			gomega.Expect(res.Status).To(gomega.Equal(DuplicatedIdStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
 		}
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
+			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb()
+	})
+
+	GinkgoIt("Should assert correct blocks are opened while deleting", func() {
+		s := []uint8("sdčkfjalsčkjfdlsčakdfjlčk")
+		a := testCreateRose()
+
+		for i := 0; i < 2500; i++ {
+			id := fmt.Sprintf("id-%d", i)
+			res, err := a.Write(&Metadata{
+				Id:   id,
+				Data: s,
+			})
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
+		}
+
+		gomega.Expect(roseBlockFile(0)).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
+
+		for i := 2501; i < 3002; i++ {
+			id := fmt.Sprintf("id-%d", i)
+			res, err := a.Write(&Metadata{
+				Id:   id,
+				Data: s,
+			})
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
+		}
+
+		gomega.Expect(roseBlockFile(1)).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
+
+
+		for i := 0; i < 2500; i++ {
+			id := fmt.Sprintf("id-%d", i)
+			res, err := a.Delete(&Metadata{
+				Id:   id,
+			})
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(EntryDeletedStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
+		}
+
+		gomega.Expect(roseBlockFile(0)).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
+
+		for i := 2501; i < 3002; i++ {
+			id := fmt.Sprintf("id-%d", i)
+			res, err := a.Delete(&Metadata{
+				Id:   id,
+			})
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(EntryDeletedStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
+		}
+
+		gomega.Expect(roseBlockFile(1)).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
 
 		if err := a.Shutdown(); err != nil {
 			testRemoveFileSystemDb()
@@ -732,7 +802,7 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	GinkgoIt("Should successfully perform and inspect inserts", func() {
 		r := testCreateRose()
 
-		m := r.Db
+		m := r.db
 
 		testInsertFixture(m,10000, []uint8{})
 
@@ -754,7 +824,7 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	GinkgoIt("Should successfully perform and inspect deletes", func() {
 		r := testCreateRose()
 
-		m := r.Db
+		m := r.db
 
 		ids := testInsertFixture(m,10000, []uint8{})
 
@@ -786,7 +856,7 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	GinkgoIt("Should successfully perform and inspect delete reallocation", func() {
 		r := testCreateRose()
 
-		m := r.Db
+		m := r.db
 
 		ids := testInsertFixture(m,10000, []uint8{})
 

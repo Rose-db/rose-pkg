@@ -31,11 +31,11 @@ func (d *fsDriver) Save(j *[]*job, mapIdx uint16) RoseError {
 }
 
 func (d *fsDriver) MarkDeleted(j *[]*job, mapIdx uint16) RoseError {
-	if err := d.loadHandler(mapIdx); err != nil {
-		return err
-	}
-
 	if len(*j) == 1 {
+		if err := d.loadHandler(mapIdx); err != nil {
+			return err
+		}
+
 		return d.CurrentHandler.Delete((*j)[0].Entry)
 	}
 

@@ -133,6 +133,8 @@ func (d *Db) Delete(id string) (bool, RoseError) {
 		return false, nil
 	}
 
+	mapId = idData[1]
+
 	a := []uint8(id)
 	err := d.deleteFromFs(&a, mapId)
 
@@ -141,7 +143,6 @@ func (d *Db) Delete(id string) (bool, RoseError) {
 	}
 
 	idx = idData[0]
-	mapId = idData[1]
 
 	// get the map where the id value is
 	m = d.InternalDb[mapId]
@@ -214,7 +215,7 @@ func (d *Db) deleteFromFs(id *[]uint8, mapIdx uint16) RoseError {
 		&job{Entry: id},
 	}
 
-	return d.FsDriver.MarkDeleted(&jobs, d.CurrMapIdx)
+	return d.FsDriver.MarkDeleted(&jobs, mapIdx)
 }
 
 /**
