@@ -41,8 +41,8 @@ func (fs *fsDb) Write(d *[]uint8) Error {
 	if err != nil {
 		name := fs.File.Name()
 
-		return &dbIntegrityError{
-			Code:    DbIntegrityViolationCode,
+		return &dbError{
+			Code:    DbErrorCode,
 			Message: fmt.Sprintf("Database integrity violation. Cannot write to existing file %s with underlying message: %s", name, err.Error()),
 		}
 	}
@@ -60,8 +60,8 @@ func (fs *fsDb) Delete(id *[]uint8) Error {
 	_, e := fs.File.Seek(0, 0)
 
 	if e != nil {
-		return &dbIntegrityError{
-			Code:    DbIntegrityViolationCode,
+		return &dbError{
+			Code:    DbErrorCode,
 			Message: fmt.Sprintf("Unable to delete %s: %s", string(*id), e.Error()),
 		}
 	}
@@ -78,8 +78,8 @@ func (fs *fsDb) Delete(id *[]uint8) Error {
 		_, oe := fs.File.Seek(offset, 0)
 
 		if oe != nil {
-			return &dbIntegrityError{
-				Code:    DbIntegrityViolationCode,
+			return &dbError{
+				Code:    DbErrorCode,
 				Message: fmt.Sprintf("Unable to delete %s: %s", string(*id), oe.Error()),
 			}
 		}
@@ -87,8 +87,8 @@ func (fs *fsDb) Delete(id *[]uint8) Error {
 		_, e := fs.File.Write([]uint8(delMark))
 
 		if e != nil {
-			return &dbIntegrityError{
-				Code:    DbIntegrityViolationCode,
+			return &dbError{
+				Code:    DbErrorCode,
 				Message: fmt.Sprintf("Unable to delete %s: %s", string(*id), e.Error()),
 			}
 		}
@@ -127,8 +127,8 @@ func (fs *fsDb) SyncAndClose() Error {
 	err = fs.File.Sync()
 
 	if err != nil {
-		return &dbIntegrityError{
-			Code:    DbIntegrityViolationCode,
+		return &dbError{
+			Code:    DbErrorCode,
 			Message: fmt.Sprintf("Database integrity violation. Database file system problem for file %s with underlying message: %s", name, err.Error()),
 		}
 	}
@@ -136,8 +136,8 @@ func (fs *fsDb) SyncAndClose() Error {
 	err = fs.File.Close()
 
 	if err != nil {
-		return &dbIntegrityError{
-			Code:    DbIntegrityViolationCode,
+		return &dbError{
+			Code:    DbErrorCode,
 			Message: fmt.Sprintf("Database integrity violation. Cannot close file %s with underlying message: %s", name, err.Error()),
 		}
 	}

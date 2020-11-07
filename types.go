@@ -3,12 +3,15 @@ package rose
 // error types
 const systemErrorType = "system_error"
 const metadataErrorType = "metadata_error"
+const dbErrorType = "db_error"
+const dbIntegrityErrorType = "db_integrity_error"
 
 // application error codes
 const MetadataErrorCode = 1
 const SystemErrorCode = 2
 const InvalidRequestCode = 3
 const DbIntegrityViolationCode = 4
+const DbErrorCode = 5
 
 // result status
 const OkResultStatus = "ok"
