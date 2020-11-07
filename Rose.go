@@ -54,9 +54,7 @@ func New(log bool) (*Rose, Error) {
 }
 
 func (a *Rose) Write(m *Metadata) (*AppResult, Error) {
-	var vErr Error
-
-	vErr = m.validate()
+	vErr := m.validate()
 
 	if vErr != nil {
 		return nil, vErr
