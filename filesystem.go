@@ -7,7 +7,7 @@ import (
 	"runtime"
 )
 
-func populateDb(m *Db) RoseError {
+func populateDb(m *Db) Error {
 	files, fsErr := ioutil.ReadDir(roseDbDir())
 
 	if fsErr != nil {
@@ -45,7 +45,7 @@ func populateDb(m *Db) RoseError {
 			if val == nil {
 				return &dbIntegrityError{
 					Code:    DbIntegrityViolationCode,
-					Message: fmt.Sprintf("Database integrity violation. Cannot populate database. Invalid row encountered."),
+					Message: "Database integrity violation. Cannot populate database. Invalid row encountered.",
 				}
 			}
 
@@ -66,9 +66,9 @@ func populateDb(m *Db) RoseError {
 	return nil
 }
 
-func createDbIfNotExists(logging bool, comm chan string, errChan chan RoseError) {
+func createDbIfNotExists(logging bool, comm chan string, errChan chan Error) {
 	var dir, db, log string
-	var err RoseError
+	var err Error
 	var file *os.File
 
 	dir = roseDir()
@@ -149,7 +149,7 @@ func createDbIfNotExists(logging bool, comm chan string, errChan chan RoseError)
 	close(errChan)
 }
 
-func createFile(f string, flag int) (*os.File, RoseError) {
+func createFile(f string, flag int) (*os.File, Error) {
 	file, err := os.OpenFile(f, flag, 0666)
 
 	if err != nil {
@@ -164,7 +164,7 @@ func createFile(f string, flag int) (*os.File, RoseError) {
 	return file, nil
 }
 
-func closeFile(file *os.File) RoseError {
+func closeFile(file *os.File) Error {
 	fsErr := file.Sync()
 
 	if fsErr != nil {

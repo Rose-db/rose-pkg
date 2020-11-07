@@ -16,7 +16,7 @@ func newFsDriver() *fsDriver {
 	}
 }
 
-func (d *fsDriver) Save(j *[]*job, mapIdx uint16) RoseError {
+func (d *fsDriver) Save(j *[]*job, mapIdx uint16) Error {
 	if len(*j) == 1 {
 		job := (*j)[0]
 
@@ -30,7 +30,7 @@ func (d *fsDriver) Save(j *[]*job, mapIdx uint16) RoseError {
 	return nil
 }
 
-func (d *fsDriver) MarkDeleted(j *[]*job, mapIdx uint16) RoseError {
+func (d *fsDriver) MarkDeleted(j *[]*job, mapIdx uint16) Error {
 	if len(*j) == 1 {
 		if err := d.loadHandler(mapIdx); err != nil {
 			return err
@@ -42,7 +42,7 @@ func (d *fsDriver) MarkDeleted(j *[]*job, mapIdx uint16) RoseError {
 	return nil
 }
 
-func (d *fsDriver) Shutdown() RoseError {
+func (d *fsDriver) Shutdown() Error {
 	for _, handler := range d.Handlers {
 		if handler.File != nil {
 			if err := handler.SyncAndClose(); err != nil {
@@ -56,7 +56,7 @@ func (d *fsDriver) Shutdown() RoseError {
 	return nil
 }
 
-func (d *fsDriver) loadHandler(mapIdx uint16) RoseError {
+func (d *fsDriver) loadHandler(mapIdx uint16) Error {
 	if d.CurrentHandler != nil && d.CurrentHandlerIdx == mapIdx {
 		return nil
 	}

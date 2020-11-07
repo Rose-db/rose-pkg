@@ -49,7 +49,7 @@ func NewLineReader(r *os.File) *lineReader {
 	Reads a single line in a file. Every call to Read() return a single
 	line in a file until io.EOF is reached
  */
-func (s *lineReader) Read() (*lineReaderData, bool, RoseError) {
+func (s *lineReader) Read() (*lineReaderData, bool, Error) {
 	ok, err := s.populateBuffer()
 
 	if !ok {
@@ -93,7 +93,7 @@ func (s *lineReader) getData() *lineReaderData {
 	}
 }
 
-func (s *lineReader) populateBuffer() (bool, RoseError) {
+func (s *lineReader) populateBuffer() (bool, Error) {
 	d := ""
 	skip := false
 	for {
@@ -111,7 +111,7 @@ func (s *lineReader) populateBuffer() (bool, RoseError) {
 		}
 
 		if b == 10 {
-			if skip == true {
+			if skip {
 				skip = false
 
 				continue
@@ -150,7 +150,7 @@ func NewOffsetReader(f *os.File) *offsetReader {
 	}
 }
 
-func (r *offsetReader) GetOffset(id string) (bool, int64, RoseError)  {
+func (r *offsetReader) GetOffset(id string) (bool, int64, Error)  {
 	for {
 		status, err := r.populateBuffer()
 
@@ -178,7 +178,7 @@ func (r *offsetReader) GetOffset(id string) (bool, int64, RoseError)  {
 	}
 }
 
-func (r *offsetReader) populateBuffer() (bool, RoseError) {
+func (r *offsetReader) populateBuffer() (bool, Error) {
 	skip := false
 	for {
 		b, err := r.internalReader.ReadByte()

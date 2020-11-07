@@ -2,6 +2,7 @@ package rose
 
 import "encoding/json"
 
+// Will be used when insert/read/update in batches
 func splitMetadataArray(mArr []*Metadata, size int) [][]*Metadata {
 	min := func(a, b int) int {
 		if a <= b {
@@ -20,13 +21,6 @@ func splitMetadataArray(mArr []*Metadata, size int) [][]*Metadata {
 	}
 
 	return batch
-}
-
-func removeElem(s []uint64, i int) []uint64 {
-	// s[i] goes to the end, while the element that was in s[i] is replaced with the last element
-	s[len(s)-1], s[i] = s[i], s[len(s)-1]
-	// just return everything except the last element since that is where s[i] is now
-	return s[:len(s)-1]
 }
 
 func prepareData(id string, data []uint8) *[]uint8 {

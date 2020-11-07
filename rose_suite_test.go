@@ -41,7 +41,7 @@ var _ = GinkgoDescribe("Misc tests", func() {
 
 			condition := false
 
-			if id < 0 || id > 2999 {
+			if id > 2999 {
 				condition = false
 			} else {
 				condition = true
@@ -63,12 +63,9 @@ var _ = GinkgoDescribe("Misc tests", func() {
 
 var _ = GinkgoDescribe("Successfully failing tests", func() {
 	GinkgoIt("Should fail write because of an empty string id", func() {
-		var m *Metadata
-		var a *Rose
+		a := testCreateRose()
 
-		a = testCreateRose()
-
-		m = &Metadata{
+		m := &Metadata{
 			Data:   []uint8{},
 			Id: "",
 		}
@@ -81,7 +78,7 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 			return
 		}
 
-		gomega.Expect(err.GetCode()).To(gomega.Equal(MetadataErrorCode), fmt.Sprintf("MetadataErrorCode should have been returned as RoseError.Status"))
+		gomega.Expect(err.GetCode()).To(gomega.Equal(MetadataErrorCode), fmt.Sprintf("MetadataErrorCode should have been returned as Error.Status"))
 		gomega.Expect(err.Error()).To(gomega.Equal("Code: 1, Message: Id cannot be an empty string"))
 
 		if err := a.Shutdown(); err != nil {
@@ -96,9 +93,7 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail read/delete because of an empty string id", func() {
-		var a *Rose
-
-		a = testCreateRose()
+		a := testCreateRose()
 
 		s := ""
 		_, readErr := a.Read("", &s)
@@ -109,7 +104,7 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 			return
 		}
 
-		gomega.Expect(readErr.GetCode()).To(gomega.Equal(MetadataErrorCode), fmt.Sprintf("MetadataErrorCode should have been returned as RoseError.Status"))
+		gomega.Expect(readErr.GetCode()).To(gomega.Equal(MetadataErrorCode), "MetadataErrorCode should have been returned as Error.Status")
 		gomega.Expect(readErr.Error()).To(gomega.Equal("Code: 1, Message: Id cannot be an empty string"))
 
 		_, delErr := a.Delete("")
@@ -120,7 +115,7 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 			return
 		}
 
-		gomega.Expect(delErr.GetCode()).To(gomega.Equal(MetadataErrorCode), fmt.Sprintf("MetadataErrorCode should have been returned as RoseError.Status"))
+		gomega.Expect(delErr.GetCode()).To(gomega.Equal(MetadataErrorCode), "MetadataErrorCode should have been returned as Error.Status")
 		gomega.Expect(delErr.Error()).To(gomega.Equal("Code: 1, Message: Id cannot be an empty string"))
 
 		if err := a.Shutdown(); err != nil {
@@ -155,7 +150,7 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 			return
 		}
 
-		gomega.Expect(err.GetCode()).To(gomega.Equal(MetadataErrorCode), fmt.Sprintf("MetadataErrorCode should have been returned as RoseError.Status"))
+		gomega.Expect(err.GetCode()).To(gomega.Equal(MetadataErrorCode), fmt.Sprintf("MetadataErrorCode should have been returned as Error.Status"))
 		gomega.Expect(err.Error()).To(gomega.Equal("Code: 1, Message: Data must be a JSON byte array"))
 
 		if err := a.Shutdown(); err != nil {
@@ -189,7 +184,7 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 			return
 		}
 
-		gomega.Expect(err.GetCode()).To(gomega.Equal(MetadataErrorCode), fmt.Sprintf("MetadataErrorCode should have been returned as RoseError.Status"))
+		gomega.Expect(err.GetCode()).To(gomega.Equal(MetadataErrorCode), fmt.Sprintf("MetadataErrorCode should have been returned as Error.Status"))
 		gomega.Expect(err.Error()).To(gomega.Equal("Code: 1, Message: Id cannot be larger than 128 bytes, 144 bytes given"))
 
 		if err := a.Shutdown(); err != nil {
@@ -243,7 +238,7 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 			return
 		}
 
-		gomega.Expect(err.GetCode()).To(gomega.Equal(MetadataErrorCode), fmt.Sprintf("MetadataErrorCode should have been returned as RoseError.Status"))
+		gomega.Expect(err.GetCode()).To(gomega.Equal(MetadataErrorCode), fmt.Sprintf("MetadataErrorCode should have been returned as Error.Status"))
 		// TODO: There seems to be a difference when converting json byte array to string and back into byte array, check later
 		//gomega.Expect(err.Error()).To(gomega.Equal(fmt.Sprintf("Code: 1, Message: %s", fmt.Sprintf("Data cannot be larger than 16000000 bytes (16MB), %d bytes given", len(d)))))
 
@@ -538,7 +533,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 	GinkgoIt("Should skip the deleted entries when booting a populated database", func() {
 		a := testCreateRose()
-		n := 10000
+		n := 1000
 		s := testAsJson(testString)
 
 		for i := 0; i < n; i++ {
@@ -610,7 +605,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 	GinkgoIt("Should skip the deleted entries when booting a populated database and strategically removing entries in the database", func() {
 		a := testCreateRose()
-		n := 10000
+		n := 4000
 		s := testAsJson(testString)
 
 		for i := 0; i < n; i++ {
@@ -635,7 +630,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 		a = testCreateRose()
 
-		strategy := []int{10, 150, 1156, 3452, 6543, 5678, 8904, 9999, 1, 0}
+		strategy := []int{0, 10, 150, 987, 1000, 1001, 1002, 3000, 3001, 3002, 1, 3999, 4000, 2367}
 
 		for i := range strategy {
 			id := fmt.Sprintf("id-%d", i)
@@ -745,7 +740,7 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 		var a *Rose
 		var m *Metadata
 
-		var err RoseError
+		var err Error
 		var res *AppResult
 		var currId uint64
 
@@ -820,7 +815,7 @@ var _ = GinkgoDescribe("Read tests", func() {
 
 			res, err := a.Write(&Metadata{
 				Id:   id,
-				Data: []uint8(value),
+				Data: value,
 			})
 
 			gomega.Expect(err).To(gomega.BeNil())
@@ -867,13 +862,13 @@ var _ = GinkgoDescribe("Read tests", func() {
 		for i := 0; i < 10000; i++ {
 			id := fmt.Sprintf("id-%d", i)
 			value := testAsJson(fmt.Sprintf("id-value-%d", i))
-			data := []uint8(value)
+			data := value
 
 			fsData += string(*prepareData(id, data))
 
 			res, err := a.Write(&Metadata{
 				Id:   id,
-				Data: []uint8(value),
+				Data: value,
 			})
 
 			gomega.Expect(err).To(gomega.BeNil())
@@ -1169,7 +1164,7 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 
 func testFixtureSingleInsert(id string, value []uint8, a *Rose) {
 	var m *Metadata
-	var appErr RoseError
+	var appErr Error
 
 	m = &Metadata{
 		Data:   value,

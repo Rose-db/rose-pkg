@@ -14,9 +14,9 @@ type AppResult struct {
 	Reason string
 }
 
-func New(log bool) (*Rose, RoseError) {
+func New(log bool) (*Rose, Error) {
 	comm := make(chan string)
-	errChan := make(chan RoseError)
+	errChan := make(chan Error)
 	go createDbIfNotExists(log, comm, errChan)
 
 	for msg := range comm {
@@ -53,8 +53,8 @@ func New(log bool) (*Rose, RoseError) {
 	return r, nil
 }
 
-func (a *Rose) Write(m *Metadata) (*AppResult, RoseError) {
-	var vErr RoseError
+func (a *Rose) Write(m *Metadata) (*AppResult, Error) {
+	var vErr Error
 
 	vErr = m.validate()
 
@@ -83,7 +83,7 @@ func (a *Rose) Write(m *Metadata) (*AppResult, RoseError) {
 	}, nil
 }
 
-func (a *Rose) Read(id string, v interface{}) (*AppResult, RoseError) {
+func (a *Rose) Read(id string, v interface{}) (*AppResult, Error) {
 	if id == "" {
 		return nil, &metadataError{
 			Code:    MetadataErrorCode,
@@ -91,9 +91,7 @@ func (a *Rose) Read(id string, v interface{}) (*AppResult, RoseError) {
 		}
 	}
 
-	var res *dbReadResult
-
-	res = a.db.Read(id, v)
+	res := a.db.Read(id, v)
 
 	if res == nil {
 		return &AppResult{
@@ -109,7 +107,7 @@ func (a *Rose) Read(id string, v interface{}) (*AppResult, RoseError) {
 	}, nil
 }
 
-func (a *Rose) Delete(id string) (*AppResult, RoseError) {
+func (a *Rose) Delete(id string) (*AppResult, Error) {
 	if id == "" {
 		return nil, &metadataError{
 			Code:    MetadataErrorCode,
@@ -123,7 +121,7 @@ func (a *Rose) Delete(id string) (*AppResult, RoseError) {
 		return nil, err
 	}
 
-	if res == false {
+	if !res {
 		return &AppResult{
 			Method: DeleteMethodType,
 			Status: NotFoundResultStatus,
@@ -137,6 +135,6 @@ func (a *Rose) Delete(id string) (*AppResult, RoseError) {
 	}, nil
 }
 
-func (a *Rose) Shutdown() RoseError {
+func (a *Rose) Shutdown() Error {
 	return a.db.Shutdown()
 }

@@ -9,11 +9,11 @@ type Metadata struct {
 	Data 	[]uint8
 }
 
-func (m *Metadata) validate() RoseError {
+func (m *Metadata) validate() Error {
 	if m.Id == "" {
 		return &metadataError{
 			Code:    MetadataErrorCode,
-			Message: fmt.Sprintf("Id cannot be an empty string"),
+			Message: "Id cannot be an empty string",
 		}
 	}
 

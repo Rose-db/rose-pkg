@@ -10,7 +10,7 @@ type fsDb struct {
 	File *os.File
 }
 
-func newFsDb(b uint16) (*fsDb, RoseError) {
+func newFsDb(b uint16) (*fsDb, Error) {
 	a := roseBlockFile(b)
 
 	file, err := createFile(a, os.O_RDWR|os.O_CREATE)
@@ -25,7 +25,7 @@ func newFsDb(b uint16) (*fsDb, RoseError) {
 	}, nil
 }
 
-func (fs *fsDb) Write(d *[]uint8) RoseError {
+func (fs *fsDb) Write(d *[]uint8) Error {
 	if fs.File == nil {
 		err := fs.WakeUp()
 
@@ -50,7 +50,7 @@ func (fs *fsDb) Write(d *[]uint8) RoseError {
 	return nil
 }
 
-func (fs *fsDb) Delete(id *[]uint8) RoseError {
+func (fs *fsDb) Delete(id *[]uint8) Error {
 	if fs.File == nil {
 		if err := fs.WakeUp(); err != nil {
 			return err
@@ -98,7 +98,7 @@ func (fs *fsDb) Delete(id *[]uint8) RoseError {
 }
 
 
-func (fs *fsDb) Sleep() RoseError {
+func (fs *fsDb) Sleep() Error {
 	if err := fs.SyncAndClose(); err != nil {
 		return err
 	}
@@ -108,7 +108,7 @@ func (fs *fsDb) Sleep() RoseError {
 	return nil
 }
 
-func (fs *fsDb) WakeUp() RoseError {
+func (fs *fsDb) WakeUp() Error {
 	file, err := createFile(fs.Path, os.O_RDWR)
 
 	if err != nil {
@@ -120,11 +120,10 @@ func (fs *fsDb) WakeUp() RoseError {
 	return nil
 }
 
-func (fs *fsDb) SyncAndClose() RoseError {
+func (fs *fsDb) SyncAndClose() Error {
 	var err error
-	var name string
 
-	name = fs.File.Name()
+	name := fs.File.Name()
 	err = fs.File.Sync()
 
 	if err != nil {

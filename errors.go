@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-type RoseError interface {
+type Error interface {
 	Error() string
 	Type() string
 	GetCode() int

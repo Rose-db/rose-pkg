@@ -55,7 +55,7 @@ func newMemoryDb(fsDriver *fsDriver) *Db {
 		- if the block does not exist, a new block is created
 	- the value is stored in the block with its index
 */
-func (d *Db) Write(id string, v []uint8, fsWrite bool) (int, RoseError) {
+func (d *Db) Write(id string, v []uint8, fsWrite bool) (int, Error) {
 	d.RWMutex.Lock()
 
 	if len(d.FreeIdsList) > 0 {
@@ -119,7 +119,7 @@ func (d *Db) Write(id string, v []uint8, fsWrite bool) (int, RoseError) {
 	return NormalExecutionStatus, nil
 }
 
-func (d *Db) Delete(id string) (bool, RoseError) {
+func (d *Db) Delete(id string) (bool, Error) {
 	d.RWMutex.Lock()
 
 	var idData [2]uint16
@@ -198,7 +198,7 @@ func (d *Db) Read(id string, v interface{}) *dbReadResult {
 	}
 }
 
-func (d *Db) Shutdown() RoseError {
+func (d *Db) Shutdown() Error {
 	d.init()
 
 	return d.FsDriver.Shutdown()
@@ -209,17 +209,17 @@ func (d *Db) Shutdown() RoseError {
 
 	Save the data on the filesystem
  */
-func (d *Db) saveOnFs(id string, v []uint8) RoseError {
+func (d *Db) saveOnFs(id string, v []uint8) Error {
 	jobs := []*job{
-		&job{Entry: prepareData(id, v)},
+		{Entry: prepareData(id, v)},
 	}
 
 	return d.FsDriver.Save(&jobs, d.CurrMapIdx)
 }
 
-func (d *Db) deleteFromFs(id *[]uint8, mapIdx uint16) RoseError {
+func (d *Db) deleteFromFs(id *[]uint8, mapIdx uint16) Error {
 	jobs := []*job{
-		&job{Entry: id},
+		{Entry: id},
 	}
 
 	return d.FsDriver.MarkDeleted(&jobs, mapIdx)

@@ -6,18 +6,12 @@ import (
 	"github.com/onsi/ginkgo"
 	"io/ioutil"
 	"os"
-	"reflect"
-	"testing"
 )
 
 func benchmarkRemoveFileSystemDb() {
-	var dir string
-
-	dir = roseDbDir()
+	dir := roseDbDir()
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		panic(err)
-
-		return
 	}
 
 	files, err := ioutil.ReadDir(dir)
@@ -33,20 +27,8 @@ func benchmarkRemoveFileSystemDb() {
 
 		if err != nil {
 			panic(err)
-
-			return
 		}
 	}
-}
-
-func testGetBenchmarkName(b *testing.B) string {
-	v := reflect.ValueOf(*b)
-	return v.FieldByName("name").String()
-}
-
-func testGetTestName(t *testing.T) string {
-	v := reflect.ValueOf(*t)
-	return v.FieldByName("name").String()
 }
 
 func testAsJson(j string) []uint8 {
