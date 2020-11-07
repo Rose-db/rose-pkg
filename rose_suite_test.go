@@ -258,7 +258,6 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 		testRemoveFileSystemDb()
 	})
 
-
 	GinkgoIt("Should fail if trying to insert data with already existing id", func() {
 		var s []uint8
 		var a *Rose
@@ -525,6 +524,180 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 		}
 
 		gomega.Expect(roseBlockFile(3)).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
+			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb()
+	})
+
+	GinkgoIt("Should skip the deleted entries when booting a populated database", func() {
+		a := testCreateRose()
+		n := 10000
+		s := testAsJson(testString)
+
+		for i := 0; i < n; i++ {
+			id := fmt.Sprintf("id-%d", i)
+			res, err := a.Write(&Metadata{
+				Id:   id,
+				Data: s,
+			})
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
+		}
+
+		if err := a.Shutdown(); err != nil {
+			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
+
+			return
+		}
+
+		a = nil
+
+		a = testCreateRose()
+
+		for i := 0; i < n - 1; i++ {
+			id := fmt.Sprintf("id-%d", i)
+			res, err := a.Delete(id)
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(EntryDeletedStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
+		}
+		
+		if err := a.Shutdown(); err != nil {
+			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
+
+			return
+		}
+
+		a = nil
+
+		a = testCreateRose()
+		
+		count := 0
+		for i := 0; i < n; i++ {
+			id := fmt.Sprintf("id-%d", i)
+			t := ""
+			res, err := a.Read(id, &t)
+
+			gomega.Expect(err).To(gomega.BeNil())
+
+			if res.Status == FoundResultStatus {
+				count++
+			}
+		}
+
+		gomega.Expect(count).To(gomega.Equal(1))
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
+			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb()
+	})
+
+	GinkgoIt("Should skip the deleted entries when booting a populated database and strategically removing entries in the database", func() {
+		a := testCreateRose()
+		n := 10000
+		s := testAsJson(testString)
+
+		for i := 0; i < n; i++ {
+			id := fmt.Sprintf("id-%d", i)
+			res, err := a.Write(&Metadata{
+				Id:   id,
+				Data: s,
+			})
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
+		}
+
+		if err := a.Shutdown(); err != nil {
+			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
+
+			return
+		}
+
+		a = nil
+
+		a = testCreateRose()
+
+		strategy := []int{10, 150, 1156, 3452, 6543, 5678, 8904, 9999, 1, 0}
+
+		for i := range strategy {
+			id := fmt.Sprintf("id-%d", i)
+			res, err := a.Delete(id)
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(EntryDeletedStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
+		}
+
+		if err := a.Shutdown(); err != nil {
+			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
+
+			return
+		}
+
+		a = nil
+
+		a = testCreateRose()
+
+		count := 0
+		for i := 0; i < n; i++ {
+			id := fmt.Sprintf("id-%d", i)
+			t := ""
+			res, err := a.Read(id, &t)
+
+			gomega.Expect(err).To(gomega.BeNil())
+
+			if res.Status == FoundResultStatus {
+				count++
+			}
+		}
+
+		gomega.Expect(count).To(gomega.Equal(n - len(strategy)))
+
+		for i := 0; i < len(strategy); i++ {
+			id := fmt.Sprintf("id-%d", i)
+			t := ""
+			res, err := a.Read(id, &t)
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
+		}
+
+		if err := a.Shutdown(); err != nil {
+			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
+
+			return
+		}
+
+		a = nil
+
+		a = testCreateRose()
+
+		for i := 0; i < len(strategy); i++ {
+			id := fmt.Sprintf("id-%d", i)
+			t := ""
+			res, err := a.Read(id, &t)
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
+		}
 
 		if err := a.Shutdown(); err != nil {
 			testRemoveFileSystemDb()

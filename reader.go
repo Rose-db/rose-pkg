@@ -2,6 +2,7 @@ package rose
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -17,6 +18,7 @@ type lineReader struct {
 type offsetReader struct {
 	internalReader *bufio.Reader
 	buf []uint8
+	offset int64
 }
 
 type lineReaderData struct {
@@ -72,6 +74,10 @@ func (s *lineReader) Read() (*lineReaderData, bool, RoseError) {
 func (s *lineReader) getData() *lineReaderData {
 	buf := string(s.buf)
 
+	if buf == "" {
+		return nil
+	}
+
 	split := strings.Split(buf, delim)
 
 	if len(split) != 2 {
@@ -120,8 +126,12 @@ func (s *lineReader) populateBuffer() (bool, RoseError) {
 
 		d += string(b)
 
-		if len(d) == 9 && d == "[{[del]}]" {
+		if len(d) == 9 && d == delMark {
 			skip = true
+			d = ""
+			s.buf = make([]uint8, 1)
+
+			continue
 		}
 
 		s.buf = appendByte(s.buf, b)
@@ -141,8 +151,6 @@ func NewOffsetReader(f *os.File) *offsetReader {
 }
 
 func (r *offsetReader) GetOffset(id string) (bool, int64, RoseError)  {
-	var offset int64 = 0
-
 	for {
 		status, err := r.populateBuffer()
 
@@ -155,14 +163,14 @@ func (r *offsetReader) GetOffset(id string) (bool, int64, RoseError)  {
 		}
 
 		if status {
-			buf := string(r.buf)
+			s := bytes.Split(r.buf, []uint8(delim))
 
-			s := strings.Split(buf, delim)
-
-			if s[0] == id {
-				return true, offset, nil
-			} else {
-				offset += int64(len(buf))
+			if string(s[0]) == id {
+				off := r.offset
+				r.offset = 0
+				off = off - int64(len(r.buf))
+				r.buf = make([]uint8, 1)
+				return true, off, nil
 			}
 
 			r.buf = make([]uint8, 1)
@@ -171,6 +179,7 @@ func (r *offsetReader) GetOffset(id string) (bool, int64, RoseError)  {
 }
 
 func (r *offsetReader) populateBuffer() (bool, RoseError) {
+	skip := false
 	for {
 		b, err := r.internalReader.ReadByte()
 
@@ -185,10 +194,28 @@ func (r *offsetReader) populateBuffer() (bool, RoseError) {
 			}
 		}
 
+		r.offset++
 		if b == 10 {
+			if skip {
+				skip = false
+
+				continue
+			}
+
 			r.buf = appendByte(r.buf, b)
 
 			break
+		}
+
+		if skip {
+			continue
+		}
+
+		if len(r.buf[1:]) == 9 && string(r.buf[1:]) == delMark {
+			skip = true
+			r.buf = make([]uint8, 1)
+
+			continue
 		}
 
 		r.buf = appendByte(r.buf, b)
