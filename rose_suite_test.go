@@ -100,7 +100,8 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 
 		a = testCreateRose()
 
-		_, readErr := a.Read("")
+		s := ""
+		_, readErr := a.Read("", &s)
 
 		if readErr == nil {
 			ginkgo.Fail("err should not be nil")
@@ -299,7 +300,8 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 		var a *Rose
 		a = testCreateRose()
 
-		res, err := a.Read("id")
+		var s string
+		res, err := a.Read("id", &s)
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
@@ -614,12 +616,13 @@ var _ = GinkgoDescribe("Read tests", func() {
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 		testFixtureSingleInsert(id, s, a)
 
-		res, err := a.Read("id")
+		r := ""
+		res, err := a.Read("id", &r)
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
-		gomega.Expect(res.Result).To(gomega.Equal("sdčkfjalsčkjfdlsčakdfjlčk"))
+		gomega.Expect(r).To(gomega.Equal("sdčkfjalsčkjfdlsčakdfjlčk"))
 
 		if err := a.Shutdown(); err != nil {
 			testRemoveFileSystemDb()
@@ -655,7 +658,8 @@ var _ = GinkgoDescribe("Read tests", func() {
 		}
 
 		for _, id := range ids {
-			res, err := a.Read(id)
+			r := ""
+			res, err := a.Read(id, &r)
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
@@ -666,7 +670,7 @@ var _ = GinkgoDescribe("Read tests", func() {
 
 			value := fmt.Sprintf("id-value-%d", intId)
 
-			gomega.Expect(res.Result).To(gomega.Equal(value))
+			gomega.Expect(r).To(gomega.Equal(value))
 		}
 
 		if err := a.Shutdown(); err != nil {
@@ -742,7 +746,8 @@ var _ = GinkgoDescribe("Read tests", func() {
 		gomega.Expect(res.Status).To(gomega.Equal(EntryDeletedStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 
-		res, err = a.Read("id")
+		r := ""
+		res, err = a.Read("id", &r)
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
@@ -786,12 +791,13 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 		}
 
 		consume := func(id int) {
-			res, err := r.Read(fmt.Sprintf("id-%d", id))
+			rs := ""
+			res, err := r.Read(fmt.Sprintf("id-%d", id), &rs)
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
-			gomega.Expect(res.Result).To(gomega.Equal(fmt.Sprintf("value-%d", id)))
+			gomega.Expect(rs).To(gomega.Equal(fmt.Sprintf("value-%d", id)))
 		}
 
 		for i := 0; i < num; i++ {
@@ -803,11 +809,12 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			consume(id)
 			curr++
 
-			res, err := r.Read(fmt.Sprintf("id-%d", id))
+			rs := ""
+			res, err := r.Read(fmt.Sprintf("id-%d", id), &rs)
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
-			gomega.Expect(res.Result).To(gomega.Equal(fmt.Sprintf("value-%d", id)))
+			gomega.Expect(rs).To(gomega.Equal(fmt.Sprintf("value-%d", id)))
 
 			if curr == num {
 				break
@@ -869,7 +876,8 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			consume(a)
 			curr++
 
-			res, err := r.Read(a)
+			rs := ""
+			res, err := r.Read(a, &rs)
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))

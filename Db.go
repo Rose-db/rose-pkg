@@ -8,7 +8,7 @@ import (
 type dbReadResult struct {
 	Idx uint16
 	Id string
-	Result string
+	Result interface{}
 }
 
 /**
@@ -158,7 +158,7 @@ func (d *Db) Delete(id string) (bool, RoseError) {
 	return true, nil
 }
 
-func (d *Db) Read(id string) *dbReadResult {
+func (d *Db) Read(id string, v interface{}) *dbReadResult {
 	d.RWMutex.Lock()
 
 	var m *[3000]*[]uint8
@@ -185,8 +185,7 @@ func (d *Db) Read(id string) *dbReadResult {
 
 	d.RWMutex.Unlock()
 
-	toString := ""
-	e := json.Unmarshal(*b, &toString)
+	e := json.Unmarshal(*b, v)
 
 	if e != nil {
 		panic(e)
@@ -195,7 +194,7 @@ func (d *Db) Read(id string) *dbReadResult {
 	return &dbReadResult{
 		Idx:    idx,
 		Id:     id,
-		Result: toString,
+		Result: v,
 	}
 }
 

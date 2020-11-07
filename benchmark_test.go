@@ -68,35 +68,3 @@ func BenchmarkAppInsertHundredThousand(b *testing.B) {
 		}
 	}
 }
-
-func BenchmarkAppReadHundredThousand(b *testing.B) {
-	benchmarkRemoveFileSystemDb()
-
-	defer benchmarkRemoveFileSystemDb()
-
-	n := 100000
-
-	a := testCreateRose()
-
-	benchmarkAppInsert(n, a)
-
-	for i := 0; i < b.N; i++ {
-		for k := 0; k < n; k++ {
-			res, err := a.Read(fmt.Sprintf("id-%d", k))
-
-			if err != nil {
-				panic(err)
-			}
-
-			if res.Status != FoundResultStatus {
-				panic(fmt.Sprintf("Expected status: %s, given: %s", FoundResultStatus, res.Status))
-			}
-		}
-	}
-
-	err := a.Shutdown()
-
-	if err != nil {
-		panic(err)
-	}
-}

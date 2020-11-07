@@ -12,7 +12,6 @@ type AppResult struct {
 	Method string
 	Status string
 	Reason string
-	Result string
 }
 
 func New(log bool) (*Rose, RoseError) {
@@ -84,7 +83,7 @@ func (a *Rose) Write(m *Metadata) (*AppResult, RoseError) {
 	}, nil
 }
 
-func (a *Rose) Read(id string) (*AppResult, RoseError) {
+func (a *Rose) Read(id string, v interface{}) (*AppResult, RoseError) {
 	if id == "" {
 		return nil, &metadataError{
 			Code:    MetadataErrorCode,
@@ -94,7 +93,7 @@ func (a *Rose) Read(id string) (*AppResult, RoseError) {
 
 	var res *dbReadResult
 
-	res = a.db.Read(id)
+	res = a.db.Read(id, v)
 
 	if res == nil {
 		return &AppResult{
@@ -107,7 +106,6 @@ func (a *Rose) Read(id string) (*AppResult, RoseError) {
 	return &AppResult{
 		Method: ReadMethodType,
 		Status: FoundResultStatus,
-		Result: res.Result,
 	}, nil
 }
 
