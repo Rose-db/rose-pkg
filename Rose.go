@@ -84,24 +84,16 @@ func (a *Rose) Write(m *Metadata) (*AppResult, RoseError) {
 	}, nil
 }
 
-func (a *Rose) Read(m *Metadata) (*AppResult, RoseError) {
-	var vErr RoseError
-
-	vErr = m.validate()
-
-	if vErr != nil {
-		return nil, vErr
-	}
-
+func (a *Rose) Read(id string) (*AppResult, RoseError) {
 	var res *dbReadResult
 
-	res = a.db.Read(m.Id)
+	res = a.db.Read(id)
 
 	if res == nil {
 		return &AppResult{
 			Method: ReadMethodType,
 			Status: NotFoundResultStatus,
-			Reason: fmt.Sprintf("Rose: Entry with id %s not found", m.Id),
+			Reason: fmt.Sprintf("Rose: Entry with id %s not found", id),
 		}, nil
 	}
 
@@ -112,16 +104,8 @@ func (a *Rose) Read(m *Metadata) (*AppResult, RoseError) {
 	}, nil
 }
 
-func (a *Rose) Delete(m *Metadata) (*AppResult, RoseError) {
-	var vErr RoseError
-
-	vErr = m.validate()
-
-	if vErr != nil {
-		return nil, vErr
-	}
-
-	res, err := a.db.Delete(m.Id)
+func (a *Rose) Delete(id string) (*AppResult, RoseError) {
+	res, err := a.db.Delete(id)
 
 	if err != nil {
 		return nil, err
@@ -131,7 +115,7 @@ func (a *Rose) Delete(m *Metadata) (*AppResult, RoseError) {
 		return &AppResult{
 			Method: DeleteMethodType,
 			Status: NotFoundResultStatus,
-			Reason: fmt.Sprintf("Rose: Entry with id %s not found", m.Id),
+			Reason: fmt.Sprintf("Rose: Entry with id %s not found", id),
 		}, nil
 	}
 

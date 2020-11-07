@@ -1,5 +1,7 @@
 package rose
 
+import "encoding/json"
+
 func splitMetadataArray(mArr []*Metadata, size int) [][]*Metadata {
 	min := func(a, b int) int {
 		if a <= b {
@@ -32,6 +34,11 @@ func prepareData(id string, data []uint8) *[]uint8 {
 	a := []uint8(i)
 
 	return &a
+}
+
+func isJSON(s []uint8) bool {
+	var js json.RawMessage
+	return json.Unmarshal(s, &js) == nil
 }
 
 func appendByte(slice []uint8, data ...uint8) []uint8 {

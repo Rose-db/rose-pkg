@@ -1,6 +1,7 @@
 package rose
 
 import (
+	"encoding/json"
 	"sync"
 )
 
@@ -184,10 +185,17 @@ func (d *Db) Read(id string) *dbReadResult {
 
 	d.RWMutex.Unlock()
 
+	toString := ""
+	e := json.Unmarshal(*b, &toString)
+
+	if e != nil {
+		panic(e)
+	}
+
 	return &dbReadResult{
 		Idx:    idx,
 		Id:     id,
-		Result: string(*b),
+		Result: toString,
 	}
 }
 

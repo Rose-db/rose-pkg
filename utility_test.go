@@ -1,7 +1,9 @@
 package rose
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/onsi/ginkgo"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -45,4 +47,14 @@ func testGetBenchmarkName(b *testing.B) string {
 func testGetTestName(t *testing.T) string {
 	v := reflect.ValueOf(*t)
 	return v.FieldByName("name").String()
+}
+
+func testAsJson(j string) []uint8 {
+	js, err := json.Marshal(j)
+
+	if err != nil {
+		ginkgo.Fail(fmt.Sprintf("Cannot marshal json with message: %s", err.Error()))
+	}
+
+	return js
 }

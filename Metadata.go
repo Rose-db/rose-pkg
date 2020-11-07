@@ -25,6 +25,13 @@ func (m *Metadata) validate() RoseError {
 		}
 	}
 
+	if !isJSON(m.Data) {
+		return &metadataError{
+			Code:    MetadataErrorCode,
+			Message: "Data must be a JSON byte array",
+		}
+	}
+
 	l = len(m.Data)
 	if len(m.Data) > maxValSize {
 		return &metadataError{

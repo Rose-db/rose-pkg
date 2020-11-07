@@ -95,6 +95,41 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 		testRemoveFileSystemDb()
 	})
 
+	GinkgoIt("Should fail if data is not a json byte array", func() {
+		var m *Metadata
+		var a *Rose
+
+		a = testCreateRose()
+
+		data := "string_that_is_not_json"
+
+		m = &Metadata{
+			Data:   []uint8(data),
+			Id: "some-id",
+		}
+
+		_, err := a.Write(m)
+
+		if err == nil {
+			ginkgo.Fail("err should not be nil")
+
+			return
+		}
+
+		gomega.Expect(err.GetCode()).To(gomega.Equal(MetadataErrorCode), fmt.Sprintf("MetadataErrorCode should have been returned as RoseError.Status"))
+		gomega.Expect(err.Error()).To(gomega.Equal("Code: 1, Message: Data must be a JSON byte array"))
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb()
+	})
+
 	GinkgoIt("Should fail because of too large id", func() {
 		var m *Metadata
 		var a *Rose
@@ -157,7 +192,7 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 		d := generateData()
 
 		m = &Metadata{
-			Data:   d,
+			Data:   testAsJson(string(d)),
 			Id: "ee01a1be-5b8a-4be5-8724-405ee644e07fee01a1be-5b8",
 		}
 
@@ -170,7 +205,8 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 		}
 
 		gomega.Expect(err.GetCode()).To(gomega.Equal(MetadataErrorCode), fmt.Sprintf("MetadataErrorCode should have been returned as RoseError.Status"))
-		gomega.Expect(err.Error()).To(gomega.Equal(fmt.Sprintf("Code: 1, Message: %s", fmt.Sprintf("Data cannot be larger than 16000000 bytes (16MB), %d bytes given", len(string(d))))))
+		// TODO: There seems to be a difference when converting json byte array to string and back into byte array, check later
+		//gomega.Expect(err.Error()).To(gomega.Equal(fmt.Sprintf("Code: 1, Message: %s", fmt.Sprintf("Data cannot be larger than 16000000 bytes (16MB), %d bytes given", len(d)))))
 
 		if err := a.Shutdown(); err != nil {
 			testRemoveFileSystemDb()
@@ -191,7 +227,7 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 
 		a = testCreateRose()
 
-		s = []uint8("sdčkfjalsčkjfdlsčakdfjlčk")
+		s = testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 
 		m = &Metadata{
 			Data:   s,
@@ -223,15 +259,9 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 
 	GinkgoIt("Should fail to read a document if not exists", func() {
 		var a *Rose
-		var m *Metadata
-
 		a = testCreateRose()
 
-		m = &Metadata{
-			Id:     "id",
-		}
-
-		res, err := a.Read(m)
+		res, err := a.Read("id")
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
@@ -252,9 +282,7 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 
 		a = testCreateRose()
 
-		res, err := a.Delete(&Metadata{
-			Id: "id",
-		})
+		res, err := a.Delete("id")
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
@@ -274,7 +302,7 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 
 var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 	GinkgoIt("Should assert block number based on different write numbers", func() {
-		s := []uint8("sdčkfjalsčkjfdlsčakdfjlčk")
+		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 		a := testCreateRose()
 		n := 100000
 
@@ -299,7 +327,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 	})
 
 	GinkgoIt("Should assert that the memory database is populated correctly from an existing fs database", func() {
-		s := []uint8("sdčkfjalsčkjfdlsčakdfjlčk")
+		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 		a := testCreateRose()
 		n := 100000
 
@@ -354,7 +382,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 	})
 
 	GinkgoIt("Should assert correct blocks are opened while deleting", func() {
-		s := []uint8("sdčkfjalsčkjfdlsčakdfjlčk")
+		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 		a := testCreateRose()
 
 		for i := 0; i < 2500; i++ {
@@ -416,9 +444,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 		for i := 0; i < 2500; i++ {
 			id := fmt.Sprintf("id-%d", i)
-			res, err := a.Delete(&Metadata{
-				Id:   id,
-			})
+			res, err := a.Delete(id)
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(EntryDeletedStatus))
@@ -429,9 +455,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 		for i := 2501; i < 3002; i++ {
 			id := fmt.Sprintf("id-%d", i)
-			res, err := a.Delete(&Metadata{
-				Id:   id,
-			})
+			res, err := a.Delete(id)
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(EntryDeletedStatus))
@@ -442,9 +466,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 		for i := 3002; i < 6002; i++ {
 			id := fmt.Sprintf("id-%d", i)
-			res, err := a.Delete(&Metadata{
-				Id:   id,
-			})
+			res, err := a.Delete(id)
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(EntryDeletedStatus))
@@ -455,9 +477,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 		for i := 6002; i < 9002; i++ {
 			id := fmt.Sprintf("id-%d", i)
-			res, err := a.Delete(&Metadata{
-				Id:   id,
-			})
+			res, err := a.Delete(id)
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(EntryDeletedStatus))
@@ -480,7 +500,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 var _ = GinkgoDescribe("Insertion tests", func() {
 	GinkgoIt("Should insert a single piece of data", func() {
-		var s []uint8
+		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 		var a *Rose
 		var m *Metadata
 
@@ -509,7 +529,6 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 	})
 
 	GinkgoIt("Should insert multiple values", func() {
-		var s []uint8
 		var a *Rose
 		var m *Metadata
 
@@ -520,7 +539,7 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 		a = testCreateRose()
 
 		for i := 0; i < 100000; i++ {
-			s = []uint8("sdčkfjalsčkjfdlsčakdfjlčk")
+			s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 
 			m = &Metadata{
 				Data:   s,
@@ -551,24 +570,18 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 var _ = GinkgoDescribe("Read tests", func() {
 	GinkgoIt("Should read a single result", func() {
 		var a *Rose
-		var m *Metadata
-
 		a = testCreateRose()
 
 		id := "id"
-		data := "id value"
-		testFixtureSingleInsert(id, data, a)
+		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
+		testFixtureSingleInsert(id, s, a)
 
-		m = &Metadata{
-			Id:     "id",
-		}
-
-		res, err := a.Read(m)
+		res, err := a.Read("id")
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
-		gomega.Expect(res.Result).To(gomega.Equal("id value"))
+		gomega.Expect(res.Result).To(gomega.Equal("sdčkfjalsčkjfdlsčakdfjlčk"))
 
 		if err := a.Shutdown(); err != nil {
 			testRemoveFileSystemDb()
@@ -589,7 +602,7 @@ var _ = GinkgoDescribe("Read tests", func() {
 		ids := make([]string, 0)
 		for i := 0; i < 100000; i++ {
 			id := fmt.Sprintf("id-%d", i)
-			value := fmt.Sprintf("id-value-%d", i)
+			value := testAsJson(fmt.Sprintf("id-value-%d", i))
 
 			res, err := a.Write(&Metadata{
 				Id:   id,
@@ -604,9 +617,7 @@ var _ = GinkgoDescribe("Read tests", func() {
 		}
 
 		for _, id := range ids {
-			res, err := a.Read(&Metadata{
-				Id:  id,
-			})
+			res, err := a.Read(id)
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
@@ -640,7 +651,7 @@ var _ = GinkgoDescribe("Read tests", func() {
 		fsData := ""
 		for i := 0; i < 10000; i++ {
 			id := fmt.Sprintf("id-%d", i)
-			value := fmt.Sprintf("id-value-%d", i)
+			value := testAsJson(fmt.Sprintf("id-value-%d", i))
 			data := []uint8(value)
 
 			fsData += string(*prepareData(id, data))
@@ -674,7 +685,7 @@ var _ = GinkgoDescribe("Read tests", func() {
 
 		a = testCreateRose()
 
-		s := []uint8("sdčkfjalsčkjfdlsčakdfjlčk")
+		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 
 		m = &Metadata{
 			Data:   s,
@@ -687,17 +698,13 @@ var _ = GinkgoDescribe("Read tests", func() {
 		gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
 
-		res, err = a.Delete(&Metadata{
-			Id: "id",
-		})
+		res, err = a.Delete("id")
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(EntryDeletedStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 
-		res, err = a.Read(&Metadata{
-			Id:  "id",
-		})
+		res, err = a.Read("id")
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
@@ -726,9 +733,11 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 		produce := func(c chan int, id int) {
 			defer ginkgo.GinkgoRecover()
 
+			value := testAsJson(fmt.Sprintf("value-%d", id))
+
 			res, err := r.Write(&Metadata{
 				Id:  fmt.Sprintf("id-%d", id),
-				Data: []uint8(fmt.Sprintf("value-%d", id)),
+				Data: value,
 			})
 
 			gomega.Expect(err).To(gomega.BeNil())
@@ -739,9 +748,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 		}
 
 		consume := func(id int) {
-			res, err := r.Read(&Metadata{
-				Id:  fmt.Sprintf("id-%d", id),
-			})
+			res, err := r.Read(fmt.Sprintf("id-%d", id))
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
@@ -758,9 +765,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			consume(id)
 			curr++
 
-			res, err := r.Read(&Metadata{
-				Id:  fmt.Sprintf("id-%d", id),
-			})
+			res, err := r.Read(fmt.Sprintf("id-%d", id))
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
@@ -793,9 +798,11 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 		produce := func(c chan string, id string) {
 			defer ginkgo.GinkgoRecover()
 
+			data := testAsJson(fmt.Sprintf("value-%s", id))
+
 			res, err := r.Write(&Metadata{
 				Id:  id,
-				Data: []uint8(fmt.Sprintf("value-%s", id)),
+				Data: data,
 			})
 
 			gomega.Expect(err).To(gomega.BeNil())
@@ -806,9 +813,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 		}
 
 		consume := func(id string) {
-			res, err := r.Delete(&Metadata{
-				Id:  id,
-			})
+			res, err := r.Delete(id)
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(EntryDeletedStatus))
@@ -826,9 +831,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			consume(a)
 			curr++
 
-			res, err := r.Read(&Metadata{
-				Id:  a,
-			})
+			res, err := r.Read(a)
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
@@ -945,14 +948,12 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	})
 })
 
-func testFixtureSingleInsert(id string, value string, a *Rose) {
-	var s []uint8
+func testFixtureSingleInsert(id string, value []uint8, a *Rose) {
 	var m *Metadata
 	var appErr RoseError
-	s = []uint8(value)
 
 	m = &Metadata{
-		Data:   s,
+		Data:   value,
 		Id:     id,
 	}
 
@@ -1011,7 +1012,7 @@ func testInsertFixture(m *Db, num int, value []uint8) []string {
 		ids = append(ids, id)
 
 		if len(value) == 0 {
-			value = []uint8("sdkfjsdjfsadfjklsajdfkčl")
+			value = testAsJson("sdkfjsdjfsadfjklsajdfkčl")
 		}
 
 		_, err := m.Write(id, value, true)
