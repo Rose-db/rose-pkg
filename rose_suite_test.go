@@ -78,7 +78,7 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 			return
 		}
 
-		gomega.Expect(err.GetCode()).To(gomega.Equal(MetadataErrorCode), fmt.Sprintf("MetadataErrorCode should have been returned as Error.Status"))
+		gomega.Expect(err.GetCode()).To(gomega.Equal(MetadataErrorCode), "MetadataErrorCode should have been returned as Error.Status")
 		gomega.Expect(err.Error()).To(gomega.Equal("Code: 1, Message: Id cannot be an empty string"))
 
 		if err := a.Shutdown(); err != nil {
@@ -130,14 +130,11 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail if data is not a json byte array", func() {
-		var m *Metadata
-		var a *Rose
-
-		a = testCreateRose()
+		a := testCreateRose()
 
 		data := "string_that_is_not_json"
 
-		m = &Metadata{
+		m := &Metadata{
 			Data:   []uint8(data),
 			Id: "some-id",
 		}
@@ -165,12 +162,9 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail because of too large id", func() {
-		var m *Metadata
-		var a *Rose
+		a := testCreateRose()
 
-		a = testCreateRose()
-
-		m = &Metadata{
+		m := &Metadata{
 			Data:   []uint8{},
 			Id: "ee01a1be-5b8a-4be5-8724-405ee644e07fee01a1be-5b8a-4be5-8724-405ee644e07fee01a1be-5b8a-4be5-8724-405ee644e07fee01a1be-5b8a-4be5-8724-405ee644e07f",
 		}
@@ -199,10 +193,7 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail because data too large > 16MB", func() {
-		var m *Metadata
-		var a *Rose
-
-		a = testCreateRose()
+		a := testCreateRose()
 
 		str, fsErr := ioutil.ReadFile("large_value.txt")
 
@@ -225,7 +216,7 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 
 		d := generateData()
 
-		m = &Metadata{
+		m := &Metadata{
 			Data:   testAsJson(string(d)),
 			Id: "ee01a1be-5b8a-4be5-8724-405ee644e07fee01a1be-5b8",
 		}
@@ -291,8 +282,7 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail to read a document if not exists", func() {
-		var a *Rose
-		a = testCreateRose()
+		a := testCreateRose()
 
 		var s string
 		res, err := a.Read("id", &s)
@@ -312,9 +302,7 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail to delete a document if not exist", func() {
-		var a *Rose
-
-		a = testCreateRose()
+		a := testCreateRose()
 
 		res, err := a.Delete("id")
 
@@ -475,6 +463,17 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 		gomega.Expect(roseBlockFile(3)).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
 
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
+			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
+
+			return
+		}
+
+		a = nil
+
+		a = testCreateRose()
 
 		for i := 0; i < 2500; i++ {
 			id := fmt.Sprintf("id-%d", i)
@@ -777,8 +776,7 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 
 var _ = GinkgoDescribe("Read tests", func() {
 	GinkgoIt("Should read a single result", func() {
-		var a *Rose
-		a = testCreateRose()
+		a := testCreateRose()
 
 		id := "id"
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
@@ -804,9 +802,7 @@ var _ = GinkgoDescribe("Read tests", func() {
 	})
 
 	GinkgoIt("Should perform multiple reads", func() {
-		var a *Rose
-
-		a = testCreateRose()
+		a := testCreateRose()
 
 		ids := make([]string, 0)
 		for i := 0; i < 100000; i++ {
@@ -853,9 +849,7 @@ var _ = GinkgoDescribe("Read tests", func() {
 	})
 
 	GinkgoIt("Should assert fs db integrity after multiple inserts", func() {
-		var a *Rose
-
-		a = testCreateRose()
+		a := testCreateRose()
 
 		ids := make([]string, 0)
 		fsData := ""
@@ -1050,7 +1044,6 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
-
 
 			if curr == num {
 				break
