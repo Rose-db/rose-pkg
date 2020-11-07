@@ -62,7 +62,7 @@ var _ = GinkgoDescribe("Misc tests", func() {
 })
 
 var _ = GinkgoDescribe("Successfully failing tests", func() {
-	GinkgoIt("Should fail because of an empty value id", func() {
+	GinkgoIt("Should fail write because of an empty string id", func() {
 		var m *Metadata
 		var a *Rose
 
@@ -83,6 +83,44 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 
 		gomega.Expect(err.GetCode()).To(gomega.Equal(MetadataErrorCode), fmt.Sprintf("MetadataErrorCode should have been returned as RoseError.Status"))
 		gomega.Expect(err.Error()).To(gomega.Equal("Code: 1, Message: Id cannot be an empty string"))
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb()
+	})
+
+	GinkgoIt("Should fail read/delete because of an empty string id", func() {
+		var a *Rose
+
+		a = testCreateRose()
+
+		_, readErr := a.Read("")
+
+		if readErr == nil {
+			ginkgo.Fail("err should not be nil")
+
+			return
+		}
+
+		gomega.Expect(readErr.GetCode()).To(gomega.Equal(MetadataErrorCode), fmt.Sprintf("MetadataErrorCode should have been returned as RoseError.Status"))
+		gomega.Expect(readErr.Error()).To(gomega.Equal("Code: 1, Message: Id cannot be an empty string"))
+
+		_, delErr := a.Delete("")
+
+		if delErr == nil {
+			ginkgo.Fail("err should not be nil")
+
+			return
+		}
+
+		gomega.Expect(delErr.GetCode()).To(gomega.Equal(MetadataErrorCode), fmt.Sprintf("MetadataErrorCode should have been returned as RoseError.Status"))
+		gomega.Expect(delErr.Error()).To(gomega.Equal("Code: 1, Message: Id cannot be an empty string"))
 
 		if err := a.Shutdown(); err != nil {
 			testRemoveFileSystemDb()

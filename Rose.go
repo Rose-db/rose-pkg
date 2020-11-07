@@ -85,6 +85,13 @@ func (a *Rose) Write(m *Metadata) (*AppResult, RoseError) {
 }
 
 func (a *Rose) Read(id string) (*AppResult, RoseError) {
+	if id == "" {
+		return nil, &metadataError{
+			Code:    MetadataErrorCode,
+			Message: "Id cannot be an empty string",
+		}
+	}
+
 	var res *dbReadResult
 
 	res = a.db.Read(id)
@@ -105,6 +112,13 @@ func (a *Rose) Read(id string) (*AppResult, RoseError) {
 }
 
 func (a *Rose) Delete(id string) (*AppResult, RoseError) {
+	if id == "" {
+		return nil, &metadataError{
+			Code:    MetadataErrorCode,
+			Message: "Id cannot be an empty string",
+		}
+	}
+
 	res, err := a.db.Delete(id)
 
 	if err != nil {
