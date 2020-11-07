@@ -1057,6 +1057,8 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			}
 		}
 
+		gomega.Expect(curr).To(gomega.Equal(num))
+
 		if err := r.Shutdown(); err != nil {
 			testRemoveFileSystemDb()
 
