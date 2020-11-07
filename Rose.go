@@ -33,7 +33,7 @@ func New(log bool) (*Rose, Error) {
 	m := newMemoryDb(newFsDriver())
 
 	if log {
-		fmt.Println("Populating existing filesystem database in memory...")
+		fmt.Println("Loading existing filesystem database in memory...")
 	}
 
 	err = populateDb(m)

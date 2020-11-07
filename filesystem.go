@@ -3,8 +3,10 @@ package rose
 import (
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os"
 	"runtime"
+	"time"
 )
 
 func populateDb(m *Db) Error {
@@ -17,12 +19,20 @@ func populateDb(m *Db) Error {
 		}
 	}
 
+	start := time.Now()
+	written := 0
 	for _, f := range files {
 		db := fmt.Sprintf("%s/%s", roseDbDir(), f.Name())
 
 		file, err := createFile(db, os.O_RDONLY)
 
 		if err != nil {
+			fsErr := closeFile(file)
+
+			if fsErr != nil {
+				return fsErr
+			}
+
 			return err
 		}
 
@@ -32,6 +42,12 @@ func populateDb(m *Db) Error {
 			val, ok, err := reader.Read()
 
 			if err != nil {
+				fsErr := closeFile(file)
+
+				if fsErr != nil {
+					return fsErr
+				}
+
 				return &dbIntegrityError{
 					Code:    DbIntegrityViolationCode,
 					Message: fmt.Sprintf("Database integrity violation. Cannot populate database with message: %s", err.Error()),
@@ -43,6 +59,12 @@ func populateDb(m *Db) Error {
 			}
 
 			if val == nil {
+				fsErr := closeFile(file)
+
+				if fsErr != nil {
+					return fsErr
+				}
+
 				return &dbIntegrityError{
 					Code:    DbIntegrityViolationCode,
 					Message: "Database integrity violation. Cannot populate database. Invalid row encountered.",
@@ -52,7 +74,19 @@ func populateDb(m *Db) Error {
 			_, err = m.Write(string(val.id), val.val, false)
 
 			if err != nil {
+				fsErr := closeFile(file)
+
+				if fsErr != nil {
+					return fsErr
+				}
+
 				return err
+			}
+
+			written++
+
+			if written % 1000000 == 0 {
+				fmt.Printf("%d (%d million) entries loaded\n", written, written / 1000000)
 			}
 		}
 
@@ -62,6 +96,11 @@ func populateDb(m *Db) Error {
 			return fsErr
 		}
 	}
+	end := time.Now()
+
+	t := end.Sub(start).Seconds()
+
+	fmt.Printf("Database loaded in %.2fs\n", math.Round(t * 100) /100 )
 
 	return nil
 }
