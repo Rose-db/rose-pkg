@@ -36,7 +36,7 @@ func New(log bool) (*Rose, Error) {
 		fmt.Println("Loading existing filesystem database in memory...")
 	}
 
-	err = populateDb(m, log)
+	err = loadDbInMemory(m, log)
 
 	if err != nil {
 		return nil, err

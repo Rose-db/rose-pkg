@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func populateDb(m *Db, log bool) Error {
+func loadDbInMemory(m *Db, log bool) Error {
 	files, fsErr := ioutil.ReadDir(roseDbDir())
 
 	if fsErr != nil {
@@ -85,7 +85,7 @@ func populateDb(m *Db, log bool) Error {
 
 			if log {
 				written++
-				
+
 				if written % 1000000 == 0 {
 					fmt.Printf("%d (%d million) entries loaded\n", written, written / 1000000)
 				}
