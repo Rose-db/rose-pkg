@@ -1,6 +1,9 @@
 package rose
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"os"
+)
 
 // Will be used when insert/read/update in batches
 func splitMetadataArray(mArr []*Metadata, size int) [][]*Metadata {
@@ -47,4 +50,35 @@ func appendByte(slice []uint8, data ...uint8) []uint8 {
 	slice = slice[0:n]
 	copy(slice[m:n], data)
 	return slice
+}
+
+/**
+	Creates batches based on {size}. If len(files) < size,
+	it creates a single batch with len(files) in that single batch
+ */
+func createFileInfoBatch(files []os.FileInfo, size int) map[int][]os.FileInfo {
+	m := make(map[int][]os.FileInfo)
+
+	currBatch := 0
+	idx := 0
+	batch := []os.FileInfo{}
+	for i, f := range files {
+		if i != 0 && i % size == 0 {
+			idx = 0
+			m[currBatch] = batch
+			currBatch++
+			batch = []os.FileInfo{}
+
+			batch = append(batch, f)
+		} else {
+			batch = append(batch, f)
+			idx++
+		}
+	}
+
+	if len(batch) > 0 {
+		m[currBatch] = batch
+	}
+
+	return m
 }

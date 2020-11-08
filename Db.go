@@ -204,6 +204,41 @@ func (d *Db) Shutdown() Error {
 	return d.FsDriver.Shutdown()
 }
 
+func (d *Db) writeOnLoad(id string, v []uint8, mapIdx uint16) Error {
+	d.RWMutex.Lock()
+
+	var idx uint16
+	var m *[3000]*[]uint8
+
+	// check if the entry already exists
+	if _, ok := d.IdLookupMap[id]; ok {
+		d.RWMutex.Unlock()
+
+		return nil
+	}
+
+	// r/w operation, create uint64 index
+	idx = d.idFactory.Next()
+
+	m, ok := d.InternalDb[mapIdx]
+
+	if !ok {
+		// current block does not exist, created a new one
+		m = &[3000]*[]uint8{}
+		d.InternalDb[mapIdx] = m
+	}
+
+	// r operation, add COMPUTED index to the index map
+	d.IdLookupMap[id] = [2]uint16{idx, mapIdx}
+
+	// saving the pointer address of the data, not the actual data
+	m[idx] = &v
+
+	d.RWMutex.Unlock()
+
+	return nil
+}
+
 /**
 	PRIVATE METHOD. DO NOT USE IN CLIENT CODE
 

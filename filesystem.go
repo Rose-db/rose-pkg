@@ -3,10 +3,11 @@ package rose
 import (
 	"fmt"
 	"io/ioutil"
-	"math"
 	"os"
 	"runtime"
-	"time"
+	"strconv"
+	"strings"
+	"sync"
 )
 
 func loadDbInMemory(m *Db, log bool) Error {
@@ -19,93 +20,135 @@ func loadDbInMemory(m *Db, log bool) Error {
 		}
 	}
 
-	start := time.Now()
-	written := 0
-	for _, f := range files {
-		db := fmt.Sprintf("%s/%s", roseDbDir(), f.Name())
+	// Creates as many batches as there are files, 50 files per batch
+	batch := createFileInfoBatch(files, 10)
 
-		file, err := createFile(db, os.O_RDONLY)
+	/**
+		Every batch has a sender goroutine that sends a single
+		file to a receiver goroutine. There can be only 1 sender but
+		depending on batch size, there can be {batch_size} receivers.
+	 */
+	for _, b := range batch {
+		dataCh := make(chan os.FileInfo)
+		wg := &sync.WaitGroup{}
+
+		// sender
+		go func() {
+			for _, f := range b {
+				dataCh<- f
+			}
+
+			close(dataCh)
+		}()
+
+		// receiver
+		for i := 0; i < len(b); i++ {
+			wg.Add(1)
+			go loadSingleFile(m, dataCh, wg)
+		}
+
+		wg.Wait()
+	}
+
+	m.CurrMapIdx = uint16(len(files)) - 1
+
+	return nil
+}
+
+func loadSingleFile(m *Db, dataCh<- chan os.FileInfo, wg *sync.WaitGroup) {
+	f := <-dataCh
+	db := fmt.Sprintf("%s/%s", roseDbDir(), f.Name())
+
+	file, err := createFile(db, os.O_RDONLY)
+
+	if err != nil {
+		fsErr := closeFile(file)
+
+		if fsErr != nil {
+			wg.Done()
+
+			panic(fsErr)
+		}
+
+		wg.Done()
+		panic(err)
+	}
+
+	reader := NewLineReader(file)
+
+	for {
+		val, ok, err := reader.Read()
 
 		if err != nil {
 			fsErr := closeFile(file)
 
 			if fsErr != nil {
-				return fsErr
+				wg.Done()
+
+				panic(fsErr)
 			}
 
-			return err
+			wg.Done()
+
+			panic(&dbIntegrityError{
+				Code:    DbIntegrityViolationCode,
+				Message: fmt.Sprintf("Database integrity violation. Cannot populate database with message: %s", err.Error()),
+			})
 		}
 
-		reader := NewLineReader(file)
-
-		for {
-			val, ok, err := reader.Read()
-
-			if err != nil {
-				fsErr := closeFile(file)
-
-				if fsErr != nil {
-					return fsErr
-				}
-
-				return &dbIntegrityError{
-					Code:    DbIntegrityViolationCode,
-					Message: fmt.Sprintf("Database integrity violation. Cannot populate database with message: %s", err.Error()),
-				}
-			}
-
-			if !ok {
-				break
-			}
-
-			if val == nil {
-				fsErr := closeFile(file)
-
-				if fsErr != nil {
-					return fsErr
-				}
-
-				return &dbIntegrityError{
-					Code:    DbIntegrityViolationCode,
-					Message: "Database integrity violation. Cannot populate database. Invalid row encountered.",
-				}
-			}
-
-			_, err = m.Write(string(val.id), val.val, false)
-
-			if err != nil {
-				fsErr := closeFile(file)
-
-				if fsErr != nil {
-					return fsErr
-				}
-
-				return err
-			}
-
-			if log {
-				written++
-
-				if written % 1000000 == 0 {
-					fmt.Printf("%d (%d million) entries loaded\n", written, written / 1000000)
-				}
-			}
+		if !ok {
+			break
 		}
 
-		fsErr := closeFile(file)
+		if val == nil {
+			fsErr := closeFile(file)
 
-		if fsErr != nil {
-			return fsErr
+			if fsErr != nil {
+				wg.Done()
+
+				panic(fsErr)
+			}
+
+			wg.Done()
+
+			panic(&dbIntegrityError{
+				Code:    DbIntegrityViolationCode,
+				Message: "Database integrity violation. Cannot populate database. Invalid row encountered.",
+			})
+		}
+
+		fileName := f.Name()
+		dotSplit := strings.Split(fileName, ".")
+		underscoreSplit := strings.Split(dotSplit[0], "_")
+		i, _ := strconv.Atoi(underscoreSplit[1])
+		mapIdx := uint16(i)
+
+		err = m.writeOnLoad(string(val.id), val.val, mapIdx)
+
+		if err != nil {
+			fsErr := closeFile(file)
+
+			if fsErr != nil {
+				wg.Done()
+
+				panic(fsErr)
+			}
+
+			wg.Done()
+
+			panic(err)
 		}
 	}
-	end := time.Now()
 
-	t := end.Sub(start).Seconds()
-	if log {
-		fmt.Printf("Database loaded in %.2fs\n", math.Round(t * 100) /100 )
+	fsErr := closeFile(file)
+
+	if fsErr != nil {
+		wg.Done()
+
+		panic(fsErr)
 	}
 
-	return nil
+	wg.Done()
 }
 
 func createDbIfNotExists(logging bool, comm chan string, errChan chan Error) {
