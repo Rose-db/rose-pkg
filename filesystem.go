@@ -20,7 +20,6 @@ func loadDbInMemory(m *Db, log bool) Error {
 		}
 	}
 
-
 	docCountChan := make(chan bool)
 
 	if log {
@@ -63,7 +62,7 @@ func loadDbInMemory(m *Db, log bool) Error {
 		// receiver
 		for i := 0; i < len(b); i++ {
 			wg.Add(1)
-			go loadSingleFile(m, dataCh, wg, docCountChan)
+			go loadSingleFile(m, dataCh, wg, docCountChan, log)
 		}
 
 		wg.Wait()
@@ -76,7 +75,7 @@ func loadDbInMemory(m *Db, log bool) Error {
 	return nil
 }
 
-func loadSingleFile(m *Db, dataCh<- chan os.FileInfo, wg *sync.WaitGroup, docCountChan chan bool) {
+func loadSingleFile(m *Db, dataCh<- chan os.FileInfo, wg *sync.WaitGroup, docCountChan chan bool, log bool) {
 	f := <-dataCh
 	db := fmt.Sprintf("%s/%s", roseDbDir(), f.Name())
 
@@ -160,7 +159,9 @@ func loadSingleFile(m *Db, dataCh<- chan os.FileInfo, wg *sync.WaitGroup, docCou
 			panic(err)
 		}
 
-		docCountChan<- true
+		if log {
+			docCountChan<- true
+		}
 	}
 
 	fsErr := closeFile(file)
