@@ -59,6 +59,31 @@ var _ = GinkgoDescribe("Misc tests", func() {
 			}
 		}
 	})
+
+	GinkgoIt("Should return the real size of the database", func() {
+		a := testCreateRose()
+
+		files, err := ioutil.ReadDir(roseDbDir())
+
+		if err != nil {
+			ginkgo.Fail(fmt.Sprintf("Could not calculate size of the database: %s", err.Error()))
+		}
+
+		var size uint64
+		var dbSize uint64
+
+		for _, f := range files {
+			size += uint64(f.Size())
+		}
+
+		dbSize, err = a.Size()
+
+		if err != nil {
+			ginkgo.Fail(fmt.Sprintf("Could not get size of the database: %s", err.Error()))
+		}
+
+		gomega.Expect(size).To(gomega.Equal(dbSize))
+	})
 })
 
 var _ = GinkgoDescribe("Successfully failing tests", func() {
@@ -1186,9 +1211,7 @@ func testCreateRose() *Rose {
 }
 
 func testRemoveFileSystemDb() {
-	var dir string
-
-	dir = roseDbDir()
+	dir := roseDbDir()
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		panic(err)
 

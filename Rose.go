@@ -2,6 +2,7 @@ package rose
 
 import (
 	"fmt"
+	"io/ioutil"
 )
 
 type Rose struct {
@@ -131,6 +132,25 @@ func (a *Rose) Delete(id string) (*AppResult, Error) {
 		Method: DeleteMethodType,
 		Status: EntryDeletedStatus,
 	}, nil
+}
+
+func (a *Rose) Size() (uint64, Error) {
+	files, err := ioutil.ReadDir(roseDbDir())
+
+	if err != nil {
+		return 0, &dbIntegrityError{
+			Code:    DbIntegrityViolationCode,
+			Message: fmt.Sprintf("Could not determine size: %s", err.Error()),
+		}
+	}
+
+	var size uint64
+
+	for _, f := range files {
+		size += uint64(f.Size())
+	}
+
+	return size, nil
 }
 
 func (a *Rose) Shutdown() Error {
