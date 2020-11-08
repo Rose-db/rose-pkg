@@ -34,7 +34,7 @@ func New(log bool) (*Rose, Error) {
 	m := newMemoryDb(newFsDriver())
 
 	if log {
-		fmt.Println("Loading existing filesystem database in memory...")
+		fmt.Println("Loading existing filesystem database in memory. Depending on the size of the database, this may take some time...")
 	}
 
 	err = loadDbInMemory(m, log)
@@ -44,7 +44,7 @@ func New(log bool) (*Rose, Error) {
 	}
 
 	if log {
-		fmt.Println("Filesystem database is populated successfully")
+		fmt.Println("Filesystem database is loaded successfully")
 	}
 
 	r := &Rose{

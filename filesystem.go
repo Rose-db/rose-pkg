@@ -20,8 +20,27 @@ func loadDbInMemory(m *Db, log bool) Error {
 		}
 	}
 
+
+	docCountChan := make(chan bool)
+
+	if log {
+		go func(docCountChan chan bool) {
+			var docCount uint64
+			for c := range docCountChan {
+				c = c
+				docCount++
+
+				if docCount % 1000000 == 0 {
+					fmt.Printf("Loaded %d million entries\n", docCount / 1000000)
+				}
+			}
+		}(docCountChan)
+	}
+
+
+
 	// Creates as many batches as there are files, 50 files per batch
-	batch := createFileInfoBatch(files, 10)
+	batch := createFileInfoBatch(files, 200)
 
 	/**
 		Every batch has a sender goroutine that sends a single
@@ -44,18 +63,20 @@ func loadDbInMemory(m *Db, log bool) Error {
 		// receiver
 		for i := 0; i < len(b); i++ {
 			wg.Add(1)
-			go loadSingleFile(m, dataCh, wg)
+			go loadSingleFile(m, dataCh, wg, docCountChan)
 		}
 
 		wg.Wait()
 	}
+
+	close(docCountChan)
 
 	m.CurrMapIdx = uint16(len(files)) - 1
 
 	return nil
 }
 
-func loadSingleFile(m *Db, dataCh<- chan os.FileInfo, wg *sync.WaitGroup) {
+func loadSingleFile(m *Db, dataCh<- chan os.FileInfo, wg *sync.WaitGroup, docCountChan chan bool) {
 	f := <-dataCh
 	db := fmt.Sprintf("%s/%s", roseDbDir(), f.Name())
 
@@ -138,6 +159,8 @@ func loadSingleFile(m *Db, dataCh<- chan os.FileInfo, wg *sync.WaitGroup) {
 
 			panic(err)
 		}
+
+		docCountChan<- true
 	}
 
 	fsErr := closeFile(file)
