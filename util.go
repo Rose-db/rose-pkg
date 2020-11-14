@@ -47,9 +47,23 @@ func appendByte(slice []uint8, data ...uint8) []uint8 {
 		copy(newSlice, slice)
 		slice = newSlice
 	}
+
 	slice = slice[0:n]
 	copy(slice[m:n], data)
 	return slice
+}
+
+func appendString(slice []string, data string) []string {
+	m := len(slice)
+	if m > cap(slice) {
+		// if necessary, reallocate
+		// allocate double what's needed, for future growth.
+		newSlice := make([]string, m + 1)
+		copy(newSlice, slice)
+		slice = newSlice
+	}
+
+	return []string{}
 }
 
 /**

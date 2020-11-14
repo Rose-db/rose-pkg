@@ -21,6 +21,8 @@ func loadDbInMemory(m *Db, log bool) Error {
 	}
 
 	docCountChan := make(chan bool)
+	errChan := make(chan Error)
+	errors := make([]string, 1)
 
 	if log {
 		go func(docCountChan chan bool) {
@@ -36,7 +38,13 @@ func loadDbInMemory(m *Db, log bool) Error {
 		}(docCountChan)
 	}
 
-
+	go func(errChan chan Error) {
+		for e := range errChan {
+			if e != nil {
+				errors = append(errors, e.Error())
+			}
+		}
+	}(errChan)
 
 	// Creates as many batches as there are files, 50 files per batch
 	batch := createFileInfoBatch(files, 200)
@@ -62,21 +70,38 @@ func loadDbInMemory(m *Db, log bool) Error {
 		// receiver
 		for i := 0; i < len(b); i++ {
 			wg.Add(1)
-			go loadSingleFile(m, dataCh, wg, docCountChan, log)
+			go loadSingleFile(m, dataCh, wg, docCountChan, errChan, log)
 		}
 
 		wg.Wait()
 	}
 
 	close(docCountChan)
+	close(errChan)
+
+	if len(errors[1:]) > 0 {
+		fmt.Printf("Errors occurred while trying to load the database. For brevity, only the first 5 errors are shown here. Go to %s for more information\n", roseLogDir())
+
+		e := errors[1:6]
+
+		for _, err := range e {
+			fmt.Println(err)
+		}
+
+		return &dbIntegrityError{
+			Code:    DbIntegrityViolationCode,
+			Message: "Unable to load database into filesystem. Exiting!",
+		}
+	}
 
 	m.CurrMapIdx = uint16(len(files)) - 1
 
 	return nil
 }
 
-func loadSingleFile(m *Db, dataCh<- chan os.FileInfo, wg *sync.WaitGroup, docCountChan chan bool, log bool) {
+func loadSingleFile(m *Db, dataCh<- chan os.FileInfo, wg *sync.WaitGroup, docCountChan chan bool, errChan chan Error, log bool) {
 	f := <-dataCh
+
 	db := fmt.Sprintf("%s/%s", roseDbDir(), f.Name())
 
 	file, err := createFile(db, os.O_RDONLY)
@@ -85,13 +110,14 @@ func loadSingleFile(m *Db, dataCh<- chan os.FileInfo, wg *sync.WaitGroup, docCou
 		fsErr := closeFile(file)
 
 		if fsErr != nil {
+			errChan<- fsErr
 			wg.Done()
-
-			panic(fsErr)
+			return
 		}
 
+		errChan<- err
 		wg.Done()
-		panic(err)
+		return
 	}
 
 	reader := NewLineReader(file)
@@ -103,17 +129,17 @@ func loadSingleFile(m *Db, dataCh<- chan os.FileInfo, wg *sync.WaitGroup, docCou
 			fsErr := closeFile(file)
 
 			if fsErr != nil {
+				errChan<- fsErr
 				wg.Done()
-
-				panic(fsErr)
+				return
 			}
 
-			wg.Done()
-
-			panic(&dbIntegrityError{
+			errChan<- &dbIntegrityError{
 				Code:    DbIntegrityViolationCode,
 				Message: fmt.Sprintf("Database integrity violation. Cannot populate database with message: %s", err.Error()),
-			})
+			}
+			wg.Done()
+			return
 		}
 
 		if !ok {
@@ -124,17 +150,17 @@ func loadSingleFile(m *Db, dataCh<- chan os.FileInfo, wg *sync.WaitGroup, docCou
 			fsErr := closeFile(file)
 
 			if fsErr != nil {
+				errChan<- fsErr
 				wg.Done()
-
-				panic(fsErr)
+				return
 			}
 
-			wg.Done()
-
-			panic(&dbIntegrityError{
+			errChan<- &dbIntegrityError{
 				Code:    DbIntegrityViolationCode,
 				Message: "Database integrity violation. Cannot populate database. Invalid row encountered.",
-			})
+			}
+			wg.Done()
+			return
 		}
 
 		fileName := f.Name()
@@ -149,14 +175,14 @@ func loadSingleFile(m *Db, dataCh<- chan os.FileInfo, wg *sync.WaitGroup, docCou
 			fsErr := closeFile(file)
 
 			if fsErr != nil {
+				errChan<- fsErr
 				wg.Done()
-
-				panic(fsErr)
+				return
 			}
 
+			errChan<- err
 			wg.Done()
-
-			panic(err)
+			return
 		}
 
 		if log {
@@ -167,11 +193,12 @@ func loadSingleFile(m *Db, dataCh<- chan os.FileInfo, wg *sync.WaitGroup, docCou
 	fsErr := closeFile(file)
 
 	if fsErr != nil {
+		errChan<- fsErr
 		wg.Done()
-
-		panic(fsErr)
+		return
 	}
 
+	errChan<- nil
 	wg.Done()
 }
 
@@ -321,6 +348,10 @@ func roseDir() string {
 
 func roseDbDir() string {
 	return fmt.Sprintf("%s/.rose_db/db", userHomeDir())
+}
+
+func roseLogDir() string {
+	return fmt.Sprintf("%s/.rose_db/log", userHomeDir())
 }
 
 func roseBlockFile(block uint16) string {
