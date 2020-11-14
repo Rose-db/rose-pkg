@@ -46,8 +46,14 @@ func loadDbInMemory(m *Db, log bool) Error {
 		}
 	}(errChan)
 
+	limit, err := getOpenFileHandleLimit()
+
+	if err != nil {
+		return err
+	}
+
 	// Creates as many batches as there are files, 50 files per batch
-	batch := createFileInfoBatch(files, 200)
+	batch := createFileInfoBatch(files, limit)
 
 	/**
 		Every batch has a sender goroutine that sends a single
