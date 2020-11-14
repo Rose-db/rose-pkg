@@ -86,6 +86,44 @@ var _ = GinkgoDescribe("Misc tests", func() {
 	})
 })
 
+var _ = GinkgoDescribe("Input validity tests", func() {
+	GinkgoIt("Should successfully save and read a key that is similar to the delimiter", func() {
+		a := testCreateRose()
+
+		key := "[#]{{}#]"
+		data := "some data"
+
+		m := &Metadata{
+			Data:   testAsJson(data),
+			Id: key,
+		}
+
+		res, err := a.Write(m)
+
+		gomega.Expect(err).To(gomega.BeNil())
+		gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+		gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
+
+		s := ""
+		res, err = a.Read(key, &s)
+
+		gomega.Expect(err).To(gomega.BeNil())
+		gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
+		gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
+		gomega.Expect(s).To(gomega.Equal(data))
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb()
+	})
+})
+
 var _ = GinkgoDescribe("Successfully failing tests", func() {
 	GinkgoIt("Should fail write because of an empty string id", func() {
 		a := testCreateRose()

@@ -16,7 +16,10 @@ type AppResult struct {
 }
 
 func New(log bool) (*Rose, Error) {
-	fmt.Println("")
+	if log {
+		fmt.Println("")
+	}
+
 	comm := make(chan string)
 	errChan := make(chan Error)
 	go createDbIfNotExists(log, comm, errChan)
@@ -35,19 +38,18 @@ func New(log bool) (*Rose, Error) {
 	m := newMemoryDb(newFsDriver())
 
 	if log {
-		fmt.Println("Loading existing filesystem database in memory. Depending on the size of the database, this may take some time...\n")
+		fmt.Printf("Loading existing filesystem database in memory. Depending on the size of the database, this may take some time...\n\n")
 	}
 
-	err = loadDbInMemory(m)
+	err = loadDbInMemory(m, log)
 
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println("")
-
 	if log {
-		fmt.Println("Filesystem database is loaded successfully. Rose is ready for use!\n")
+		fmt.Println("")
+		fmt.Printf("Filesystem database is loaded successfully. Rose is ready for use!\n\n")
 	}
 
 	r := &Rose{

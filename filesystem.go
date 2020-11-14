@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func loadDbInMemory(m *Db) Error {
+func loadDbInMemory(m *Db, log bool) Error {
 	files, fsErr := ioutil.ReadDir(roseDbDir())
 
 	if fsErr != nil {
@@ -42,13 +42,17 @@ func loadDbInMemory(m *Db) Error {
 	// Creates as many batches as there are files, 50 files per batch
 	batch := createFileInfoBatch(files, limit)
 
+
+	var bar *pb.ProgressBar
+	if log {
+		bar = pb.StartNew(len(files))
+		bar.SetRefreshRate(time.Millisecond)
+	}
 	/**
-		Every batch has a sender goroutine that sends a single
-		file to a receiver goroutine. There can be only 1 sender but
-		depending on batch size, there can be {batch_size} receivers.
-	 */
-	bar := pb.StartNew(len(files))
-	bar.SetRefreshRate(time.Millisecond)
+	Every batch has a sender goroutine that sends a single
+	file to a receiver goroutine. There can be only 1 sender but
+	depending on batch size, there can be {batch_size} receivers.
+	*/
 	for _, b := range batch {
 		dataCh := make(chan os.FileInfo)
 		wg := &sync.WaitGroup{}
@@ -64,7 +68,9 @@ func loadDbInMemory(m *Db) Error {
 
 		// receiver
 		for i := 0; i < len(b); i++ {
-			bar.Increment()
+			if log {
+				bar.Increment()
+			}
 			wg.Add(1)
 			go loadSingleFile(m, dataCh, wg, errChan)
 		}
@@ -91,7 +97,9 @@ func loadDbInMemory(m *Db) Error {
 
 	m.CurrMapIdx = uint16(len(files)) - 1
 
-	bar.Finish()
+	if log {
+		bar.Finish()
+	}
 
 	return nil
 }
