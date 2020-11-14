@@ -33,7 +33,7 @@ var _ = GinkgoDescribe("Misc tests", func() {
 		fac = newIdFactory()
 
 		for {
-			if iterations == 10000000 {
+			if iterations == 100000 {
 				break
 			}
 
@@ -955,7 +955,7 @@ var _ = GinkgoDescribe("Read tests", func() {
 var _ = GinkgoDescribe("Concurrency tests", func() {
 	GinkgoIt("Should concurrently insert and read", func() {
 		var r *Rose
-		num := 100000
+		num := 10000
 		c := make(chan int, num)
 
 		r = testCreateRose()
@@ -1022,7 +1022,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 	GinkgoIt("Should delete documents concurrently", func() {
 		var r *Rose
 
-		num := 100000
+		num := 10000
 		c := make(chan string, num)
 
 		r = testCreateRose()
