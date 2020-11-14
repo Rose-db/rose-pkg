@@ -2,15 +2,17 @@ package rose
 
 import (
 	"fmt"
+	"github.com/cheggaaa/pb/v3"
 	"io/ioutil"
 	"os"
 	"runtime"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
-func loadDbInMemory(m *Db, log bool) Error {
+func loadDbInMemory(m *Db) Error {
 	files, fsErr := ioutil.ReadDir(roseDbDir())
 
 	if fsErr != nil {
@@ -20,23 +22,8 @@ func loadDbInMemory(m *Db, log bool) Error {
 		}
 	}
 
-	docCountChan := make(chan bool)
 	errChan := make(chan Error)
 	errors := make([]string, 1)
-
-	if log {
-		go func(docCountChan chan bool) {
-			var docCount uint64
-			for c := range docCountChan {
-				c = c
-				docCount++
-
-				if docCount % 1000000 == 0 {
-					fmt.Printf("Loaded %d million entries\n", docCount / 1000000)
-				}
-			}
-		}(docCountChan)
-	}
 
 	go func(errChan chan Error) {
 		for e := range errChan {
@@ -60,6 +47,8 @@ func loadDbInMemory(m *Db, log bool) Error {
 		file to a receiver goroutine. There can be only 1 sender but
 		depending on batch size, there can be {batch_size} receivers.
 	 */
+	bar := pb.StartNew(len(files))
+	bar.SetRefreshRate(time.Millisecond)
 	for _, b := range batch {
 		dataCh := make(chan os.FileInfo)
 		wg := &sync.WaitGroup{}
@@ -75,14 +64,14 @@ func loadDbInMemory(m *Db, log bool) Error {
 
 		// receiver
 		for i := 0; i < len(b); i++ {
+			bar.Increment()
 			wg.Add(1)
-			go loadSingleFile(m, dataCh, wg, docCountChan, errChan, log)
+			go loadSingleFile(m, dataCh, wg, errChan)
 		}
 
 		wg.Wait()
 	}
 
-	close(docCountChan)
 	close(errChan)
 
 	if len(errors[1:]) > 0 {
@@ -102,10 +91,12 @@ func loadDbInMemory(m *Db, log bool) Error {
 
 	m.CurrMapIdx = uint16(len(files)) - 1
 
+	bar.Finish()
+
 	return nil
 }
 
-func loadSingleFile(m *Db, dataCh<- chan os.FileInfo, wg *sync.WaitGroup, docCountChan chan bool, errChan chan Error, log bool) {
+func loadSingleFile(m *Db, dataCh<- chan os.FileInfo, wg *sync.WaitGroup, errChan chan Error) {
 	f := <-dataCh
 
 	db := fmt.Sprintf("%s/%s", roseDbDir(), f.Name())
@@ -190,10 +181,6 @@ func loadSingleFile(m *Db, dataCh<- chan os.FileInfo, wg *sync.WaitGroup, docCou
 			wg.Done()
 			return
 		}
-
-		if log {
-			docCountChan<- true
-		}
 	}
 
 	fsErr := closeFile(file)
@@ -269,7 +256,7 @@ func createDbIfNotExists(logging bool, comm chan string, errChan chan Error) {
 
 	if logging {
 		if created {
-			comm<- "Filesystem database created for the first time"
+			comm<- "Filesystem database created for the first time\n"
 
 			err = closeFile(file)
 
@@ -283,7 +270,7 @@ func createDbIfNotExists(logging bool, comm chan string, errChan chan Error) {
 				return
 			}
 		} else {
-			comm<- "Filesystem database already exists. Nothing to update"
+			comm<- "Filesystem database already exists. Nothing to update\n"
 		}
 	}
 
