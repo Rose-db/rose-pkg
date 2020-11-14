@@ -91,7 +91,7 @@ var _ = GinkgoDescribe("Input validity tests", func() {
 		a := testCreateRose()
 
 		key := "[#]{{}#]"
-		data := "some data"
+		data := "[#]{{}#]"
 
 		m := &Metadata{
 			Data:   testAsJson(data),
