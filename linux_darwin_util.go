@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"os/exec"
 	"strconv"
+	"strings"
 )
 
 /**
@@ -51,6 +52,44 @@ func getOpenFileHandleLimit() (int, Error) {
 	}
 
 	return n - 20, nil
+}
+
+func getDbSize() (int, Error) {
+	cmd := exec.Command("du", roseDbDir())
+
+	var out bytes.Buffer
+	cmd.Stdout = &out
+
+	err := cmd.Run()
+
+	if err != nil {
+		return 0, &systemError{
+			Code:    SystemErrorCode,
+			Message: "Could not execute du {dir}",
+		}
+	}
+
+	b := make([]uint8, 1000)
+	_, err = out.Read(b)
+
+	if err != nil {
+		return 0, &systemError{
+			Code:    SystemErrorCode,
+			Message: "Could not read from stdout after executing du {dir}",
+		}
+	}
+
+	split := strings.Split(string(b), "\t")
+	n, err := strconv.Atoi(split[0])
+
+	if err != nil {
+		return 0, &systemError{
+			Code:    SystemErrorCode,
+			Message: "Could not convert given output string from ulimit -n to integer",
+		}
+	}
+
+	return n, nil
 }
 
 
