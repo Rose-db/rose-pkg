@@ -1062,6 +1062,8 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 		wg.Wait()
 
+		close(deleteCh)
+
 		if err := r.Shutdown(); err != nil {
 			testRemoveFileSystemDb()
 
@@ -1072,6 +1074,95 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 		testRemoveFileSystemDb()
 	})
+
+	GinkgoIt("Should perform strategic deletes on exact filesystem blocks with sender/receive pattern", func() {
+		r := testCreateRose()
+		dataCh := make(chan int)
+		n := 1000000
+
+		go func() {
+			for i := 0; i < n; i++  {
+				dataCh<- i
+			}
+
+			close(dataCh)
+		}()
+
+		wg := &sync.WaitGroup{}
+
+		for i := 0; i < n; i++ {
+			wg.Add(1)
+			go func(dataCh <-chan int, wg *sync.WaitGroup) {
+				a := <-dataCh
+
+				id := fmt.Sprintf("id-%d", a)
+				value := fmt.Sprintf("value-%d", a)
+
+				m := &Metadata{
+					Id: id,
+					Data: testAsJson(value),
+				}
+
+				res, err := r.Write(m)
+
+				gomega.Expect(err).To(gomega.BeNil())
+				gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+				gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
+
+				wg.Done()
+			}(dataCh, wg)
+		}
+
+		wg.Wait()
+
+		base := n / 3000 - 2
+		blocks := [10000]int{}
+		multiplier := 1
+		counter := 0
+		for i := 0; i < base; i++ {
+			if i != 0 && i % 1000 == 0 {
+				multiplier++
+			}
+
+			block := i * 3000 + multiplier
+
+			blocks[counter] = block
+
+			counter++
+		}
+
+		for _, block := range blocks {
+			if block == 0 {
+				continue
+			}
+
+			wg.Add(1)
+			go func(wg *sync.WaitGroup, block int) {
+				id := fmt.Sprintf("id-%d", block)
+
+				res, err := r.Delete(id)
+
+				gomega.Expect(err).To(gomega.BeNil())
+				gomega.Expect(res.Status).To(gomega.Equal(EntryDeletedStatus))
+				gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
+
+				wg.Done()
+			}(wg, block)
+		}
+
+		wg.Wait()
+
+		if err := r.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb()
+	})
+
 	GinkgoIt("Should concurrently insert and read", func() {
 		var r *Rose
 		num := 10000
