@@ -112,6 +112,18 @@ var _ = GinkgoDescribe("Input validity tests", func() {
 		gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
 		gomega.Expect(s).To(gomega.Equal(data))
 
+		res, err = a.Delete(key)
+
+		gomega.Expect(err).To(gomega.BeNil())
+		gomega.Expect(res.Status).To(gomega.Equal(EntryDeletedStatus))
+		gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
+
+		res, err = a.Read(key, &s)
+
+		gomega.Expect(err).To(gomega.BeNil())
+		gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
+		gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
+
 		if err := a.Shutdown(); err != nil {
 			testRemoveFileSystemDb()
 
