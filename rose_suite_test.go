@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/onsi/ginkgo"
@@ -1003,6 +1004,74 @@ var _ = GinkgoDescribe("Read tests", func() {
 })
 
 var _ = GinkgoDescribe("Concurrency tests", func() {
+	GinkgoIt("Should perform sequential inserts and deletes with sender/receive pattern", func() {
+		r := testCreateRose()
+		dataCh := make(chan int)
+		deleteCh := make(chan string)
+		n := 10000
+
+		go func() {
+			for i := 0; i < n; i++  {
+				dataCh<- i
+			}
+
+			close(dataCh)
+		}()
+
+		wg := &sync.WaitGroup{}
+
+		for i := 0; i < n; i++ {
+			wg.Add(1)
+			go func(dataCh <-chan int, deleteChan chan string, wg *sync.WaitGroup) {
+				a := <-dataCh
+
+				id := fmt.Sprintf("id-%d", a)
+				value := fmt.Sprintf("value-%d", a)
+
+				m := &Metadata{
+					Id: id,
+					Data: testAsJson(value),
+				}
+
+				res, err := r.Write(m)
+
+				gomega.Expect(err).To(gomega.BeNil())
+				gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+				gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
+
+				deleteCh<- id
+
+				wg.Done()
+			}(dataCh, deleteCh, wg)
+		}
+
+		for i := 0; i < n; i++ {
+			wg.Add(1)
+			go func(dataCh <-chan int, deleteChan chan string, wg *sync.WaitGroup) {
+				id := <-deleteCh
+
+				res, err := r.Delete(id)
+
+				gomega.Expect(err).To(gomega.BeNil())
+				gomega.Expect(res.Status).To(gomega.Equal(EntryDeletedStatus))
+				gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
+
+				wg.Done()
+			}(dataCh, deleteCh, wg)
+		}
+
+		wg.Wait()
+
+		if err := r.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb()
+	})
 	GinkgoIt("Should concurrently insert and read", func() {
 		var r *Rose
 		num := 10000
