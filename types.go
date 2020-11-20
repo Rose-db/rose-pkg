@@ -30,8 +30,6 @@ const ExistsStatus = 2
 const NewBlockCreatedStatus = 3
 const NormalExecutionStatus = 4
 
-// 128B
-const maxIdSize = 128
 // 16MB
 const maxValSize = 16000000
 
