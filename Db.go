@@ -2,6 +2,7 @@ package rose
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/google/uuid"
 	"sync"
 )
@@ -32,6 +33,7 @@ type Db struct {
 	FreeIdsList map[string][2]uint16
 	idFactory *idFactory
 	CurrMapIdx uint16
+	sync.RWMutex
 
 	FsDriver *fsDriver
 }
@@ -116,6 +118,136 @@ func (d *Db) Write(v []uint8, fsWrite bool) (int, string,  Error) {
 	}
 	
 	return NormalExecutionStatus, id, nil
+}
+
+func (d *Db) GoWrite(v []uint8, fsWrite bool, goRes chan *GoAppResult) {
+	d.Lock()
+
+	if len(d.FreeIdsList) > 0 {
+		id := ""
+		for found := range d.FreeIdsList {
+			id = found
+			break
+		}
+
+		list := d.FreeIdsList[id]
+		idx := list[0]
+		mapId := list[1]
+
+		d.IdLookupMap[id] = [2]uint16{idx, mapId}
+		// we know that the block has to exist since its in the free list
+		// and that means it was deleted
+		m := d.InternalDb[mapId]
+
+		m[idx] = &v
+
+		delete(d.FreeIdsList, id)
+
+		res := &GoAppResult{
+			Result: &AppResult{
+				Uuid:  id,
+				Method: InsertMethodType,
+				Status: OkResultStatus,
+				Reason: "",
+			},
+			Err:    nil,
+		}
+
+		d.Unlock()
+
+		goRes<- res
+
+		return
+	}
+
+	id := uuid.New().String()
+
+	// check if the entry already exists
+	if _, ok := d.IdLookupMap[id]; ok {
+		res := &GoAppResult{
+			Result: nil,
+			Err:    &systemError{
+				Code:    DbIntegrityViolationCode,
+				Message: fmt.Sprintf("Uuid integrity validation. Duplicate uuid found. This should not happen. Try this write again"),
+			},
+		}
+
+		d.Unlock()
+
+		goRes<- res
+
+		return
+	}
+
+	var idx uint16
+	var m *[3000]*[]uint8
+
+	// r/w operation, create uint64 index
+	idx = d.idFactory.Next()
+
+	m, created := d.getBlock()
+
+	// r operation, add COMPUTED index to the index map
+	d.IdLookupMap[id] = [2]uint16{idx, d.CurrMapIdx}
+
+	if fsWrite {
+		err := d.saveOnFs(id, v)
+
+		if err != nil {
+			res := &GoAppResult{
+				Result: nil,
+				Err:    &systemError{
+					Code:    DbIntegrityViolationCode,
+					Message: fmt.Sprintf("Unable to save document to the filesystem. Underlying message is: '%s'", err.Error()),
+				},
+			}
+
+			d.Unlock()
+
+			goRes<- res
+
+			return
+		}
+	}
+
+	// saving the pointer address of the data, not the actual data
+	m[idx] = &v
+
+	if idx == 2999 {
+		d.CurrMapIdx++
+	}
+
+	if created {
+		res := &GoAppResult{
+			Result: &AppResult{
+				Uuid:  id,
+				Method: InsertMethodType,
+				Status: OkResultStatus,
+				Reason: "",
+			},
+			Err: nil,
+		}
+
+		d.Unlock()
+
+		goRes<- res
+
+		return
+	}
+
+	res := &GoAppResult{
+		Result: &AppResult{
+			Uuid:  id,
+			Method: InsertMethodType,
+			Status: OkResultStatus,
+			Reason: "",
+		},
+		Err: nil,
+	}
+
+	d.Unlock()
+
+	goRes<- res
 }
 
 func (d *Db) Delete(id string) (bool, Error) {

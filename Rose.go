@@ -16,6 +16,11 @@ type AppResult struct {
 	Reason string
 }
 
+type GoAppResult struct {
+	Result *AppResult
+	Err Error
+}
+
 func New(log bool) (*Rose, Error) {
 	if log {
 		fmt.Println("")
@@ -77,6 +82,22 @@ func (a *Rose) Write(data []uint8) (*AppResult, Error) {
 		Method: InsertMethodType,
 		Status: OkResultStatus,
 	}, nil
+}
+
+func (a *Rose) GoWrite(data []uint8) chan *GoAppResult {
+	resChan := make(chan *GoAppResult)
+
+	if err := validateData(data); err != nil {
+		resChan<- &GoAppResult{
+			Result: nil,
+			Err:    err,
+		}
+	}
+
+	// save the entry under idx into memory
+	go a.db.GoWrite(data, true, resChan)
+
+	return resChan
 }
 
 func (a *Rose) Read(id string, v interface{}) (*AppResult, Error) {

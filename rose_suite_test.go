@@ -705,6 +705,75 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 	})
 })
 
+var _ = GinkgoDescribe("Concurrency tests", func() {
+	GinkgoIt("Should write values to the database with the concurrent method", func() {
+		a := testCreateRose()
+		n := 10000
+
+		results := [10000]chan *GoAppResult{}
+		for i := 0; i < n; i++ {
+			s := testAsJson(testString)
+
+			resChan := a.GoWrite(s)
+
+			results[i] = resChan
+		}
+
+		uuids := [10000]string{}
+		count := 0
+		for i, c := range results {
+			res := <-c
+
+			gomega.Expect(res.Err).To(gomega.BeNil())
+
+			uuids[i] = res.Result.Uuid
+
+			count++
+		}
+
+		gomega.Expect(count).To(gomega.Equal(n))
+
+		// assert that every uuid is a valid uuid
+		count = 0
+		for _, Uuid := range uuids {
+			gomega.Expect(testIsValidUUID(Uuid)).To(gomega.BeTrue())
+
+			count++
+		}
+
+		gomega.Expect(count).To(gomega.Equal(n))
+
+		// assert that there are no duplicate ids
+		uuidsMap := make(map[string]interface{})
+		for _, Uuid := range uuids {
+			_, ok := uuidsMap[Uuid]
+
+			gomega.Expect(ok).To(gomega.BeFalse())
+
+			uuidsMap[Uuid] = nil
+		}
+
+		for _, Uuid := range uuids {
+			s := ""
+			res, err := a.Read(Uuid, &s)
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
+		}
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
+			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb()
+	})
+})
+
 var _ = GinkgoDescribe("Insertion tests", func() {
 	GinkgoIt("Should insert a single piece of data", func() {
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
