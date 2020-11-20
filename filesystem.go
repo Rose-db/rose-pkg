@@ -56,6 +56,7 @@ func loadDbInMemory(m *Db, log bool) Error {
 	for _, b := range batch {
 		dataCh := make(chan os.FileInfo)
 		wg := &sync.WaitGroup{}
+		lock := &sync.RWMutex{}
 
 		// sender
 		go func() {
@@ -72,7 +73,7 @@ func loadDbInMemory(m *Db, log bool) Error {
 				bar.Increment()
 			}
 			wg.Add(1)
-			go loadSingleFile(m, dataCh, wg, errChan)
+			go loadSingleFile(m, dataCh, wg, errChan, lock)
 		}
 
 		wg.Wait()
@@ -104,7 +105,7 @@ func loadDbInMemory(m *Db, log bool) Error {
 	return nil
 }
 
-func loadSingleFile(m *Db, dataCh<- chan os.FileInfo, wg *sync.WaitGroup, errChan chan Error) {
+func loadSingleFile(m *Db, dataCh<- chan os.FileInfo, wg *sync.WaitGroup, errChan chan Error, lock *sync.RWMutex) {
 	f := <-dataCh
 
 	db := fmt.Sprintf("%s/%s", roseDbDir(), f.Name())
@@ -174,7 +175,7 @@ func loadSingleFile(m *Db, dataCh<- chan os.FileInfo, wg *sync.WaitGroup, errCha
 		i, _ := strconv.Atoi(underscoreSplit[1])
 		mapIdx := uint16(i)
 
-		err = m.writeOnLoad(string(val.id), val.val, mapIdx)
+		err = m.writeOnLoad(string(val.id), val.val, mapIdx, lock)
 
 		if err != nil {
 			fsErr := closeFile(file)

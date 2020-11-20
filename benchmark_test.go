@@ -61,5 +61,7 @@ func BenchmarkAppInsertHundredThousand(b *testing.B) {
 		if err != nil {
 			panic(err)
 		}
+
+		benchmarkRemoveFileSystemDb()
 	}
 }

@@ -3,6 +3,7 @@ package rose
 import (
 	"encoding/json"
 	"github.com/google/uuid"
+	"sync"
 )
 
 type dbReadResult struct {
@@ -190,12 +191,16 @@ func (d *Db) Shutdown() Error {
 	return d.FsDriver.Shutdown()
 }
 
-func (d *Db) writeOnLoad(id string, v []uint8, mapIdx uint16) Error {
+func (d *Db) writeOnLoad(id string, v []uint8, mapIdx uint16, lock *sync.RWMutex) Error {
+	lock.Lock()
+
 	var idx uint16
 	var m *[3000]*[]uint8
 
 	// check if the entry already exists
 	if _, ok := d.IdLookupMap[id]; ok {
+		lock.Unlock()
+
 		return nil
 	}
 
@@ -215,6 +220,8 @@ func (d *Db) writeOnLoad(id string, v []uint8, mapIdx uint16) Error {
 
 	// saving the pointer address of the data, not the actual data
 	m[idx] = &v
+
+	lock.Unlock()
 
 	return nil
 }
