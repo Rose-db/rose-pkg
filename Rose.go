@@ -10,6 +10,7 @@ type Rose struct {
 }
 
 type AppResult struct {
+	Uuid string
 	Method string
 	Status string
 	Reason string
@@ -59,29 +60,20 @@ func New(log bool) (*Rose, Error) {
 	return r, nil
 }
 
-func (a *Rose) Write(m *Metadata) (*AppResult, Error) {
-	vErr := m.validate()
-
-	if vErr != nil {
-		return nil, vErr
+func (a *Rose) Write(data []uint8) (*AppResult, Error) {
+	if err := validateData(data); err != nil {
+		return nil, err
 	}
 
 	// save the entry under idx into memory
-
-	status, err := a.db.Write(m.Id, m.Data, true)
+	_, id, err := a.db.Write(data, true)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if status == ExistsStatus {
-		return &AppResult{
-			Method: InsertMethodType,
-			Status: DuplicatedIdStatus,
-		}, nil
-	}
-
 	return &AppResult{
+		Uuid: id,
 		Method: InsertMethodType,
 		Status: OkResultStatus,
 	}, nil
@@ -89,8 +81,8 @@ func (a *Rose) Write(m *Metadata) (*AppResult, Error) {
 
 func (a *Rose) Read(id string, v interface{}) (*AppResult, Error) {
 	if id == "" {
-		return nil, &metadataError{
-			Code:    MetadataErrorCode,
+		return nil, &dataError{
+			Code:    DataErrorCode,
 			Message: "Id cannot be an empty string",
 		}
 	}
@@ -113,8 +105,8 @@ func (a *Rose) Read(id string, v interface{}) (*AppResult, Error) {
 
 func (a *Rose) Delete(id string) (*AppResult, Error) {
 	if id == "" {
-		return nil, &metadataError{
-			Code:    MetadataErrorCode,
+		return nil, &dataError{
+			Code:    DataErrorCode,
 			Message: "Id cannot be an empty string",
 		}
 	}

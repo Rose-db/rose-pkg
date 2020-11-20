@@ -2,7 +2,7 @@ package rose
 
 import (
 	"encoding/json"
-	"sync"
+	"github.com/google/uuid"
 )
 
 type dbReadResult struct {
@@ -30,8 +30,6 @@ type Db struct {
 	IdLookupMap map[string][2]uint16
 	FreeIdsList map[string][2]uint16
 	idFactory *idFactory
-	RWMutex *sync.RWMutex
-
 	CurrMapIdx uint16
 
 	FsDriver *fsDriver
@@ -55,10 +53,14 @@ func newMemoryDb(fsDriver *fsDriver) *Db {
 		- if the block does not exist, a new block is created
 	- the value is stored in the block with its index
 */
-func (d *Db) Write(id string, v []uint8, fsWrite bool) (int, Error) {
-	d.RWMutex.Lock()
-
+func (d *Db) Write(v []uint8, fsWrite bool) (int, string,  Error) {
 	if len(d.FreeIdsList) > 0 {
+		id := ""
+		for found, _ := range d.FreeIdsList {
+			id = found
+			break
+		}
+
 		list := d.FreeIdsList[id]
 		idx := list[0]
 		mapId := list[1]
@@ -72,20 +74,18 @@ func (d *Db) Write(id string, v []uint8, fsWrite bool) (int, Error) {
 
 		delete(d.FreeIdsList, id)
 
-		d.RWMutex.Unlock()
+		return FreeListQueryStatus, id, nil
+	}
 
-		return FreeListQueryStatus, nil
+	id := uuid.New().String()
+
+	// check if the entry already exists
+	if _, ok := d.IdLookupMap[id]; ok {
+		return ExistsStatus, "", nil
 	}
 
 	var idx uint16
 	var m *[3000]*[]uint8
-
-	// check if the entry already exists
-	if _, ok := d.IdLookupMap[id]; ok {
-		d.RWMutex.Unlock()
-
-		return ExistsStatus, nil
-	}
 
 	// r/w operation, create uint64 index
 	idx = d.idFactory.Next()
@@ -99,7 +99,7 @@ func (d *Db) Write(id string, v []uint8, fsWrite bool) (int, Error) {
 		err := d.saveOnFs(id, v)
 
 		if err != nil {
-			return 0, err
+			return 0, "", err
 		}
 	}
 
@@ -110,18 +110,14 @@ func (d *Db) Write(id string, v []uint8, fsWrite bool) (int, Error) {
 		d.CurrMapIdx++
 	}
 
-	d.RWMutex.Unlock()
-
 	if created {
-		return NewBlockCreatedStatus, nil
+		return NewBlockCreatedStatus, id,  nil
 	}
 	
-	return NormalExecutionStatus, nil
+	return NormalExecutionStatus, id, nil
 }
 
 func (d *Db) Delete(id string) (bool, Error) {
-	d.RWMutex.Lock()
-
 	var idData [2]uint16
 	var mapId, idx uint16
 	var m *[3000]*[]uint8
@@ -129,8 +125,6 @@ func (d *Db) Delete(id string) (bool, Error) {
 	idData, ok := d.IdLookupMap[id]
 
 	if !ok {
-		d.RWMutex.Unlock()
-
 		return false, nil
 	}
 
@@ -153,14 +147,10 @@ func (d *Db) Delete(id string) (bool, Error) {
 
 	d.FreeIdsList[id] = [2]uint16{idx, mapId}
 
-	d.RWMutex.Unlock()
-
 	return true, nil
 }
 
 func (d *Db) Read(id string, v interface{}) *dbReadResult {
-	d.RWMutex.Lock()
-
 	var m *[3000]*[]uint8
 	var idData [2]uint16
 	var mapId, idx uint16
@@ -172,8 +162,6 @@ func (d *Db) Read(id string, v interface{}) *dbReadResult {
 	mapId = idData[1]
 
 	if !ok {
-		d.RWMutex.Unlock()
-
 		return nil
 	}
 
@@ -182,8 +170,6 @@ func (d *Db) Read(id string, v interface{}) *dbReadResult {
 
 	// get the value of id, value is a pointer, not the actual data
 	b = m[idx]
-
-	d.RWMutex.Unlock()
 
 	e := json.Unmarshal(*b, v)
 
@@ -205,15 +191,11 @@ func (d *Db) Shutdown() Error {
 }
 
 func (d *Db) writeOnLoad(id string, v []uint8, mapIdx uint16) Error {
-	d.RWMutex.Lock()
-
 	var idx uint16
 	var m *[3000]*[]uint8
 
 	// check if the entry already exists
 	if _, ok := d.IdLookupMap[id]; ok {
-		d.RWMutex.Unlock()
-
 		return nil
 	}
 
@@ -233,8 +215,6 @@ func (d *Db) writeOnLoad(id string, v []uint8, mapIdx uint16) Error {
 
 	// saving the pointer address of the data, not the actual data
 	m[idx] = &v
-
-	d.RWMutex.Unlock()
 
 	return nil
 }
@@ -283,7 +263,6 @@ func (d *Db) getBlock() (*[3000]*[]uint8, bool) {
 func (d *Db) init() {
 	d.InternalDb = make(map[uint16]*[3000]*[]uint8)
 	d.InternalDb[0] = &[3000]*[]uint8{}
-	d.RWMutex = &sync.RWMutex{}
 	d.FreeIdsList = make(map[string][2]uint16)
 
 	d.IdLookupMap = make(map[string][2]uint16)

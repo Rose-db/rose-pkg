@@ -2,29 +2,9 @@ package rose
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 )
-
-// Will be used when insert/read/update in batches
-func splitMetadataArray(mArr []*Metadata, size int) [][]*Metadata {
-	min := func(a, b int) int {
-		if a <= b {
-			return a
-		}
-
-		return b
-	}
-
-	var batch [][]*Metadata = [][]*Metadata{}
-
-	for i := 0; i < len(mArr); i += size {
-		b := mArr[i:min(i+size, len(mArr))]
-
-		batch = append(batch, b)
-	}
-
-	return batch
-}
 
 func prepareData(id string, data []uint8) *[]uint8 {
 	i := id + delim + string(data) + "\n"
@@ -53,18 +33,25 @@ func appendByte(slice []uint8, data ...uint8) []uint8 {
 	return slice
 }
 
-func appendString(slice []string, data string) []string {
-	m := len(slice)
-	if m > cap(slice) {
-		// if necessary, reallocate
-		// allocate double what's needed, for future growth.
-		newSlice := make([]string, m + 1)
-		copy(newSlice, slice)
-		slice = newSlice
+func validateData(data []uint8) Error {
+	if !isJSON(data) {
+		return &dataError{
+			Code:    DataErrorCode,
+			Message: "Data must be a JSON byte array",
+		}
 	}
 
-	return []string{}
+	l := len(data)
+	if l > maxValSize {
+		return &dataError{
+			Code:    DataErrorCode,
+			Message: fmt.Sprintf("Data cannot be larger than 16000000 bytes (16MB), %d bytes given", l),
+		}
+	}
+
+	return nil
 }
+
 
 /**
 	Creates batches based on {size}. If len(files) < size,

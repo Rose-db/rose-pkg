@@ -16,7 +16,7 @@ type systemError struct {
 	Message string
 }
 
-type metadataError struct {
+type dataError struct {
 	Code int
 	Message string
 }
@@ -86,18 +86,18 @@ func (e *dbIntegrityError) JSON() map[string]interface{} {
 
 
 
-func (e *metadataError) Error() string {
+func (e *dataError) Error() string {
 	return fmt.Sprintf("Code: %d, Message: %s", e.Code, e.Message)
 }
 
-func (e *metadataError) Type() string {
+func (e *dataError) Type() string {
 	return metadataErrorType
 }
 
-func (e *metadataError) GetCode() int {
-	return MetadataErrorCode
+func (e *dataError) GetCode() int {
+	return DataErrorCode
 }
 
-func (e *metadataError) JSON() map[string]interface{} {
+func (e *dataError) JSON() map[string]interface{} {
 	return map[string]interface{}{}
 }

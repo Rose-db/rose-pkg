@@ -7,7 +7,7 @@ const dbErrorType = "db_error"
 const dbIntegrityErrorType = "db_integrity_error"
 
 // application error codes
-const MetadataErrorCode = 1
+const DataErrorCode = 1
 const SystemErrorCode = 2
 const DbIntegrityViolationCode = 4
 const DbErrorCode = 5
