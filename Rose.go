@@ -36,10 +36,13 @@ func New(log bool) (*Rose, Error) {
 	if !created {
 		if log {
 			fmt.Println(string("\033[32mINFO:\033[0m"),"Defragmenting existing database. Depending on the size of the database, this may take some time...")
-			if err := defragment(); err != nil {
-				return nil, err
-			}
+		}
 
+		if err := defragment(); err != nil {
+			return nil, err
+		}
+
+		if log {
 			fmt.Println("  Defragmentation complete!")
 			fmt.Println("")
 		}
