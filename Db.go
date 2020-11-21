@@ -379,15 +379,13 @@ func (d *Db) Read(id string, v interface{}) *dbReadResult {
 	}
 }
 
-
-
 func (d *Db) Shutdown() Error {
 	d.init()
 
 	return d.FsDriver.Shutdown()
 }
 
-func (d *Db) writeOnLoad(id string, v []uint8, mapIdx uint16, lock *sync.RWMutex) Error {
+func (d *Db) writeOnLoad(id string, v []uint8, mapIdx uint16, lock *sync.RWMutex, fsWrite bool) Error {
 	lock.Lock()
 
 	var idx uint16
@@ -417,7 +415,52 @@ func (d *Db) writeOnLoad(id string, v []uint8, mapIdx uint16, lock *sync.RWMutex
 	// saving the pointer address of the data, not the actual data
 	m[idx] = &v
 
+	if fsWrite {
+		err := d.saveOnFs(id, v)
+
+		if err != nil {
+			return err
+		}
+	}
+
 	lock.Unlock()
+
+	return nil
+}
+
+func (d *Db) writeOnDefragmentation(id string, v []uint8, mapIdx uint16) Error {
+	var idx uint16
+	var m *[3000]*[]uint8
+
+	// check if the entry already exists
+	if _, ok := d.IdLookupMap[id]; ok {
+		return nil
+	}
+
+	// r/w operation, create uint64 index
+	idx = d.idFactory.Next()
+
+	m, ok := d.InternalDb[mapIdx]
+
+	if !ok {
+		// current block does not exist, created a new one
+		m = &[3000]*[]uint8{}
+		d.InternalDb[mapIdx] = m
+	}
+
+	// r operation, add COMPUTED index to the index map
+	d.IdLookupMap[id] = [2]uint16{idx, mapIdx}
+
+	// saving the pointer address of the data, not the actual data
+	m[idx] = &v
+
+	jobs := []*job{
+		{Entry: prepareData(id, v)},
+	}
+
+	if err := d.FsDriver.Save(&jobs, mapIdx); err != nil {
+		return err
+	}
 
 	return nil
 }

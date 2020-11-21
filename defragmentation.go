@@ -2,9 +2,13 @@ package rose
 
 import (
 	"fmt"
+	"github.com/cheggaaa/pb/v3"
 	"io"
 	"io/ioutil"
 	"os"
+	"strconv"
+	"strings"
+	"time"
 )
 
 func createBackupDirectory() Error {
@@ -32,6 +36,35 @@ func removeBackupDirectory() Error {
 	return nil
 }
 
+func removeDbFiles() Error {
+	roseDb := roseDbDir()
+	files, err := ioutil.ReadDir(roseDb)
+
+	if err != nil {
+		return &dbIntegrityError{
+			Code:    DbIntegrityViolationCode,
+			Message: fmt.Sprintf("Unable to read file from directory %s for defragmentation with underlying message: %s", roseDb, err.Error()),
+		}
+	}
+
+	for _, f := range files {
+		if f.IsDir() {
+			continue
+		}
+
+		fileName := fmt.Sprintf("%s/%s", roseDb, f.Name())
+
+		if err := os.Remove(fileName); err != nil {
+			return &dbIntegrityError{
+				Code:    DbIntegrityViolationCode,
+				Message: fmt.Sprintf("Unable to remove file from directory %s for defragmentation with underlying message: %s", roseDb, err.Error()),
+			}
+		}
+	}
+
+	return nil
+}
+
 func moveFilesToBackup() Error {
 	roseDb := roseDbDir()
 	files, err := ioutil.ReadDir(roseDb)
@@ -41,6 +74,10 @@ func moveFilesToBackup() Error {
 			Code:    DbIntegrityViolationCode,
 			Message: fmt.Sprintf("Unable to read file from directory %s for defragmentation with underlying message: %s", roseDb, err.Error()),
 		}
+	}
+
+	if len(files) == 0 {
+		return nil
 	}
 
 	for _, f := range files {
@@ -94,8 +131,10 @@ func copyToBackup(fileName string) Error {
 	return nil
 }
 
-func writeToDb() Error {
+func writeBackupToDb(log bool) Error {
 	backupDir := fmt.Sprintf("%s/backup", roseDbDir())
+
+	m := newMemoryDb(newFsDriver(roseDbDir()))
 
 	files, fsErr := ioutil.ReadDir(backupDir)
 
@@ -106,8 +145,21 @@ func writeToDb() Error {
 		}
 	}
 
+	var bar *pb.ProgressBar
+	if log {
+		fmt.Println("")
+		bar = pb.Simple.Start(len(files))
+		bar.SetRefreshRate(time.Millisecond)
+	}
+
 	for _, f := range files {
-		file, err := createFile(f.Name(), os.O_RDONLY)
+		if log {
+			bar.Increment()
+		}
+
+		fileName := fmt.Sprintf("%s/%s", backupDir, f.Name())
+
+		file, err := createFile(fileName, os.O_RDONLY)
 
 		if err != nil {
 			return err
@@ -147,7 +199,30 @@ func writeToDb() Error {
 					Message: "Database integrity violation while defragmenting. Cannot populate database. Invalid row encountered.",
 				}
 			}
+
+			fileName := f.Name()
+			dotSplit := strings.Split(fileName, ".")
+			underscoreSplit := strings.Split(dotSplit[0], "_")
+			i, _ := strconv.Atoi(underscoreSplit[1])
+			mapIdx := uint16(i)
+
+			err = m.writeOnDefragmentation(string(val.id), val.val, mapIdx)
+
+			if err != nil {
+				fsErr := closeFile(file)
+
+				if fsErr != nil {
+					return fsErr
+				}
+
+				return err
+			}
 		}
+	}
+
+	if log {
+		bar.Finish()
+		fmt.Println("")
 	}
 
 	return nil
@@ -172,11 +247,20 @@ func defragment(log bool) Error {
 
 	if log {
 		fmt.Printf("  Backup complete\n")
+		fmt.Printf("  Removing database to apply defragmentation...\n")
 	}
 
-	/*	if err := writeToDb(); err != nil {
-			return err
-		}*/
+	if err := removeDbFiles(); err != nil {
+		return err
+	}
+
+	if log {
+		fmt.Printf("  Database removed. Applying defragmentation...\n")
+	}
+
+	if err := writeBackupToDb(log); err != nil {
+		return err
+	}
 
 	if err := removeBackupDirectory(); err != nil {
 		return err
