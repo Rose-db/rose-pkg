@@ -153,8 +153,11 @@ func writeToDb() Error {
 	return nil
 }
 
-func defragment() Error {
-	fmt.Printf("  Creating database backup...\n")
+func defragment(log bool) Error {
+	if log {
+		fmt.Printf("  Creating database backup...\n")
+	}
+
 	if err := createBackupDirectory(); err != nil {
 		return err
 	}
@@ -166,7 +169,10 @@ func defragment() Error {
 
 		return err
 	}
-	fmt.Printf("  Backup complete\n")
+
+	if log {
+		fmt.Printf("  Backup complete\n")
+	}
 
 	/*	if err := writeToDb(); err != nil {
 			return err
