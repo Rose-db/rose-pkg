@@ -18,7 +18,7 @@ func loadDbInMemory(m *Db, log bool) Error {
 	if fsErr != nil {
 		return &systemError{
 			Code:    SystemErrorCode,
-			Message: fsErr.Error(),
+			Message: fmt.Sprintf("Could not read %s directory with underlynging message: %s", roseDbDir(), fsErr.Error()),
 		}
 	}
 
@@ -217,7 +217,7 @@ func createDbIfNotExists(log bool) (bool, Error) {
 	updated := 0
 
 	if log {
-		fmt.Println("Creating the database on the filesystem if not exists...")
+		fmt.Println(string("\033[32mINFO:\033[0m"), "Creating the database on the filesystem if not exists...")
 	}
 
 	roseDbCreated := false
@@ -240,7 +240,7 @@ func createDbIfNotExists(log bool) (bool, Error) {
 	}
 
 	if log && updated > 0 && updated != 3 {
-		fmt.Println("Some directories were missing. They have been created again.")
+		fmt.Println("  Some directories were missing. They have been created again.")
 	}
 
 	created := false
@@ -261,7 +261,7 @@ func createDbIfNotExists(log bool) (bool, Error) {
 
 	if log {
 		if created {
-			fmt.Printf("Filesystem database created for the first time\n\n")
+			fmt.Printf("\tFilesystem database created for the first time\n\n")
 
 			err = closeFile(file)
 
@@ -272,7 +272,7 @@ func createDbIfNotExists(log bool) (bool, Error) {
 				}
 			}
 		} else {
-			fmt.Printf("Filesystem database already exists. Nothing to update\n\n")
+			fmt.Printf("  Filesystem database already exists. Nothing to update\n\n")
 		}
 	}
 

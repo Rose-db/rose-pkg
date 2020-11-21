@@ -379,6 +379,8 @@ func (d *Db) Read(id string, v interface{}) *dbReadResult {
 	}
 }
 
+
+
 func (d *Db) Shutdown() Error {
 	d.init()
 

@@ -33,15 +33,25 @@ func New(log bool) (*Rose, Error) {
 		return nil, err
 	}
 
+	if !created {
+		if log {
+			fmt.Println(string("\033[32mINFO:\033[0m"),"Defragmenting existing database. Depending on the size of the database, this may take some time...")
+			if err := defragment(); err != nil {
+				return nil, err
+			}
+
+			fmt.Println("  Defragmentation complete!")
+			fmt.Println("")
+		}
+	}
+
 	m := newMemoryDb(newFsDriver(roseDbDir()))
 
 	if log {
 		fmt.Println("=============")
 		fmt.Println("")
-		fmt.Printf("Loading existing filesystem database in memory. Depending on the size of the database, this may take some time...\n\n")
+		fmt.Println(string("\033[32mINFO:\033[0m"), "Loading existing filesystem database in memory. Depending on the size of the database, this may take some time...\n\n")
 	}
-
-
 
 	if err := loadDbInMemory(m, log); err != nil {
 		return nil, err
@@ -49,7 +59,8 @@ func New(log bool) (*Rose, Error) {
 
 	if log {
 		fmt.Println("")
-		fmt.Printf("Filesystem database is loaded successfully!\n\n")
+		fmt.Println("")
+		fmt.Println(string("\033[32mINFO:\033[0m"), "Filesystem database is loaded successfully!\n")
 		fmt.Println("=============")
 		fmt.Println("")
 	}
@@ -59,7 +70,7 @@ func New(log bool) (*Rose, Error) {
 	}
 
 	if log {
-		fmt.Printf("Rose is ready to use!\n\n")
+		fmt.Println(string("\033[32mINFO:"), "Rose is ready to use!", string("\033[0m"), "\n")
 	}
 
 	return r, nil
