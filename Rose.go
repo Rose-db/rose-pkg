@@ -41,7 +41,7 @@ func New(log bool) (*Rose, Error) {
 		return nil, err
 	}
 
-	m := newMemoryDb(newFsDriver())
+	m := newMemoryDb(newFsDriver(roseDbDir()))
 
 	if log {
 		fmt.Println("=============")

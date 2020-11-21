@@ -246,7 +246,7 @@ func createDbIfNotExists(logging bool, comm chan string, errChan chan Error) {
 
 	created := false
 	// create first block file
-	a := roseBlockFile(0)
+	a := roseBlockFile(0, roseDbDir())
 	if _, fsErr := os.Stat(a); os.IsNotExist(fsErr) {
 		file, err = createFile(a, os.O_RDWR|os.O_CREATE)
 
@@ -356,6 +356,6 @@ func roseLogDir() string {
 	return fmt.Sprintf("%s/.rose_db/log", userHomeDir())
 }
 
-func roseBlockFile(block uint16) string {
-	return fmt.Sprintf("%s/block_%d.rose", roseDbDir(), block)
+func roseBlockFile(block uint16, dbDir string) string {
+	return fmt.Sprintf("%s/block_%d.rose", dbDir, block)
 }

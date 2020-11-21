@@ -35,30 +35,3 @@ const maxValSize = 16000000
 
 const delim = "[##]{{}#]"
 const delMark = "{[{del}]}"
-
-type ModeType uint8
-
-const InMemoryMode ModeType = 1
-const FilesystemMode ModeType = 2
-const PartialFilesystemMode ModeType = 3
-
-// default mode must be FilesystemMode mode
-type mode struct {
-	CurrentMode ModeType
-}
-
-func newMode(m ModeType) mode {
-	return mode{CurrentMode: m}
-}
-
-func (m mode) IsFilesystemMode() bool {
-	return m.CurrentMode == FilesystemMode
-}
-
-func (m mode) IsInMemoryMode() bool {
-	return m.CurrentMode == InMemoryMode
-}
-
-func (m mode) IsPartialFilesystemMode() bool {
-	return m.CurrentMode == PartialFilesystemMode
-}

@@ -424,7 +424,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 			firstWrite[i] = res.Uuid
 		}
 
-		gomega.Expect(roseBlockFile(0)).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
+		gomega.Expect(roseBlockFile(0, roseDbDir())).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
 
 		secondWrite := [501]string{}
 		for i := 2501; i < 3002; i++ {
@@ -439,7 +439,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 			counter++
 		}
 
-		gomega.Expect(roseBlockFile(1)).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
+		gomega.Expect(roseBlockFile(1, roseDbDir())).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
 
 		counter = 0
 		thirdWrite := [3000]string{}
@@ -455,7 +455,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 			counter++
 		}
 
-		gomega.Expect(roseBlockFile(2)).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
+		gomega.Expect(roseBlockFile(2, roseDbDir())).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
 
 		counter = 0
 		fourthWrite := [3000]string{}
@@ -471,7 +471,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 			counter++
 		}
 
-		gomega.Expect(roseBlockFile(3)).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
+		gomega.Expect(roseBlockFile(3, roseDbDir())).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
 
 		if err := a.Shutdown(); err != nil {
 			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
@@ -491,7 +491,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 		}
 
-		gomega.Expect(roseBlockFile(0)).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
+		gomega.Expect(roseBlockFile(0, roseDbDir())).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
 
 		for _, id := range secondWrite {
 			res, err := a.Delete(id)
@@ -501,7 +501,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 		}
 
-		gomega.Expect(roseBlockFile(1)).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
+		gomega.Expect(roseBlockFile(1, roseDbDir())).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
 
 		for _, id := range thirdWrite {
 			res, err := a.Delete(id)
@@ -511,7 +511,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 		}
 
-		gomega.Expect(roseBlockFile(2)).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
+		gomega.Expect(roseBlockFile(2, roseDbDir())).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
 
 		for _, id := range fourthWrite {
 			res, err := a.Delete(id)
@@ -521,7 +521,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 		}
 
-		gomega.Expect(roseBlockFile(3)).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
+		gomega.Expect(roseBlockFile(3, roseDbDir())).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
 
 		if err := a.Shutdown(); err != nil {
 			testRemoveFileSystemDb()

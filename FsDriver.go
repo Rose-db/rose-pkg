@@ -2,6 +2,7 @@ package rose
 
 type fsDriver struct {
 	Handlers map[uint16]*fsDb
+	DbDir string
 	CurrentHandler *fsDb
 	CurrentHandlerIdx uint16
 }
@@ -10,9 +11,10 @@ type job struct {
 	Entry *[]uint8
 }
 
-func newFsDriver() *fsDriver {
+func newFsDriver(dbDir string) *fsDriver {
 	return &fsDriver{
 		Handlers: make(map[uint16]*fsDb),
+		DbDir: dbDir,
 	}
 }
 
@@ -70,7 +72,7 @@ func (d *fsDriver) loadHandler(mapIdx uint16) Error {
 	handler, ok := d.Handlers[mapIdx]
 
 	if !ok {
-		handler, err := newFsDb(mapIdx)
+		handler, err := newFsDb(mapIdx, d.DbDir)
 
 		if err != nil {
 			return err

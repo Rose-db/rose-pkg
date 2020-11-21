@@ -10,8 +10,8 @@ type fsDb struct {
 	File *os.File
 }
 
-func newFsDb(b uint16) (*fsDb, Error) {
-	a := roseBlockFile(b)
+func newFsDb(b uint16, dbDir string) (*fsDb, Error) {
+	a := roseBlockFile(b, dbDir)
 
 	file, err := createFile(a, os.O_RDWR|os.O_CREATE)
 
