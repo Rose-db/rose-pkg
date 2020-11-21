@@ -66,7 +66,9 @@ func New(log bool) (*Rose, Error) {
 		db: m,
 	}
 
-	fmt.Printf("Rose is ready to use!\n\n")
+	if log {
+		fmt.Printf("Rose is ready to use!\n\n")
+	}
 
 	return r, nil
 }
