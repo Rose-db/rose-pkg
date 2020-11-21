@@ -23,6 +23,7 @@ type GoAppResult struct {
 
 func New(log bool) (*Rose, Error) {
 	if log {
+		fmt.Println("=============")
 		fmt.Println("")
 	}
 
@@ -40,10 +41,11 @@ func New(log bool) (*Rose, Error) {
 		return nil, err
 	}
 
-
 	m := newMemoryDb(newFsDriver())
 
 	if log {
+		fmt.Println("=============")
+		fmt.Println("")
 		fmt.Printf("Loading existing filesystem database in memory. Depending on the size of the database, this may take some time...\n\n")
 	}
 
@@ -55,12 +57,16 @@ func New(log bool) (*Rose, Error) {
 
 	if log {
 		fmt.Println("")
-		fmt.Printf("Filesystem database is loaded successfully. Rose is ready for use!\n\n")
+		fmt.Printf("Filesystem database is loaded successfully!\n\n")
+		fmt.Println("=============")
+		fmt.Println("")
 	}
 
 	r := &Rose{
 		db: m,
 	}
+
+	fmt.Printf("Rose is ready to use!\n\n")
 
 	return r, nil
 }
