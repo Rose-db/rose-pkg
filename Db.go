@@ -168,7 +168,7 @@ func (d *Db) GoWrite(v []uint8, fsWrite bool, goRes chan *GoAppResult) {
 			Result: nil,
 			Err:    &systemError{
 				Code:    DbIntegrityViolationCode,
-				Message: fmt.Sprintf("Uuid integrity validation. Duplicate uuid found. This should not happen. Try this write again"),
+				Message: "Uuid integrity validation. Duplicate uuid found. This should not happen. Try this write again",
 			},
 		}
 
@@ -281,6 +281,68 @@ func (d *Db) Delete(id string) (bool, Error) {
 	d.FreeIdsList[id] = [2]uint16{idx, mapId}
 
 	return true, nil
+}
+
+func (d *Db) GoDelete(id string, resChan chan *GoAppResult) {
+	d.Lock()
+
+	var idData [2]uint16
+	var mapId, idx uint16
+	var m *[3000]*[]uint8
+
+	idData, ok := d.IdLookupMap[id]
+
+	if !ok {
+		d.Unlock()
+
+		resChan<- &GoAppResult{
+			Result: nil,
+			Err:    &dataError{
+				Code:    DataErrorCode,
+				Message: fmt.Sprintf("Document under uuid %s does not exist", id),
+			},
+		}
+
+		return
+	}
+
+	mapId = idData[1]
+
+	a := []uint8(id)
+	err := d.deleteFromFs(&a, mapId)
+
+	if err != nil {
+		d.Unlock()
+
+		resChan<- &GoAppResult{
+			Result: nil,
+			Err:    err,
+		}
+
+		return
+	}
+
+	idx = idData[0]
+
+	// get the map where the id value is
+	m = d.InternalDb[mapId]
+
+	delete(d.IdLookupMap, id)
+	m[idx] = nil
+
+	d.FreeIdsList[id] = [2]uint16{idx, mapId}
+
+	d.Unlock()
+
+	resChan<- &GoAppResult{
+		Result: &AppResult{
+			Uuid:  id,
+			Method: DeleteMethodType,
+			Status: EntryDeletedStatus,
+			Reason: "",
+		},
+		Err:    nil,
+	}
 }
 
 func (d *Db) Read(id string, v interface{}) *dbReadResult {

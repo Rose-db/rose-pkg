@@ -708,9 +708,9 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 var _ = GinkgoDescribe("Concurrency tests", func() {
 	GinkgoIt("Should write values to the database with the concurrent method", func() {
 		a := testCreateRose()
-		n := 10000
+		n := 1000
 
-		results := [10000]chan *GoAppResult{}
+		results := [1000]chan *GoAppResult{}
 		for i := 0; i < n; i++ {
 			s := testAsJson(testString)
 
@@ -719,7 +719,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			results[i] = resChan
 		}
 
-		uuids := [10000]string{}
+		uuids := [1000]string{}
 		count := 0
 		for i, c := range results {
 			res := <-c
@@ -759,6 +759,150 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
+		}
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
+			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb()
+	})
+
+	GinkgoIt("Should delete document from the database with write done synchronously", func() {
+		a := testCreateRose()
+		n := 1000
+
+		uuids := [1000]string{}
+		for i := 0; i < n; i++ {
+			s := testAsJson(testString)
+
+			res, err := a.Write(s)
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
+			gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
+
+			uuids[i] = res.Uuid
+		}
+
+		goResults := [1000]chan *GoAppResult{}
+		for i, Uuid := range uuids {
+			resChan := a.GoDelete(Uuid)
+
+			goResults[i] = resChan
+		}
+
+		count := 0
+		for _, c := range goResults {
+			res := <-c
+
+			gomega.Expect(res.Err).To(gomega.BeNil())
+			gomega.Expect(res.Result).To(gomega.Not(gomega.BeNil()))
+			gomega.Expect(testIsValidUUID(res.Result.Uuid)).To(gomega.BeTrue())
+			gomega.Expect(res.Result.Status).To(gomega.Equal(EntryDeletedStatus))
+			gomega.Expect(res.Result.Method).To(gomega.Equal(DeleteMethodType))
+
+			count++
+		}
+
+		gomega.Expect(count).To(gomega.Equal(n))
+
+		for _, Uuid := range uuids {
+			s := ""
+			res, err := a.Read(Uuid, &s)
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
+		}
+
+		if err := a.Shutdown(); err != nil {
+			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
+
+			return
+		}
+
+		a = nil
+
+		a = testCreateRose()
+
+		for _, Uuid := range uuids {
+			s := ""
+			res, err := a.Read(Uuid, &s)
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
+		}
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
+			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb()
+	})
+
+	GinkgoIt("Should write/delete with sender/receiver patter", func() {
+		a := testCreateRose()
+		n := 1000
+
+		uuids := [1000]string{}
+		goResults := [1000]chan *GoAppResult{}
+		for i := 0; i < n; i++ {
+			s := testAsJson(testString)
+
+			resChan := a.GoWrite(s)
+
+			goResults[i] = resChan
+		}
+
+		for i, resChan := range goResults {
+			res := <-resChan
+
+			gomega.Expect(res.Err).To(gomega.BeNil())
+			gomega.Expect(res.Result.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(testIsValidUUID(res.Result.Uuid)).To(gomega.BeTrue())
+			gomega.Expect(res.Result.Method).To(gomega.Equal(InsertMethodType))
+
+			ch := a.GoDelete(res.Result.Uuid)
+
+			delRes := <-ch
+
+			gomega.Expect(delRes.Err).To(gomega.BeNil())
+			gomega.Expect(delRes.Result).To(gomega.Not(gomega.BeNil()))
+			gomega.Expect(testIsValidUUID(res.Result.Uuid)).To(gomega.BeTrue())
+			gomega.Expect(delRes.Result.Status).To(gomega.Equal(EntryDeletedStatus))
+			gomega.Expect(delRes.Result.Method).To(gomega.Equal(DeleteMethodType))
+
+			uuids[i] = res.Result.Uuid
+		}
+
+		if err := a.Shutdown(); err != nil {
+			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
+
+			return
+		}
+
+		a = nil
+
+		a = testCreateRose()
+
+		for _, Uuid := range uuids {
+			s := ""
+			res, err := a.Read(Uuid, &s)
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
 		}
 

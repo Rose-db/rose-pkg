@@ -152,6 +152,25 @@ func (a *Rose) Delete(id string) (*AppResult, Error) {
 	}, nil
 }
 
+func (a *Rose) GoDelete(id string) chan *GoAppResult {
+	resChan := make(chan *GoAppResult)
+	if id == "" {
+		resChan<- &GoAppResult{
+			Result: nil,
+			Err:    &dataError{
+				Code:    DataErrorCode,
+				Message: "Id cannot be an empty string",
+			},
+		}
+
+		return resChan
+	}
+
+	go a.db.GoDelete(id, resChan)
+
+	return resChan
+}
+
 func (a *Rose) Size() (uint64, Error) {
 	files, err := ioutil.ReadDir(roseDbDir())
 
