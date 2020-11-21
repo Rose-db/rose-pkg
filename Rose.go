@@ -27,15 +27,7 @@ func New(log bool) (*Rose, Error) {
 		fmt.Println("")
 	}
 
-	comm := make(chan string)
-	errChan := make(chan Error)
-	go createDbIfNotExists(log, comm, errChan)
-
-	for msg := range comm {
-		fmt.Println(msg)
-	}
-
-	err := <-errChan
+	created, err := createDbIfNotExists(log)
 
 	if err != nil {
 		return nil, err
@@ -49,9 +41,9 @@ func New(log bool) (*Rose, Error) {
 		fmt.Printf("Loading existing filesystem database in memory. Depending on the size of the database, this may take some time...\n\n")
 	}
 
-	err = loadDbInMemory(m, log)
 
-	if err != nil {
+
+	if err := loadDbInMemory(m, log); err != nil {
 		return nil, err
 	}
 

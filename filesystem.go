@@ -204,44 +204,43 @@ func loadSingleFile(m *Db, dataCh<- chan os.FileInfo, wg *sync.WaitGroup, errCha
 	wg.Done()
 }
 
-func createDbIfNotExists(logging bool, comm chan string, errChan chan Error) {
-	var dir, db, log string
+func createDbIfNotExists(log bool) (bool, Error) {
+	var dir, db, logDir string
 	var err Error
 	var file *os.File
 
 	dir = roseDir()
 	db = fmt.Sprintf("%s/db", dir)
-	log = fmt.Sprintf("%s/log", dir)
+	logDir = fmt.Sprintf("%s/log", dir)
 
-	dirs := [3]string{dir, db, log}
+	dirs := [3]string{dir, db, logDir}
 	updated := 0
 
-	if logging {
-		comm<- "Creating the database on the filesystem if not exists..."
+	if log {
+		fmt.Println("Creating the database on the filesystem if not exists...")
 	}
 
+	roseDbCreated := false
 	// Create rose directories
-	for _, d := range dirs {
+	for i, d := range dirs {
 		if _, err := os.Stat(d); os.IsNotExist(err) {
+			if i == 0 {
+				roseDbCreated = true
+			}
+
 			updated++
 			fsErr := os.Mkdir(d, os.ModePerm)
 			if fsErr != nil {
-				close(comm)
-
-				errChan<- &systemError{
+				return false, &systemError{
 					Code:    SystemErrorCode,
-					Message: fsErr.Error(),
+					Message: fmt.Sprintf("Trying to create directory %s failed with underlying message: %s", d, fsErr.Error()),
 				}
-
-				close(errChan)
-
-				return
 			}
 		}
 	}
 
-	if logging && updated > 0 && updated != 3 {
-		comm<- "Some directories were missing. They have been created again."
+	if log && updated > 0 && updated != 3 {
+		fmt.Println("Some directories were missing. They have been created again.")
 	}
 
 	created := false
@@ -251,40 +250,33 @@ func createDbIfNotExists(logging bool, comm chan string, errChan chan Error) {
 		file, err = createFile(a, os.O_RDWR|os.O_CREATE)
 
 		if err != nil {
-			close(comm)
-
-			errChan<- err
-
-			close(errChan)
-
-			return
+			return false, &systemError{
+				Code:    SystemErrorCode,
+				Message: fmt.Sprintf("Trying to create initial block file failed with underlying message: %s", err.Error()),
+			}
 		}
 
 		created = true
 	}
 
-	if logging {
+	if log {
 		if created {
-			comm<- "Filesystem database created for the first time\n"
+			fmt.Printf("Filesystem database created for the first time\n\n")
 
 			err = closeFile(file)
 
 			if err != nil {
-				close(comm)
-
-				errChan<- err
-
-				close(errChan)
-
-				return
+				return false, &systemError{
+					Code:    SystemErrorCode,
+					Message: fmt.Sprintf("Trying to close initial block file failed with underlying message: %s", err.Error()),
+				}
 			}
 		} else {
-			comm<- "Filesystem database already exists. Nothing to update\n"
+			fmt.Printf("Filesystem database already exists. Nothing to update\n\n")
 		}
 	}
 
-	close(comm)
-	close(errChan)
+	return roseDbCreated, nil
 }
 
 func createFile(f string, flag int) (*os.File, Error) {
