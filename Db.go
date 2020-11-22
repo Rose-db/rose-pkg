@@ -58,29 +58,6 @@ func newMemoryDb(fsDriver *fsDriver) *Db {
 	- the value is stored in the block with its index
 */
 func (d *Db) Write(v []uint8, fsWrite bool) (int, string,  Error) {
-/*	if len(d.FreeIdsList) > 0 {
-		id := ""
-		for found, _ := range d.FreeIdsList {
-			id = found
-			break
-		}
-
-		list := d.FreeIdsList[id]
-		idx := list[0]
-		mapId := list[1]
-
-		d.IdLookupMap[id] = [2]uint16{idx, mapId}
-		// we know that the block has to exist since its in the free list
-		// and that means it was deleted
-		m := d.InternalDb[mapId]
-
-		m[idx] = &v
-
-		delete(d.FreeIdsList, id)
-
-		return FreeListQueryStatus, id, nil
-	}*/
-
 	id := uuid.New().String()
 
 	// check if the entry already exists
