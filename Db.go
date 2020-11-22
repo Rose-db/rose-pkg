@@ -30,7 +30,6 @@ type Db struct {
 	// map of user supplied ids to InternalDb indexes
 	// IdLookupMap::string -> idx::uint -> InternalDb[idx] -> []uint8
 	IdLookupMap map[string][2]uint16
-	FreeIdsList map[string][2]uint16
 	Index map[string]int64
 	idFactory *idFactory
 	CurrMapIdx uint16
@@ -224,8 +223,6 @@ func (d *Db) Delete(id string) (bool, Error) {
 	delete(d.Index, id)
 	m[idx] = nil
 
-	d.FreeIdsList[id] = [2]uint16{idx, mapId}
-
 	return true, nil
 }
 
@@ -276,8 +273,6 @@ func (d *Db) GoDelete(id string, resChan chan *GoAppResult) {
 	delete(d.IdLookupMap, id)
 	delete(d.Index, id)
 	m[idx] = nil
-
-	d.FreeIdsList[id] = [2]uint16{idx, mapId}
 
 	d.Unlock()
 
@@ -442,7 +437,6 @@ func (d *Db) getBlock() (*[3000]*[]uint8, bool) {
 func (d *Db) init() {
 	d.InternalDb = make(map[uint16]*[3000]*[]uint8)
 	d.InternalDb[0] = &[3000]*[]uint8{}
-	d.FreeIdsList = make(map[string][2]uint16)
 	d.Index = make(map[string]int64)
 
 	d.IdLookupMap = make(map[string][2]uint16)
