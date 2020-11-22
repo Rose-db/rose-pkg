@@ -18,18 +18,18 @@ func newFsDriver(dbDir string) *fsDriver {
 	}
 }
 
-func (d *fsDriver) Save(j *[]*job, mapIdx uint16) Error {
+func (d *fsDriver) Save(j *[]*job, mapIdx uint16) (int64, int64, Error) {
 	if len(*j) == 1 {
 		job := (*j)[0]
 
 		if err := d.loadHandler(mapIdx); err != nil {
-			return err
+			return 0, 0, err
 		}
 
 		return d.CurrentHandler.Write(job.Entry)
 	}
 
-	return nil
+	return 0, 0, nil
 }
 
 func (d *fsDriver) MarkDeleted(j *[]*job, mapIdx uint16) Error {
@@ -39,6 +39,18 @@ func (d *fsDriver) MarkDeleted(j *[]*job, mapIdx uint16) Error {
 		}
 
 		return d.CurrentHandler.Delete((*j)[0].Entry)
+	}
+
+	return nil
+}
+
+func (d *fsDriver) MarkStrategicDeleted(j *[]*job, mapIdx uint16, offset int64) Error {
+	if len(*j) == 1 {
+		if err := d.loadHandler(mapIdx); err != nil {
+			return err
+		}
+
+		return d.CurrentHandler.StrategicDelete((*j)[0].Entry, offset)
 	}
 
 	return nil

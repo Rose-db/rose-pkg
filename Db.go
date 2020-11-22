@@ -31,6 +31,7 @@ type Db struct {
 	// IdLookupMap::string -> idx::uint -> InternalDb[idx] -> []uint8
 	IdLookupMap map[string][2]uint16
 	FreeIdsList map[string][2]uint16
+	Index map[string]int64
 	idFactory *idFactory
 	CurrMapIdx uint16
 	sync.RWMutex
@@ -99,7 +100,9 @@ func (d *Db) Write(v []uint8, fsWrite bool) (int, string,  Error) {
 	d.IdLookupMap[id] = [2]uint16{idx, d.CurrMapIdx}
 
 	if fsWrite {
-		err := d.saveOnFs(id, v)
+		bytesWritten, size, err := d.saveOnFs(id, v)
+
+		d.Index[id] = size - bytesWritten
 
 		if err != nil {
 			return 0, "", err
@@ -191,7 +194,7 @@ func (d *Db) GoWrite(v []uint8, fsWrite bool, goRes chan *GoAppResult) {
 	d.IdLookupMap[id] = [2]uint16{idx, d.CurrMapIdx}
 
 	if fsWrite {
-		err := d.saveOnFs(id, v)
+		_, _, err := d.saveOnFs(id, v)
 
 		if err != nil {
 			res := &GoAppResult{
@@ -416,7 +419,7 @@ func (d *Db) writeOnLoad(id string, v []uint8, mapIdx uint16, lock *sync.RWMutex
 	m[idx] = &v
 
 	if fsWrite {
-		err := d.saveOnFs(id, v)
+		_, _, err := d.saveOnFs(id, v)
 
 		if err != nil {
 			return err
@@ -457,8 +460,9 @@ func (d *Db) writeOnDefragmentation(id string, v []uint8, mapIdx uint16) Error {
 	jobs := []*job{
 		{Entry: prepareData(id, v)},
 	}
+	_, _, err := d.FsDriver.Save(&jobs, mapIdx)
 
-	if err := d.FsDriver.Save(&jobs, mapIdx); err != nil {
+	if err != nil {
 		return err
 	}
 
@@ -470,7 +474,7 @@ func (d *Db) writeOnDefragmentation(id string, v []uint8, mapIdx uint16) Error {
 
 	Save the data on the filesystem
  */
-func (d *Db) saveOnFs(id string, v []uint8) Error {
+func (d *Db) saveOnFs(id string, v []uint8) (int64, int64, Error) {
 	jobs := []*job{
 		{Entry: prepareData(id, v)},
 	}
@@ -481,6 +485,12 @@ func (d *Db) saveOnFs(id string, v []uint8) Error {
 func (d *Db) deleteFromFs(id *[]uint8, mapIdx uint16) Error {
 	jobs := []*job{
 		{Entry: id},
+	}
+
+	idx, ok := d.Index[string(*id)]
+
+	if ok {
+		return d.FsDriver.MarkStrategicDeleted(&jobs, mapIdx, idx)
 	}
 
 	return d.FsDriver.MarkDeleted(&jobs, mapIdx)
@@ -510,6 +520,7 @@ func (d *Db) init() {
 	d.InternalDb = make(map[uint16]*[3000]*[]uint8)
 	d.InternalDb[0] = &[3000]*[]uint8{}
 	d.FreeIdsList = make(map[string][2]uint16)
+	d.Index = make(map[string]int64)
 
 	d.IdLookupMap = make(map[string][2]uint16)
 

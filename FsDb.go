@@ -8,6 +8,7 @@ import (
 type fsDb struct {
 	Path string
 	File *os.File
+	Stat *os.FileInfo
 }
 
 func newFsDb(b uint16, dbDir string) (*fsDb, Error) {
@@ -25,12 +26,12 @@ func newFsDb(b uint16, dbDir string) (*fsDb, Error) {
 	}, nil
 }
 
-func (fs *fsDb) Write(d *[]uint8) Error {
+func (fs *fsDb) Write(d *[]uint8) (int64, int64, Error) {
 	if fs.File == nil {
 		err := fs.WakeUp()
 
 		if err != nil {
-			return err
+			return 0, 0, err
 		}
 	}
 
@@ -41,13 +42,22 @@ func (fs *fsDb) Write(d *[]uint8) Error {
 	if err != nil {
 		name := fs.File.Name()
 
-		return &dbError{
+		return 0, 0, &dbError{
 			Code:    DbErrorCode,
 			Message: fmt.Sprintf("Database integrity violation. Cannot write to existing file %s with underlying message: %s", name, err.Error()),
 		}
 	}
 
-	return nil
+	stat, err := os.Stat(fs.Path)
+
+	if err != nil {
+		return 0, 0, &dbError{
+			Code:    DbErrorCode,
+			Message: fmt.Sprintf("Database integrity violation. Cannot read stats on existing file %s with underlying message: %s", fs.Path, err.Error()),
+		}
+	}
+
+	return int64(len(*d)), stat.Size(), nil
 }
 
 func (fs *fsDb) Delete(id *[]uint8) Error {
@@ -91,6 +101,34 @@ func (fs *fsDb) Delete(id *[]uint8) Error {
 				Code:    DbErrorCode,
 				Message: fmt.Sprintf("Unable to delete %s: %s", string(*id), e.Error()),
 			}
+		}
+	}
+
+	return nil
+}
+
+func (fs *fsDb) StrategicDelete(id *[]uint8, offset int64) Error {
+	if fs.File == nil {
+		if err := fs.WakeUp(); err != nil {
+			return err
+		}
+	}
+
+	_, e := fs.File.Seek(offset, 0)
+
+	if e != nil {
+		return &dbError{
+			Code:    DbErrorCode,
+			Message: fmt.Sprintf("Unable to delete %s: %s", string(*id), e.Error()),
+		}
+	}
+
+	_, fsErr := fs.File.Write([]uint8(delMark))
+
+	if fsErr != nil {
+		return &dbError{
+			Code:    DbErrorCode,
+			Message: fmt.Sprintf("Unable to delete %s: %s", string(*id), fsErr.Error()),
 		}
 	}
 
