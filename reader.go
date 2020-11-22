@@ -12,6 +12,7 @@ import (
 type lineReader struct {
 	internalReader *bufio.Reader
 	reader io.ReadCloser
+	offset int64
 	buf []uint8
 }
 
@@ -49,7 +50,7 @@ func NewLineReader(r *os.File) *lineReader {
 	Reads a single line in a file. Every call to Read() return a single
 	line in a file until io.EOF is reached
  */
-func (s *lineReader) Read() (*lineReaderData, bool, Error) {
+func (s *lineReader) Read() (int64, *lineReaderData, bool, Error) {
 	ok, err := s.populateBuffer()
 
 	if !ok {
@@ -57,18 +58,22 @@ func (s *lineReader) Read() (*lineReaderData, bool, Error) {
 		s.reader = nil
 		s.buf = nil
 
-		return nil, false, nil
+		return 0, nil, false, nil
 	}
 
 	if err != nil {
-		return nil, true, err
+		return 0, nil, true, err
 	}
 
 	d := s.getData()
 
+	offset := s.offset
+
+	s.offset += int64(len(s.buf) + 1)
+
 	s.buf = make([]uint8, 1)
 
-	return d, true, nil
+	return offset, d, true, nil
 }
 
 func (s *lineReader) getData() *lineReaderData {

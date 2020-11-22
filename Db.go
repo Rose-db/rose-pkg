@@ -392,7 +392,7 @@ func (d *Db) Shutdown() Error {
 	return d.FsDriver.Shutdown()
 }
 
-func (d *Db) writeOnLoad(id string, v []uint8, mapIdx uint16, lock *sync.RWMutex) Error {
+func (d *Db) writeOnLoad(id string, v []uint8, mapIdx uint16, lock *sync.RWMutex, offset int64) Error {
 	lock.Lock()
 
 	var idx uint16
@@ -421,6 +421,7 @@ func (d *Db) writeOnLoad(id string, v []uint8, mapIdx uint16, lock *sync.RWMutex
 
 	// saving the pointer address of the data, not the actual data
 	m[idx] = &v
+	d.Index[id] = offset
 
 	lock.Unlock()
 
@@ -483,13 +484,9 @@ func (d *Db) deleteFromFs(id *[]uint8, mapIdx uint16) Error {
 		{Entry: id},
 	}
 
-	idx, ok := d.Index[string(*id)]
+	idx, _ := d.Index[string(*id)]
 
-	if ok {
-		return d.FsDriver.MarkStrategicDeleted(&jobs, mapIdx, idx)
-	}
-
-	return d.FsDriver.MarkDeleted(&jobs, mapIdx)
+	return d.FsDriver.MarkStrategicDeleted(&jobs, mapIdx, idx)
 }
 
 /**

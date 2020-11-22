@@ -1207,14 +1207,16 @@ var _ = GinkgoDescribe("Read tests", func() {
 var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	GinkgoIt("Should successfully perform and inspect inserts", func() {
 		r := testCreateRose(false)
+		n := 10000
 
 		m := r.db
 
-		testInsertFixture(m,10000, []uint8{})
+		testInsertFixture(m,n, []uint8{})
 
 		// since block index starts at 0, expected must be 3
 		assertInternalDbValues(m, 3, 0)
-		assertInternalDbIntegrity(m, 10000, 4)
+		assertInternalDbIntegrity(m, n, 4)
+		assertIndexIntegrity(m, n)
 
 		if err := r.Shutdown(); err != nil {
 			testRemoveFileSystemDb()
@@ -1229,14 +1231,16 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 
 	GinkgoIt("Should successfully perform and inspect deletes", func() {
 		r := testCreateRose(false)
+		n := 10000
 
 		m := r.db
 
-		ids := testInsertFixture(m,10000, []uint8{})
+		_, ids := testInsertFixture(m,n, []uint8{})
 
 		// since block index starts at 0, expected must be 3
 		assertInternalDbValues(m, 3, 0)
-		assertInternalDbIntegrity(m, 10000, 4)
+		assertInternalDbIntegrity(m, n, 4)
+		assertIndexIntegrity(m, n)
 
 		for _, id := range ids {
 			if id == "" {
@@ -1249,8 +1253,9 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 			gomega.Expect(status).To(gomega.Equal(true))
 		}
 
-		assertInternalDbValues(m, 3, 10000)
+		assertInternalDbValues(m, 3, n)
 		assertInternalDbIntegrity(m, 0, 4)
+		assertIndexIntegrity(m, 0)
 
 		if err := r.Shutdown(); err != nil {
 			testRemoveFileSystemDb()
@@ -1268,11 +1273,12 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 
 		m := r.db
 
-		ids := testInsertFixture(m,10000, []uint8{})
+		_, ids := testInsertFixture(m,10000, []uint8{})
 
 		// since block index starts at 0, expected must be 3
 		assertInternalDbValues(m, 3, 0)
 		assertInternalDbIntegrity(m, 10000, 4)
+		assertIndexIntegrity(m, 10000)
 
 		for _, id := range ids {
 			if id == "" {
@@ -1287,6 +1293,7 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 
 		assertInternalDbValues(m, 3, 10000)
 		assertInternalDbIntegrity(m, 0, 4)
+		assertIndexIntegrity(m, 0)
 
 		testInsertFixture(m,50000, []uint8{})
 
@@ -1335,16 +1342,12 @@ func testRemoveFileSystemDb() {
 	dir := roseDbDir()
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		panic(err)
-
-		return
 	}
 
 	files, err := ioutil.ReadDir(dir)
 
 	if err != nil {
 		panic(err)
-
-		return
 	}
 
 	for _, f := range files {
@@ -1352,13 +1355,11 @@ func testRemoveFileSystemDb() {
 
 		if err != nil {
 			panic(err)
-
-			return
 		}
 	}
 }
 
-func testInsertFixture(m *Db, num int, value []uint8) []string {
+func testInsertFixture(m *Db, num int, value []uint8) (int, []string) {
 	uuids := make([]string, num)
 	for i := 0; i < num; i++ {
 		if len(value) == 0 {
@@ -1373,7 +1374,14 @@ func testInsertFixture(m *Db, num int, value []uint8) []string {
 		uuids = append(uuids, Uuid)
 	}
 
-	return uuids
+	uuidCount := 0
+	for _, Uuid := range uuids {
+		if Uuid != "" {
+			uuidCount++
+		}
+	}
+
+	return uuidCount, uuids
 }
 
 func testIsValidUUID(u string) bool {
@@ -1401,5 +1409,18 @@ func assertInternalDbIntegrity(m *Db, expectedLen int, expectedCapacity int) {
 
 	gomega.Expect(fullNum).To(gomega.Equal(expectedLen))
 	gomega.Expect(len(m.IdLookupMap)).To(gomega.Equal(expectedLen))
+}
+
+func assertIndexIntegrity(m *Db, expectedLen int) {
+	index := m.Index
+
+	gomega.Expect(len(index)).To(gomega.Equal(expectedLen))
+
+	if len(index) > 0 {
+		for Uuid, _ := range index {
+			gomega.Expect(testIsValidUUID(Uuid)).To(gomega.BeTrue())
+		}
+	}
+
 }
 

@@ -168,7 +168,7 @@ func writeBackupToDb(log bool) Error {
 		reader := NewLineReader(file)
 
 		for {
-			val, ok, err := reader.Read()
+			_, val, ok, err := reader.Read()
 
 			if err != nil {
 				fsErr := closeFile(file)
