@@ -392,7 +392,7 @@ func (d *Db) Shutdown() Error {
 	return d.FsDriver.Shutdown()
 }
 
-func (d *Db) writeOnLoad(id string, v []uint8, mapIdx uint16, lock *sync.RWMutex, fsWrite bool) Error {
+func (d *Db) writeOnLoad(id string, v []uint8, mapIdx uint16, lock *sync.RWMutex) Error {
 	lock.Lock()
 
 	var idx uint16
@@ -421,14 +421,6 @@ func (d *Db) writeOnLoad(id string, v []uint8, mapIdx uint16, lock *sync.RWMutex
 
 	// saving the pointer address of the data, not the actual data
 	m[idx] = &v
-
-	if fsWrite {
-		_, _, err := d.saveOnFs(id, v)
-
-		if err != nil {
-			return err
-		}
-	}
 
 	lock.Unlock()
 
