@@ -14,14 +14,22 @@ import (
 var GomegaRegisterFailHandler = gomega.RegisterFailHandler
 var GinkgoFail = ginkgo.Fail
 var GinkgoRunSpecs = ginkgo.RunSpecs
+var GinkgoBeforeSuite = ginkgo.BeforeSuite
+var GinkgoDescribe = ginkgo.Describe
+var GinkgoIt = ginkgo.It
 
 func TestRose(t *testing.T) {
 	GomegaRegisterFailHandler(GinkgoFail)
 	GinkgoRunSpecs(t, "Rose Suite")
 }
 
-var GinkgoDescribe = ginkgo.Describe
-var GinkgoIt = ginkgo.It
+var _ = GinkgoBeforeSuite(func() {
+	roseDir := roseDir()
+
+	if err := os.RemoveAll(roseDir); err != nil {
+		ginkgo.Fail(fmt.Sprintf("Unable to remove rose dir under %s in BeforeEach", roseDir))
+	}
+})
 
 var _ = GinkgoDescribe("Misc tests", func() {
 	GinkgoIt("Should generate ids in expected order", func() {
