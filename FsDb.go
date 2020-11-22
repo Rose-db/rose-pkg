@@ -63,6 +63,33 @@ func (fs *fsDb) Write(d *[]uint8) (int64, int64, Error) {
 	return int64(len(*d)), fs.Size, nil
 }
 
+func (fs *fsDb) Read(offset int64) (*[]uint8, Error) {
+	if fs.File == nil {
+		if err := fs.WakeUp(); err != nil {
+			return nil, err
+		}
+	}
+
+	_, e := fs.File.Seek(offset, 0)
+
+	if e != nil {
+		return nil, &dbError{
+			Code:    DbErrorCode,
+			Message: fmt.Sprintf("Unable to seek index %d with underlying error: %s", offset, e.Error()),
+		}
+	}
+
+	r := NewLineReader(fs.File)
+
+	_, data, _, err := r.Read()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &data.val, nil
+}
+
 func (fs *fsDb) Delete(id *[]uint8) Error {
 	if fs.File == nil {
 		if err := fs.WakeUp(); err != nil {

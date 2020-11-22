@@ -126,7 +126,7 @@ func (d *Db) Write(v []uint8, fsWrite bool) (int, string,  Error) {
 func (d *Db) GoWrite(v []uint8, fsWrite bool, goRes chan *GoAppResult) {
 	d.Lock()
 
-	if len(d.FreeIdsList) > 0 {
+/*	if len(d.FreeIdsList) > 0 {
 		id := ""
 		for found := range d.FreeIdsList {
 			id = found
@@ -161,7 +161,7 @@ func (d *Db) GoWrite(v []uint8, fsWrite bool, goRes chan *GoAppResult) {
 		goRes<- res
 
 		return
-	}
+	}*/
 
 	id := uuid.New().String()
 
@@ -353,7 +353,7 @@ func (d *Db) GoDelete(id string, resChan chan *GoAppResult) {
 }
 
 func (d *Db) Read(id string, v interface{}) *dbReadResult {
-	var m *[3000]*[]uint8
+/*	var m *[3000]*[]uint8
 	var idData [2]uint16
 	var mapId, idx uint16
 	var b *[]uint8
@@ -371,7 +371,24 @@ func (d *Db) Read(id string, v interface{}) *dbReadResult {
 	m = d.InternalDb[mapId]
 
 	// get the value of id, value is a pointer, not the actual data
-	b = m[idx]
+	b = m[idx]*/
+
+	idData, ok := d.IdLookupMap[id]
+
+	idx := idData[0]
+	mapId := idData[1]
+
+	if !ok {
+		return nil
+	}
+
+	index, _ := d.Index[id]
+
+	b, err := d.FsDriver.Read(index, mapId)
+
+	if err != nil {
+		panic(err)
+	}
 
 	e := json.Unmarshal(*b, v)
 
