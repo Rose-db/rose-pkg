@@ -160,6 +160,7 @@ func (a *Rose) Delete(id string) (*AppResult, Error) {
 	}
 
 	return &AppResult{
+		Uuid: id,
 		Method: DeleteMethodType,
 		Status: EntryDeletedStatus,
 	}, nil

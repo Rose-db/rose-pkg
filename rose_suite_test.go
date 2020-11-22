@@ -82,6 +82,71 @@ var _ = GinkgoDescribe("Misc tests", func() {
 
 		gomega.Expect(size).To(gomega.Equal(dbSize))
 	})
+
+	GinkgoIt("Rose should defragment after recreating it and not have deleted values in the database", func() {
+		a := testCreateRose(false)
+		n := 5000
+
+		// write 5000
+		uuids := [5000]string{}
+		for i := 0; i < n; i++ {
+			s := testAsJson("some value")
+			res, err := a.Write(s)
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
+			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
+
+			uuids[i] = res.Uuid
+		}
+
+		deletedUuids := [3000]string{}
+		// delete 3000
+		for i := 0; i < 3000; i++ {
+			u := uuids[i]
+
+			res, err := a.Delete(u)
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(EntryDeletedStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
+
+			deletedUuids[i] = res.Uuid
+		}
+
+		if err := a.Shutdown(); err != nil {
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		a = nil
+
+		a = testCreateRose(true)
+		
+		for i := 0; i < 3000; i++ {
+			u := deletedUuids[i]
+
+			s := ""
+			res, err := a.Read(u, &s)
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
+		}
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb()
+	})
 })
 
 var _ = GinkgoDescribe("Input validity tests", func() {
