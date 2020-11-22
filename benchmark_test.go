@@ -34,7 +34,7 @@ func BenchmarkAppInsertTenThousand(b *testing.B) {
 	defer benchmarkRemoveFileSystemDb()
 
 	for n := 0; n < b.N; n++ {
-		a = testCreateRose()
+		a = testCreateRose(false)
 
 		benchmarkAppInsert(10000, a)
 
@@ -52,7 +52,7 @@ func BenchmarkAppInsertHundredThousand(b *testing.B) {
 	defer benchmarkRemoveFileSystemDb()
 
 	for n := 0; n < b.N; n++ {
-		a := testCreateRose()
+		a := testCreateRose(false)
 
 		benchmarkAppInsert(100000, a)
 

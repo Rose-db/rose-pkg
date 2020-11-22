@@ -59,7 +59,7 @@ var _ = GinkgoDescribe("Misc tests", func() {
 	})
 
 	GinkgoIt("Should return the real size of the database", func() {
-		a := testCreateRose()
+		a := testCreateRose(false)
 
 		files, err := ioutil.ReadDir(roseDbDir())
 
@@ -86,7 +86,7 @@ var _ = GinkgoDescribe("Misc tests", func() {
 
 var _ = GinkgoDescribe("Input validity tests", func() {
 	GinkgoIt("Should successfully save and read data that is similar to the delimiter", func() {
-		a := testCreateRose()
+		a := testCreateRose(false)
 
 		data := "[#]{{}#]"
 
@@ -130,7 +130,7 @@ var _ = GinkgoDescribe("Input validity tests", func() {
 	})
 
 	GinkgoIt("Should successfully skip newlines in data values and not treat them as document delimiters", func() {
-		a := testCreateRose()
+		a := testCreateRose(false)
 
 		data := "[#]{{\n}#]\n"
 
@@ -176,7 +176,7 @@ var _ = GinkgoDescribe("Input validity tests", func() {
 
 var _ = GinkgoDescribe("Successfully failing tests", func() {
 	GinkgoIt("Should fail read/delete because of an empty string id", func() {
-		a := testCreateRose()
+		a := testCreateRose(false)
 
 		s := ""
 		_, readErr := a.Read("", &s)
@@ -213,7 +213,7 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail if data is not a json byte array", func() {
-		a := testCreateRose()
+		a := testCreateRose(false)
 
 		data := "string_that_is_not_json"
 
@@ -240,7 +240,7 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail because data too large > 16MB", func() {
-		a := testCreateRose()
+		a := testCreateRose(false)
 
 		str, fsErr := ioutil.ReadFile("large_value.txt")
 
@@ -287,7 +287,7 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail to read a document if not exists", func() {
-		a := testCreateRose()
+		a := testCreateRose(false)
 
 		var s string
 		res, err := a.Read("id", &s)
@@ -307,7 +307,7 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail to delete a document if not exist", func() {
-		a := testCreateRose()
+		a := testCreateRose(false)
 
 		res, err := a.Delete("id")
 
@@ -330,7 +330,7 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 	GinkgoIt("Should assert block number based on different write numbers", func() {
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
-		a := testCreateRose()
+		a := testCreateRose(false)
 		n := 100000
 
 		for i := 0; i < n; i++ {
@@ -351,7 +351,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 	GinkgoIt("Should assert that the memory database is populated correctly from an existing fs database", func() {
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
-		a := testCreateRose()
+		a := testCreateRose(false)
 		n := 100000
 
 		uuids := [100000]string{}
@@ -377,7 +377,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 			return
 		}
 
-		a = testCreateRose()
+		a = testCreateRose(false)
 		total := 0
 		for _, Uuid := range uuids {
 			if Uuid == "" {
@@ -409,7 +409,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 	GinkgoIt("Should assert correct blocks are opened while deleting", func() {
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
-		a := testCreateRose()
+		a := testCreateRose(false)
 		counter := 0
 
 		firstWrite := [2500]string{}
@@ -481,7 +481,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 		a = nil
 
-		a = testCreateRose()
+		a = testCreateRose(false)
 
 		for _, id := range firstWrite {
 			res, err := a.Delete(id)
@@ -535,7 +535,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 	})
 
 	GinkgoIt("Should skip the deleted entries when booting a populated database", func() {
-		a := testCreateRose()
+		a := testCreateRose(false)
 		n := 1000
 		s := testAsJson(testString)
 
@@ -559,7 +559,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 		a = nil
 
-		a = testCreateRose()
+		a = testCreateRose(false)
 
 		for i, id := range uuids {
 			if i == 0 {
@@ -581,7 +581,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 		a = nil
 
-		a = testCreateRose()
+		a = testCreateRose(false)
 		
 		count := 0
 		for _, id := range uuids {
@@ -613,7 +613,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 	})
 
 	GinkgoIt("Should skip the deleted entries when booting a populated database and strategically removing entries in the database", func() {
-		a := testCreateRose()
+		a := testCreateRose(false)
 		n := 4000
 		s := testAsJson(testString)
 
@@ -637,7 +637,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 		a = nil
 
-		a = testCreateRose()
+		a = testCreateRose(false)
 
 		strategy := []int{0, 10, 150, 987, 1000, 1001, 1002, 3000, 3001, 3002, 1, 3998, 3999, 2367}
 
@@ -658,7 +658,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 		a = nil
 
-		a = testCreateRose()
+		a = testCreateRose(false)
 
 		count := 0
 		for _, id := range uuids {
@@ -682,7 +682,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 		a = nil
 
-		a = testCreateRose()
+		a = testCreateRose(false)
 
 		for _, key := range strategy {
 			id := uuids[key]
@@ -707,7 +707,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 var _ = GinkgoDescribe("Concurrency tests", func() {
 	GinkgoIt("Should write values to the database with the concurrent method", func() {
-		a := testCreateRose()
+		a := testCreateRose(false)
 		n := 1000
 
 		results := [1000]chan *GoAppResult{}
@@ -774,7 +774,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 	})
 
 	GinkgoIt("Should delete document from the database with write done synchronously", func() {
-		a := testCreateRose()
+		a := testCreateRose(false)
 		n := 1000
 
 		uuids := [1000]string{}
@@ -830,7 +830,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 		a = nil
 
-		a = testCreateRose()
+		a = testCreateRose(false)
 
 		for _, Uuid := range uuids {
 			s := ""
@@ -853,7 +853,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 	})
 
 	GinkgoIt("Should write/delete with sender/receiver patter", func() {
-		a := testCreateRose()
+		a := testCreateRose(false)
 		n := 1000
 
 		uuids := [1000]string{}
@@ -895,7 +895,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 		a = nil
 
-		a = testCreateRose()
+		a = testCreateRose(false)
 
 		for _, Uuid := range uuids {
 			s := ""
@@ -922,7 +922,7 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 	GinkgoIt("Should insert a single piece of data", func() {
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 
-		a := testCreateRose()
+		a := testCreateRose(false)
 
 		res, err := a.Write(s)
 
@@ -945,7 +945,7 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 	GinkgoIt("Should insert multiple values", func() {
 		var currId uint64
 
-		a := testCreateRose()
+		a := testCreateRose(false)
 
 		for i := 0; i < 100000; i++ {
 			s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
@@ -974,7 +974,7 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 
 var _ = GinkgoDescribe("Read tests", func() {
 	GinkgoIt("Should read a single result", func() {
-		a := testCreateRose()
+		a := testCreateRose(false)
 
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 		id := testFixtureSingleInsert(s, a)
@@ -999,7 +999,7 @@ var _ = GinkgoDescribe("Read tests", func() {
 	})
 
 	GinkgoIt("Should perform multiple reads", func() {
-		a := testCreateRose()
+		a := testCreateRose(false)
 
 		ids := make([]string, 0)
 		for i := 0; i < 100000; i++ {
@@ -1036,7 +1036,7 @@ var _ = GinkgoDescribe("Read tests", func() {
 	})
 
 	GinkgoIt("Should assert fs db integrity after multiple inserts", func() {
-		a := testCreateRose()
+		a := testCreateRose(false)
 
 		ids := make([]string, 0)
 		fsData := ""
@@ -1068,7 +1068,7 @@ var _ = GinkgoDescribe("Read tests", func() {
 	})
 
 	GinkgoIt("Should delete a single document", func() {
-		a := testCreateRose()
+		a := testCreateRose(false)
 
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 
@@ -1108,7 +1108,7 @@ var _ = GinkgoDescribe("Read tests", func() {
 
 var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	GinkgoIt("Should successfully perform and inspect inserts", func() {
-		r := testCreateRose()
+		r := testCreateRose(false)
 
 		m := r.db
 
@@ -1130,7 +1130,7 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	})
 
 	GinkgoIt("Should successfully perform and inspect deletes", func() {
-		r := testCreateRose()
+		r := testCreateRose(false)
 
 		m := r.db
 
@@ -1166,7 +1166,7 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	})
 
 	GinkgoIt("Should successfully perform and inspect delete reallocation", func() {
-		r := testCreateRose()
+		r := testCreateRose(false)
 
 		m := r.db
 
@@ -1221,10 +1221,10 @@ func testFixtureSingleInsert(value []uint8, a *Rose) string {
 	return res.Uuid
 }
 
-func testCreateRose() *Rose {
+func testCreateRose(doDefragmentation bool) *Rose {
 	var a *Rose
 
-	a, err := New(false, false)
+	a, err := New(doDefragmentation, false)
 
 	if err != nil {
 		panic(err)
