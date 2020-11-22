@@ -8,7 +8,7 @@ import (
 type fsDb struct {
 	Path string
 	File *os.File
-	Stat *os.FileInfo
+	Size int64
 }
 
 func newFsDb(b uint16, dbDir string) (*fsDb, Error) {
@@ -20,9 +20,19 @@ func newFsDb(b uint16, dbDir string) (*fsDb, Error) {
 		return nil, err
 	}
 
+	stat, statErr := os.Stat(a)
+
+	if statErr != nil {
+		return nil, &dbError{
+			Code:    DbErrorCode,
+			Message: fmt.Sprintf("Database integrity violation. Cannot read stats on existing file %s with underlying message: %s", a, statErr.Error()),
+		}
+	}
+
 	return &fsDb{
 		File: file,
 		Path: a,
+		Size: stat.Size(),
 	}, nil
 }
 
@@ -48,16 +58,9 @@ func (fs *fsDb) Write(d *[]uint8) (int64, int64, Error) {
 		}
 	}
 
-	stat, err := os.Stat(fs.Path)
+	fs.Size += int64(len(*d))
 
-	if err != nil {
-		return 0, 0, &dbError{
-			Code:    DbErrorCode,
-			Message: fmt.Sprintf("Database integrity violation. Cannot read stats on existing file %s with underlying message: %s", fs.Path, err.Error()),
-		}
-	}
-
-	return int64(len(*d)), stat.Size(), nil
+	return int64(len(*d)), fs.Size, nil
 }
 
 func (fs *fsDb) Delete(id *[]uint8) Error {
