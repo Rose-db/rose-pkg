@@ -454,10 +454,7 @@ func (d *Db) writeOnDefragmentation(id string, v []uint8, mapIdx uint16) Error {
 	// saving the pointer address of the data, not the actual data
 	m[idx] = &v
 
-	jobs := []*job{
-		{Entry: prepareData(id, v)},
-	}
-	_, _, err := d.FsDriver.Save(&jobs, mapIdx)
+	_, _, err := d.FsDriver.Save(prepareData(id, v), mapIdx)
 
 	if err != nil {
 		return err
@@ -472,21 +469,17 @@ func (d *Db) writeOnDefragmentation(id string, v []uint8, mapIdx uint16) Error {
 	Save the data on the filesystem
  */
 func (d *Db) saveOnFs(id string, v []uint8) (int64, int64, Error) {
-	jobs := []*job{
-		{Entry: prepareData(id, v)},
-	}
-
-	return d.FsDriver.Save(&jobs, d.CurrMapIdx)
+	return d.FsDriver.Save(prepareData(id, v), d.CurrMapIdx)
 }
 
 func (d *Db) deleteFromFs(id *[]uint8, mapIdx uint16) Error {
-	jobs := []*job{
-		{Entry: id},
+	idx, ok := d.Index[string(*id)]
+
+	if !ok {
+		return d.FsDriver.MarkDeleted(id, mapIdx)
 	}
 
-	idx, _ := d.Index[string(*id)]
-
-	return d.FsDriver.MarkStrategicDeleted(&jobs, mapIdx, idx)
+	return d.FsDriver.MarkStrategicDeleted(id, mapIdx, idx)
 }
 
 /**

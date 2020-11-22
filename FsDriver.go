@@ -7,10 +7,6 @@ type fsDriver struct {
 	CurrentHandlerIdx uint16
 }
 
-type job struct {
-	Entry *[]uint8
-}
-
 func newFsDriver(dbDir string) *fsDriver {
 	return &fsDriver{
 		Handlers: make(map[uint16]*fsDb),
@@ -18,42 +14,28 @@ func newFsDriver(dbDir string) *fsDriver {
 	}
 }
 
-func (d *fsDriver) Save(j *[]*job, mapIdx uint16) (int64, int64, Error) {
-	if len(*j) == 1 {
-		job := (*j)[0]
-
-		if err := d.loadHandler(mapIdx); err != nil {
-			return 0, 0, err
-		}
-
-		return d.CurrentHandler.Write(job.Entry)
+func (d *fsDriver) Save(data *[]uint8, mapIdx uint16) (int64, int64, Error) {
+	if err := d.loadHandler(mapIdx); err != nil {
+		return 0, 0, err
 	}
 
-	return 0, 0, nil
+	return d.CurrentHandler.Write(data)
 }
 
-func (d *fsDriver) MarkDeleted(j *[]*job, mapIdx uint16) Error {
-	if len(*j) == 1 {
-		if err := d.loadHandler(mapIdx); err != nil {
-			return err
-		}
-
-		return d.CurrentHandler.Delete((*j)[0].Entry)
+func (d *fsDriver) MarkDeleted(id *[]uint8, mapIdx uint16) Error {
+	if err := d.loadHandler(mapIdx); err != nil {
+		return err
 	}
 
-	return nil
+	return d.CurrentHandler.Delete(id)
 }
 
-func (d *fsDriver) MarkStrategicDeleted(j *[]*job, mapIdx uint16, offset int64) Error {
-	if len(*j) == 1 {
-		if err := d.loadHandler(mapIdx); err != nil {
-			return err
-		}
-
-		return d.CurrentHandler.StrategicDelete((*j)[0].Entry, offset)
+func (d *fsDriver) MarkStrategicDeleted(id *[]uint8, mapIdx uint16, offset int64) Error {
+	if err := d.loadHandler(mapIdx); err != nil {
+		return err
 	}
 
-	return nil
+	return d.CurrentHandler.StrategicDelete(id, offset)
 }
 
 func (d *fsDriver) Shutdown() Error {
