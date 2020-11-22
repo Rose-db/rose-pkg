@@ -1224,7 +1224,7 @@ func testFixtureSingleInsert(value []uint8, a *Rose) string {
 func testCreateRose() *Rose {
 	var a *Rose
 
-	a, err := New(false)
+	a, err := New(false, false)
 
 	if err != nil {
 		panic(err)

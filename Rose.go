@@ -21,19 +21,19 @@ type GoAppResult struct {
 	Err Error
 }
 
-func New(log bool) (*Rose, Error) {
+func New(doDefragmentation bool, log bool) (*Rose, Error) {
 	if log {
 		fmt.Println("=============")
 		fmt.Println("")
 	}
 
-	created, err := createDbIfNotExists(log)
+	_, err := createDbIfNotExists(log)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if !created {
+	if doDefragmentation {
 		if log {
 			fmt.Println(string("\033[33mWARNING:\033[0m"),"Defragmenting existing database. DO NOT STOP THIS PROCESS! Depending on the size of the database, this may take some time...")
 		}
