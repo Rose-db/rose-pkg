@@ -146,7 +146,7 @@ func (d *Db) GoWrite(v []uint8, fsWrite bool, goRes chan *GoAppResult) {
 		res := &GoAppResult{
 			Result: &AppResult{
 				Uuid:  id,
-				Method: InsertMethodType,
+				Method: WriteMethodType,
 				Status: OkResultStatus,
 				Reason: "",
 			},
@@ -221,7 +221,7 @@ func (d *Db) GoWrite(v []uint8, fsWrite bool, goRes chan *GoAppResult) {
 		res := &GoAppResult{
 			Result: &AppResult{
 				Uuid:  id,
-				Method: InsertMethodType,
+				Method: WriteMethodType,
 				Status: OkResultStatus,
 				Reason: "",
 			},
@@ -238,7 +238,7 @@ func (d *Db) GoWrite(v []uint8, fsWrite bool, goRes chan *GoAppResult) {
 	res := &GoAppResult{
 		Result: &AppResult{
 			Uuid:  id,
-			Method: InsertMethodType,
+			Method: WriteMethodType,
 			Status: OkResultStatus,
 			Reason: "",
 		},

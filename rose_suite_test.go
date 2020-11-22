@@ -95,7 +95,7 @@ var _ = GinkgoDescribe("Misc tests", func() {
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
-			gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
 			uuids[i] = res.Uuid
@@ -161,7 +161,7 @@ var _ = GinkgoDescribe("Input validity tests", func() {
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
-		gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
+		gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 		gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
 		key := res.Uuid
@@ -208,7 +208,7 @@ var _ = GinkgoDescribe("Input validity tests", func() {
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
-		gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
+		gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 		gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
 		key := res.Uuid
@@ -411,7 +411,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
-			gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 		}
 
@@ -434,7 +434,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
-			gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
 			uuids[i] = res.Uuid
@@ -492,7 +492,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
-			gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
 			firstWrite[i] = res.Uuid
@@ -506,7 +506,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
-			gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
 			secondWrite[counter] = res.Uuid
@@ -522,7 +522,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
-			gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
 			thirdWrite[counter] = res.Uuid
@@ -538,7 +538,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
-			gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
 			fourthWrite[counter] = res.Uuid
@@ -619,7 +619,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
-			gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
 			uuids[i] = res.Uuid
@@ -702,7 +702,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
-			gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
 			uuids[i] = res.Uuid
@@ -812,7 +812,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 			gomega.Expect(res.Err).To(gomega.BeNil())
 			gomega.Expect(res.Result.Status).To(gomega.Equal(OkResultStatus))
-			gomega.Expect(res.Result.Method).To(gomega.Equal(InsertMethodType))
+			gomega.Expect(res.Result.Method).To(gomega.Equal(WriteMethodType))
 
 			uuids[i] = res.Result.Uuid
 
@@ -875,7 +875,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
-			gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 
 			uuids[i] = res.Uuid
 		}
@@ -963,7 +963,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			gomega.Expect(res.Err).To(gomega.BeNil())
 			gomega.Expect(res.Result.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(testIsValidUUID(res.Result.Uuid)).To(gomega.BeTrue())
-			gomega.Expect(res.Result.Method).To(gomega.Equal(InsertMethodType))
+			gomega.Expect(res.Result.Method).To(gomega.Equal(WriteMethodType))
 
 			ch := a.GoDelete(res.Result.Uuid)
 
@@ -1020,7 +1020,7 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
-		gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
+		gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 		gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
 		if err := a.Shutdown(); err != nil {
@@ -1046,7 +1046,7 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
-			gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
 			currId++
@@ -1102,7 +1102,7 @@ var _ = GinkgoDescribe("Read tests", func() {
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
-			gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
@@ -1144,7 +1144,7 @@ var _ = GinkgoDescribe("Read tests", func() {
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
-			gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
 			fsData += string(*prepareData(res.Uuid, data))
@@ -1172,7 +1172,7 @@ var _ = GinkgoDescribe("Read tests", func() {
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
-		gomega.Expect(res.Method).To(gomega.Equal(InsertMethodType))
+		gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 		gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
 		Uuid := res.Uuid

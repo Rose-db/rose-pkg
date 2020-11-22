@@ -92,7 +92,7 @@ func (a *Rose) Write(data []uint8) (*AppResult, Error) {
 
 	return &AppResult{
 		Uuid: id,
-		Method: InsertMethodType,
+		Method: WriteMethodType,
 		Status: OkResultStatus,
 	}, nil
 }
