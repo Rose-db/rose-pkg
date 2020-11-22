@@ -194,7 +194,9 @@ func (d *Db) GoWrite(v []uint8, fsWrite bool, goRes chan *GoAppResult) {
 	d.IdLookupMap[id] = [2]uint16{idx, d.CurrMapIdx}
 
 	if fsWrite {
-		_, _, err := d.saveOnFs(id, v)
+		bytesWritten, size, err := d.saveOnFs(id, v)
+
+		d.Index[id] = size - bytesWritten
 
 		if err != nil {
 			res := &GoAppResult{
@@ -279,6 +281,7 @@ func (d *Db) Delete(id string) (bool, Error) {
 	m = d.InternalDb[mapId]
 
 	delete(d.IdLookupMap, id)
+	delete(d.Index, id)
 	m[idx] = nil
 
 	d.FreeIdsList[id] = [2]uint16{idx, mapId}
@@ -331,6 +334,7 @@ func (d *Db) GoDelete(id string, resChan chan *GoAppResult) {
 	m = d.InternalDb[mapId]
 
 	delete(d.IdLookupMap, id)
+	delete(d.Index, id)
 	m[idx] = nil
 
 	d.FreeIdsList[id] = [2]uint16{idx, mapId}
