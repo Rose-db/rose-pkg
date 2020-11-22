@@ -126,43 +126,6 @@ func (d *Db) Write(v []uint8, fsWrite bool) (int, string,  Error) {
 func (d *Db) GoWrite(v []uint8, fsWrite bool, goRes chan *GoAppResult) {
 	d.Lock()
 
-/*	if len(d.FreeIdsList) > 0 {
-		id := ""
-		for found := range d.FreeIdsList {
-			id = found
-			break
-		}
-
-		list := d.FreeIdsList[id]
-		idx := list[0]
-		mapId := list[1]
-
-		d.IdLookupMap[id] = [2]uint16{idx, mapId}
-		// we know that the block has to exist since its in the free list
-		// and that means it was deleted
-		m := d.InternalDb[mapId]
-
-		m[idx] = &v
-
-		delete(d.FreeIdsList, id)
-
-		res := &GoAppResult{
-			Result: &AppResult{
-				Uuid:  id,
-				Method: WriteMethodType,
-				Status: OkResultStatus,
-				Reason: "",
-			},
-			Err:    nil,
-		}
-
-		d.Unlock()
-
-		goRes<- res
-
-		return
-	}*/
-
 	id := uuid.New().String()
 
 	// check if the entry already exists
@@ -353,26 +316,6 @@ func (d *Db) GoDelete(id string, resChan chan *GoAppResult) {
 }
 
 func (d *Db) Read(id string, v interface{}) *dbReadResult {
-/*	var m *[3000]*[]uint8
-	var idData [2]uint16
-	var mapId, idx uint16
-	var b *[]uint8
-
-	idData, ok := d.IdLookupMap[id]
-
-	idx = idData[0]
-	mapId = idData[1]
-
-	if !ok {
-		return nil
-	}
-
-	// get the map where the id value is
-	m = d.InternalDb[mapId]
-
-	// get the value of id, value is a pointer, not the actual data
-	b = m[idx]*/
-
 	idData, ok := d.IdLookupMap[id]
 
 	idx := idData[0]
