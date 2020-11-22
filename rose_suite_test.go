@@ -1214,7 +1214,7 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		testInsertFixture(m,n, []uint8{})
 
 		// since block index starts at 0, expected must be 3
-		assertInternalDbValues(m, 3, 0)
+		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(3)))
 		assertInternalDbIntegrity(m, n, 4)
 		assertIndexIntegrity(m, n)
 
@@ -1238,7 +1238,7 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		_, ids := testInsertFixture(m,n, []uint8{})
 
 		// since block index starts at 0, expected must be 3
-		assertInternalDbValues(m, 3, 0)
+		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(3)))
 		assertInternalDbIntegrity(m, n, 4)
 		assertIndexIntegrity(m, n)
 
@@ -1253,7 +1253,7 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 			gomega.Expect(status).To(gomega.Equal(true))
 		}
 
-		assertInternalDbValues(m, 3, n)
+		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(3)))
 		assertInternalDbIntegrity(m, 0, 4)
 		assertIndexIntegrity(m, 0)
 
@@ -1276,7 +1276,8 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		_, ids := testInsertFixture(m,10000, []uint8{})
 
 		// since block index starts at 0, expected must be 3
-		assertInternalDbValues(m, 3, 0)
+		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(3)))
+
 		assertInternalDbIntegrity(m, 10000, 4)
 		assertIndexIntegrity(m, 10000)
 
@@ -1291,14 +1292,14 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 			gomega.Expect(status).To(gomega.Equal(true))
 		}
 
-		assertInternalDbValues(m, 3, 10000)
+		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(3)))
 		assertInternalDbIntegrity(m, 0, 4)
 		assertIndexIntegrity(m, 0)
 
 		testInsertFixture(m,50000, []uint8{})
 
-		assertInternalDbValues(m, 16, 0)
-		assertInternalDbIntegrity(m, 50000, 17)
+		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(20)))
+		assertInternalDbIntegrity(m, 50000, 20)
 
 		if err := r.Shutdown(); err != nil {
 			testRemoveFileSystemDb()
@@ -1387,11 +1388,6 @@ func testInsertFixture(m *Db, num int, value []uint8) (int, []string) {
 func testIsValidUUID(u string) bool {
 	_, err := uuid.Parse(u)
 	return err == nil
-}
-
-func assertInternalDbValues(m *Db, expectedMapIdx uint16, freeListLen int) {
-	gomega.Expect(m.CurrMapIdx).To(gomega.Equal(expectedMapIdx))
-	gomega.Expect(len(m.FreeIdsList)).To(gomega.Equal(freeListLen))
 }
 
 func assertInternalDbIntegrity(m *Db, expectedLen int, expectedCapacity int) {

@@ -58,7 +58,7 @@ func newMemoryDb(fsDriver *fsDriver) *Db {
 	- the value is stored in the block with its index
 */
 func (d *Db) Write(v []uint8, fsWrite bool) (int, string,  Error) {
-	if len(d.FreeIdsList) > 0 {
+/*	if len(d.FreeIdsList) > 0 {
 		id := ""
 		for found, _ := range d.FreeIdsList {
 			id = found
@@ -79,7 +79,7 @@ func (d *Db) Write(v []uint8, fsWrite bool) (int, string,  Error) {
 		delete(d.FreeIdsList, id)
 
 		return FreeListQueryStatus, id, nil
-	}
+	}*/
 
 	id := uuid.New().String()
 
