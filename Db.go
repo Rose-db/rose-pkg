@@ -338,7 +338,7 @@ func (d *Db) GoDelete(id string, resChan chan *GoAppResult) {
 		Result: &AppResult{
 			Uuid:  id,
 			Method: DeleteMethodType,
-			Status: EntryDeletedStatus,
+			Status: DeletedResultStatus,
 			Reason: "",
 		},
 		Err:    nil,

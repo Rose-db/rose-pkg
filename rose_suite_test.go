@@ -109,7 +109,7 @@ var _ = GinkgoDescribe("Misc tests", func() {
 			res, err := a.Delete(u)
 
 			gomega.Expect(err).To(gomega.BeNil())
-			gomega.Expect(res.Status).To(gomega.Equal(EntryDeletedStatus))
+			gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
@@ -177,7 +177,7 @@ var _ = GinkgoDescribe("Input validity tests", func() {
 		res, err = a.Delete(key)
 
 		gomega.Expect(err).To(gomega.BeNil())
-		gomega.Expect(res.Status).To(gomega.Equal(EntryDeletedStatus))
+		gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 		gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
@@ -224,7 +224,7 @@ var _ = GinkgoDescribe("Input validity tests", func() {
 		res, err = a.Delete(key)
 
 		gomega.Expect(err).To(gomega.BeNil())
-		gomega.Expect(res.Status).To(gomega.Equal(EntryDeletedStatus))
+		gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 		gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
@@ -561,7 +561,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 			res, err := a.Delete(id)
 
 			gomega.Expect(err).To(gomega.BeNil())
-			gomega.Expect(res.Status).To(gomega.Equal(EntryDeletedStatus))
+			gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 		}
 
@@ -571,7 +571,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 			res, err := a.Delete(id)
 
 			gomega.Expect(err).To(gomega.BeNil())
-			gomega.Expect(res.Status).To(gomega.Equal(EntryDeletedStatus))
+			gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 		}
 
@@ -581,7 +581,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 			res, err := a.Delete(id)
 
 			gomega.Expect(err).To(gomega.BeNil())
-			gomega.Expect(res.Status).To(gomega.Equal(EntryDeletedStatus))
+			gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 		}
 
@@ -591,7 +591,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 			res, err := a.Delete(id)
 
 			gomega.Expect(err).To(gomega.BeNil())
-			gomega.Expect(res.Status).To(gomega.Equal(EntryDeletedStatus))
+			gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 		}
 
@@ -643,7 +643,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 			res, err := a.Delete(id)
 
 			gomega.Expect(err).To(gomega.BeNil())
-			gomega.Expect(res.Status).To(gomega.Equal(EntryDeletedStatus))
+			gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 		}
@@ -725,7 +725,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 			res, err := a.Delete(id)
 
 			gomega.Expect(err).To(gomega.BeNil())
-			gomega.Expect(res.Status).To(gomega.Equal(EntryDeletedStatus))
+			gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 		}
@@ -894,7 +894,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			gomega.Expect(res.Err).To(gomega.BeNil())
 			gomega.Expect(res.Result).To(gomega.Not(gomega.BeNil()))
 			gomega.Expect(testIsValidUUID(res.Result.Uuid)).To(gomega.BeTrue())
-			gomega.Expect(res.Result.Status).To(gomega.Equal(EntryDeletedStatus))
+			gomega.Expect(res.Result.Status).To(gomega.Equal(DeletedResultStatus))
 			gomega.Expect(res.Result.Method).To(gomega.Equal(DeleteMethodType))
 
 			count++
@@ -972,7 +972,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			gomega.Expect(delRes.Err).To(gomega.BeNil())
 			gomega.Expect(delRes.Result).To(gomega.Not(gomega.BeNil()))
 			gomega.Expect(testIsValidUUID(res.Result.Uuid)).To(gomega.BeTrue())
-			gomega.Expect(delRes.Result.Status).To(gomega.Equal(EntryDeletedStatus))
+			gomega.Expect(delRes.Result.Status).To(gomega.Equal(DeletedResultStatus))
 			gomega.Expect(delRes.Result.Method).To(gomega.Equal(DeleteMethodType))
 
 			uuids[i] = res.Result.Uuid
@@ -1180,7 +1180,7 @@ var _ = GinkgoDescribe("Read tests", func() {
 		res, err = a.Delete(Uuid)
 
 		gomega.Expect(err).To(gomega.BeNil())
-		gomega.Expect(res.Status).To(gomega.Equal(EntryDeletedStatus))
+		gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 		gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
