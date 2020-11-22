@@ -61,7 +61,10 @@ func (d *Db) Write(v []uint8, fsWrite bool) (int, string,  Error) {
 
 	// check if the entry already exists
 	if _, ok := d.IdLookupMap[id]; ok {
-		return ExistsStatus, "", nil
+		return 0, "", &dbIntegrityError{
+			Code:    DbIntegrityViolationCode,
+			Message: fmt.Sprintf("A uuid that is already exists has been generated. This must not happen. Please, try this method again"),
+		}
 	}
 
 	var idx uint16
