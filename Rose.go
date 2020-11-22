@@ -125,6 +125,7 @@ func (a *Rose) Read(id string, v interface{}) (*AppResult, Error) {
 
 	if res == nil {
 		return &AppResult{
+			Uuid: id,
 			Method: ReadMethodType,
 			Status: NotFoundResultStatus,
 			Reason: fmt.Sprintf("Rose: Entry with id %s not found", id),
@@ -132,6 +133,7 @@ func (a *Rose) Read(id string, v interface{}) (*AppResult, Error) {
 	}
 
 	return &AppResult{
+		Uuid: id,
 		Method: ReadMethodType,
 		Status: FoundResultStatus,
 	}, nil
@@ -153,6 +155,7 @@ func (a *Rose) Delete(id string) (*AppResult, Error) {
 
 	if !res {
 		return &AppResult{
+			Uuid: id,
 			Method: DeleteMethodType,
 			Status: NotFoundResultStatus,
 			Reason: fmt.Sprintf("Rose: Entry with id %s not found", id),
