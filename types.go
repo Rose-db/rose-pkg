@@ -9,8 +9,8 @@ const dbIntegrityErrorType = "db_integrity_error"
 // application error codes
 const DataErrorCode = 1
 const SystemErrorCode = 2
-const DbIntegrityViolationCode = 4
-const DbErrorCode = 5
+const DbIntegrityViolationCode = 3
+const DbErrorCode = 4
 
 // result status
 const OkResultStatus = "ok"
@@ -24,10 +24,8 @@ const DeleteMethodType = "delete"
 const ReadMethodType = "read"
 
 // memory db status types
-const FreeListQueryStatus = 1
-const ExistsStatus = 2
-const NewBlockCreatedStatus = 3
-const NormalExecutionStatus = 4
+const NewBlockCreatedStatus = 1
+const NormalExecutionStatus = 2
 
 // 16MB
 const maxValSize = 16000000

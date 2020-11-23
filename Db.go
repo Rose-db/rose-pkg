@@ -68,12 +68,11 @@ func (d *Db) Write(v []uint8, fsWrite bool) (int, string,  Error) {
 	}
 
 	var idx uint16
-	var m *[3000]*[]uint8
 
 	// r/w operation, create uint64 index
 	idx = d.idFactory.Next()
 
-	m, created := d.getBlock()
+	//m, created := d.getBlock()
 
 	// r operation, add COMPUTED index to the index map
 	d.IdLookupMap[id] = [2]uint16{idx, d.CurrMapIdx}
@@ -89,15 +88,15 @@ func (d *Db) Write(v []uint8, fsWrite bool) (int, string,  Error) {
 	}
 
 	// saving the pointer address of the data, not the actual data
-	m[idx] = &v
+	//m[idx] = &v
 
 	if idx == 2999 {
 		d.CurrMapIdx++
 	}
 
-	if created {
+/*	if created {
 		return NewBlockCreatedStatus, id,  nil
-	}
+	}*/
 	
 	return NormalExecutionStatus, id, nil
 }
@@ -125,12 +124,9 @@ func (d *Db) GoWrite(v []uint8, fsWrite bool, goRes chan *GoAppResult) {
 	}
 
 	var idx uint16
-	var m *[3000]*[]uint8
 
 	// r/w operation, create uint64 index
 	idx = d.idFactory.Next()
-
-	m, created := d.getBlock()
 
 	// r operation, add COMPUTED index to the index map
 	d.IdLookupMap[id] = [2]uint16{idx, d.CurrMapIdx}
@@ -157,29 +153,8 @@ func (d *Db) GoWrite(v []uint8, fsWrite bool, goRes chan *GoAppResult) {
 		}
 	}
 
-	// saving the pointer address of the data, not the actual data
-	m[idx] = &v
-
 	if idx == 2999 {
 		d.CurrMapIdx++
-	}
-
-	if created {
-		res := &GoAppResult{
-			Result: &AppResult{
-				Uuid:  id,
-				Method: WriteMethodType,
-				Status: OkResultStatus,
-				Reason: "",
-			},
-			Err: nil,
-		}
-
-		d.Unlock()
-
-		goRes<- res
-
-		return
 	}
 
 	res := &GoAppResult{
@@ -199,8 +174,7 @@ func (d *Db) GoWrite(v []uint8, fsWrite bool, goRes chan *GoAppResult) {
 
 func (d *Db) Delete(id string) (bool, Error) {
 	var idData [2]uint16
-	var mapId, idx uint16
-	var m *[3000]*[]uint8
+	var mapId uint16
 
 	idData, ok := d.IdLookupMap[id]
 
@@ -217,14 +191,8 @@ func (d *Db) Delete(id string) (bool, Error) {
 		return false, err
 	}
 
-	idx = idData[0]
-
-	// get the map where the id value is
-	m = d.InternalDb[mapId]
-
 	delete(d.IdLookupMap, id)
 	delete(d.Index, id)
-	m[idx] = nil
 
 	return true, nil
 }
@@ -233,8 +201,7 @@ func (d *Db) GoDelete(id string, resChan chan *GoAppResult) {
 	d.Lock()
 
 	var idData [2]uint16
-	var mapId, idx uint16
-	var m *[3000]*[]uint8
+	var mapId uint16
 
 	idData, ok := d.IdLookupMap[id]
 
@@ -268,14 +235,8 @@ func (d *Db) GoDelete(id string, resChan chan *GoAppResult) {
 		return
 	}
 
-	idx = idData[0]
-
-	// get the map where the id value is
-	m = d.InternalDb[mapId]
-
 	delete(d.IdLookupMap, id)
 	delete(d.Index, id)
-	m[idx] = nil
 
 	d.Unlock()
 

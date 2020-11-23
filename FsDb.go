@@ -192,14 +192,6 @@ func (fs *fsDb) SyncAndClose() Error {
 	var err error
 
 	name := fs.File.Name()
-	err = fs.File.Sync()
-
-	if err != nil {
-		return &dbError{
-			Code:    DbErrorCode,
-			Message: fmt.Sprintf("Database integrity violation. Database file system problem for file %s with underlying message: %s", name, err.Error()),
-		}
-	}
 
 	err = fs.File.Close()
 

@@ -1,7 +1,6 @@
 package rose
 
 type fsDriver struct {
-	Handlers map[uint16]*fsDb
 	DbDir string
 	CurrentHandler *fsDb
 	CurrentHandlerIdx uint16
@@ -9,7 +8,6 @@ type fsDriver struct {
 
 func newFsDriver(dbDir string) *fsDriver {
 	return &fsDriver{
-		Handlers: make(map[uint16]*fsDb),
 		DbDir: dbDir,
 	}
 }
@@ -47,15 +45,13 @@ func (d *fsDriver) MarkStrategicDeleted(id *[]uint8, mapIdx uint16, offset int64
 }
 
 func (d *fsDriver) Shutdown() Error {
-	for _, handler := range d.Handlers {
-		if handler.File != nil {
-			if err := handler.SyncAndClose(); err != nil {
-				return err
-			}
+	if d.CurrentHandler != nil {
+		if err := d.CurrentHandler.SyncAndClose(); err != nil {
+			return err
 		}
 	}
 
-	d.Handlers = make(map[uint16]*fsDb)
+	d.CurrentHandler = nil
 
 	return nil
 }
@@ -66,26 +62,15 @@ func (d *fsDriver) loadHandler(mapIdx uint16) Error {
 	}
 
 	if d.CurrentHandler != nil {
-		if err := d.CurrentHandler.Sleep(); err != nil {
+		if err := d.CurrentHandler.SyncAndClose(); err != nil {
 			return err
 		}
 	}
 
-	handler, ok := d.Handlers[mapIdx]
+	handler, err := newFsDb(mapIdx, d.DbDir)
 
-	if !ok {
-		handler, err := newFsDb(mapIdx, d.DbDir)
-
-		if err != nil {
-			return err
-		}
-
-		d.Handlers[mapIdx] = handler
-
-		d.CurrentHandler = handler
-		d.CurrentHandlerIdx = mapIdx
-
-		return nil
+	if err != nil {
+		return err
 	}
 
 	d.CurrentHandler = handler
