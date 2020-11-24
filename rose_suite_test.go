@@ -802,9 +802,9 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 var _ = GinkgoDescribe("Concurrency tests", func() {
 	GinkgoIt("Should write values to the database with the concurrent method", func() {
 		a := testCreateRose(false)
-		n := 1000
+		n := 10000
 
-		results := [1000]chan *GoAppResult{}
+		results := [10000]chan *GoAppResult{}
 		for i := 0; i < n; i++ {
 			s := testAsJson(testString)
 
@@ -813,7 +813,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			results[i] = resChan
 		}
 
-		uuids := [1000]string{}
+		uuids := [10000]string{}
 		count := 0
 		for i, c := range results {
 			res := <-c
@@ -872,9 +872,9 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 	GinkgoIt("Should delete document from the database with write done synchronously", func() {
 		a := testCreateRose(false)
-		n := 1000
+		n := 10000
 
-		uuids := [1000]string{}
+		uuids := [10000]string{}
 		for i := 0; i < n; i++ {
 			s := testAsJson(testString)
 
@@ -888,7 +888,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			uuids[i] = res.Uuid
 		}
 
-		goResults := [1000]chan *GoAppResult{}
+		goResults := [10000]chan *GoAppResult{}
 		for i, Uuid := range uuids {
 			resChan := a.GoDelete(Uuid)
 
@@ -953,10 +953,10 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 	GinkgoIt("Should write/delete with sender/receiver patter", func() {
 		a := testCreateRose(false)
-		n := 1000
+		n := 10000
 
-		uuids := [1000]string{}
-		goResults := [1000]chan *GoAppResult{}
+		uuids := [10000]string{}
+		goResults := [10000]chan *GoAppResult{}
 		for i := 0; i < n; i++ {
 			s := testAsJson(testString)
 

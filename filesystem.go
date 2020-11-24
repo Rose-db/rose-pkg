@@ -175,7 +175,7 @@ func loadSingleFile(m *Db, dataCh<- chan os.FileInfo, wg *sync.WaitGroup, errCha
 		i, _ := strconv.Atoi(underscoreSplit[1])
 		mapIdx := uint16(i)
 
-		err = m.writeOnLoad(string(val.id), val.val, mapIdx, lock, offset)
+		err = m.writeOnLoad(string(val.id), mapIdx, lock, offset)
 
 		if err != nil {
 			fsErr := closeFile(file)

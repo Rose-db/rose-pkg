@@ -288,7 +288,7 @@ func (d *Db) Shutdown() Error {
 	return d.FsDriver.Shutdown()
 }
 
-func (d *Db) writeOnLoad(id string, v []uint8, mapIdx uint16, lock *sync.RWMutex, offset int64) Error {
+func (d *Db) writeOnLoad(id string, mapIdx uint16, lock *sync.RWMutex, offset int64) Error {
 	lock.Lock()
 
 	var idx uint16
@@ -315,8 +315,6 @@ func (d *Db) writeOnLoad(id string, v []uint8, mapIdx uint16, lock *sync.RWMutex
 	// r operation, add COMPUTED index to the index map
 	d.IdLookupMap[id] = [2]uint16{idx, mapIdx}
 
-	// saving the pointer address of the data, not the actual data
-	m[idx] = &v
 	d.Index[id] = offset
 
 	lock.Unlock()
