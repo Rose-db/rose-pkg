@@ -16,6 +16,7 @@ var GomegaRegisterFailHandler = gomega.RegisterFailHandler
 var GinkgoFail = ginkgo.Fail
 var GinkgoRunSpecs = ginkgo.RunSpecs
 var GinkgoBeforeSuite = ginkgo.BeforeSuite
+var GinkgoAfterSuite = ginkgo.AfterSuite
 var GinkgoDescribe = ginkgo.Describe
 var GinkgoIt = ginkgo.It
 
@@ -25,6 +26,14 @@ func TestRose(t *testing.T) {
 }
 
 var _ = GinkgoBeforeSuite(func() {
+	roseDir := roseDir()
+
+	if err := os.RemoveAll(roseDir); err != nil {
+		ginkgo.Fail(fmt.Sprintf("Unable to remove rose dir under %s in BeforeEach", roseDir))
+	}
+})
+
+var _ = GinkgoAfterSuite(func() {
 	roseDir := roseDir()
 
 	if err := os.RemoveAll(roseDir); err != nil {
@@ -1034,7 +1043,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			values[i] = value
 		}
 
-		time.Sleep(10 * time.Second)
+		time.Sleep(15 * time.Second)
 
 		for i, resChan := range goResults {
 			res := <-resChan
@@ -1054,6 +1063,55 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			gomega.Expect(testIsValidUUID(appResult.Uuid)).To(gomega.BeTrue())
 			gomega.Expect(appResult.Status).To(gomega.Equal(FoundResultStatus))
 			gomega.Expect(appResult.Method).To(gomega.Equal(ReadMethodType))
+		}
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
+			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb()
+	})
+
+	GinkgoIt("Should delete data without waiting for a goroutine to finish and read the results after a timeout", func() {
+		a := testCreateRose(false)
+		n := 10000
+
+		results := [10000] *AppResult{}
+		for i := 0; i < n; i++ {
+			value := fmt.Sprintf("value-%d", i)
+			s := testAsJson(value)
+
+			result, err := a.Write(s)
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(result.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(testIsValidUUID(result.Uuid)).To(gomega.BeTrue())
+			gomega.Expect(result.Method).To(gomega.Equal(WriteMethodType))
+
+			results[i] = result
+		}
+
+		goResults := [10000]chan *GoAppResult{}
+		for i, res := range results {
+			ch := a.GoDelete(res.Uuid)
+
+			goResults[i] = ch
+		}
+
+		time.Sleep(15 * time.Second)
+
+		for _, resChan := range goResults {
+			res := <-resChan
+
+			gomega.Expect(res.Err).To(gomega.BeNil())
+			gomega.Expect(res.Result).To(gomega.Not(gomega.BeNil()))
+			gomega.Expect(testIsValidUUID(res.Result.Uuid)).To(gomega.BeTrue())
+			gomega.Expect(res.Result.Status).To(gomega.Equal(DeletedResultStatus))
+			gomega.Expect(res.Result.Method).To(gomega.Equal(DeleteMethodType))
 		}
 
 		if err := a.Shutdown(); err != nil {
