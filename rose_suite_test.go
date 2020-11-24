@@ -1214,7 +1214,6 @@ var _ = GinkgoDescribe("Read tests", func() {
 
 var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	GinkgoIt("Should successfully perform and inspect inserts", func() {
-		ginkgo.Skip("")
 		r := testCreateRose(false)
 		n := 10000
 
@@ -1224,7 +1223,6 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 
 		// since block index starts at 0, expected must be 3
 		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(3)))
-		assertInternalDbIntegrity(m, n, 4)
 		assertIndexIntegrity(m, n)
 
 		if err := r.Shutdown(); err != nil {
@@ -1239,8 +1237,6 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	})
 
 	GinkgoIt("Should successfully perform and inspect deletes", func() {
-		ginkgo.Skip("")
-
 		r := testCreateRose(false)
 		n := 10000
 
@@ -1250,7 +1246,6 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 
 		// since block index starts at 0, expected must be 3
 		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(3)))
-		assertInternalDbIntegrity(m, n, 4)
 		assertIndexIntegrity(m, n)
 
 		for _, id := range ids {
@@ -1265,7 +1260,6 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		}
 
 		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(3)))
-		assertInternalDbIntegrity(m, 0, 4)
 		assertIndexIntegrity(m, 0)
 
 		if err := r.Shutdown(); err != nil {
@@ -1280,8 +1274,6 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	})
 
 	GinkgoIt("Should successfully perform and inspect delete reallocation", func() {
-		ginkgo.Skip("")
-
 		r := testCreateRose(false)
 
 		m := r.db
@@ -1291,7 +1283,6 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		// since block index starts at 0, expected must be 3
 		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(3)))
 
-		assertInternalDbIntegrity(m, 10000, 4)
 		assertIndexIntegrity(m, 10000)
 
 		for _, id := range ids {
@@ -1306,13 +1297,11 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		}
 
 		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(3)))
-		assertInternalDbIntegrity(m, 0, 4)
 		assertIndexIntegrity(m, 0)
 
 		testInsertFixture(m,50000, []uint8{})
 
 		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(20)))
-		assertInternalDbIntegrity(m, 50000, 20)
 
 		if err := r.Shutdown(); err != nil {
 			testRemoveFileSystemDb()
