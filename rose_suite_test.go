@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
@@ -1004,6 +1005,55 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
 			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
+		}
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
+			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb()
+	})
+
+	GinkgoIt("Should write data without waiting for a goroutine to finish and read the results after a timeout", func() {
+		a := testCreateRose(false)
+		n := 10000
+
+		goResults := [10000]chan *GoAppResult{}
+		values := [10000]string{}
+		for i := 0; i < n; i++ {
+			value := fmt.Sprintf("value-%d", i)
+			s := testAsJson(value)
+
+			resChan := a.GoWrite(s)
+
+			goResults[i] = resChan
+			values[i] = value
+		}
+
+		time.Sleep(10 * time.Second)
+
+		for i, resChan := range goResults {
+			res := <-resChan
+			value := values[i]
+
+			gomega.Expect(res.Err).To(gomega.BeNil())
+			gomega.Expect(res.Result.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(testIsValidUUID(res.Result.Uuid)).To(gomega.BeTrue())
+			gomega.Expect(res.Result.Method).To(gomega.Equal(WriteMethodType))
+
+			s := ""
+			appResult, err := a.Read(res.Result.Uuid, &s)
+
+			gomega.Expect(value).To(gomega.Equal(s))
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(testIsValidUUID(appResult.Uuid)).To(gomega.BeTrue())
+			gomega.Expect(appResult.Status).To(gomega.Equal(FoundResultStatus))
+			gomega.Expect(appResult.Method).To(gomega.Equal(ReadMethodType))
 		}
 
 		if err := a.Shutdown(); err != nil {
