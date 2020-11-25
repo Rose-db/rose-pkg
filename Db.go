@@ -32,7 +32,6 @@ type Db struct {
 	IdLookupMap          map[int][2]uint16
 	Index                map[int]int64
 	AutoIncrementCounter int
-	idFactory            *idFactory
 	CurrMapIdx           uint16
 	sync.RWMutex
 
@@ -67,13 +66,8 @@ func (d *Db) Write(v []uint8, fsWrite bool) (int, int, Error) {
 		}
 	}
 
-	var idx uint16
-
-	// r/w operation, create uint64 index
-	idx = d.idFactory.Next()
-
 	// r operation, add COMPUTED index to the index map
-	d.IdLookupMap[id] = [2]uint16{idx, d.CurrMapIdx}
+	d.IdLookupMap[id] = [2]uint16{uint16(d.AutoIncrementCounter % 2999), d.CurrMapIdx}
 
 	if fsWrite {
 		bytesWritten, size, err := d.saveOnFs(id, v)
@@ -117,13 +111,8 @@ func (d *Db) GoWrite(v []uint8, fsWrite bool, goRes chan *GoAppResult) {
 		return
 	}
 
-	var idx uint16
-
-	// r/w operation, create uint64 index
-	idx = d.idFactory.Next()
-
 	// r operation, add COMPUTED index to the index map
-	d.IdLookupMap[id] = [2]uint16{idx, d.CurrMapIdx}
+	d.IdLookupMap[id] = [2]uint16{uint16(d.AutoIncrementCounter % 2999), d.CurrMapIdx}
 
 	if fsWrite {
 		bytesWritten, size, err := d.saveOnFs(id, v)
@@ -289,8 +278,6 @@ func (d *Db) Shutdown() Error {
 func (d *Db) writeOnLoad(id int, mapIdx uint16, lock *sync.RWMutex, offset int64) Error {
 	lock.Lock()
 
-	var idx uint16
-
 	// check if the entry already exists
 	if _, ok := d.IdLookupMap[id]; ok {
 		lock.Unlock()
@@ -298,11 +285,8 @@ func (d *Db) writeOnLoad(id int, mapIdx uint16, lock *sync.RWMutex, offset int64
 		return nil
 	}
 
-	// r/w operation, create uint64 index
-	idx = d.idFactory.Next()
-
 	// r operation, add COMPUTED index to the index map
-	d.IdLookupMap[id] = [2]uint16{idx, mapIdx}
+	d.IdLookupMap[id] = [2]uint16{uint16(d.AutoIncrementCounter % 2999), mapIdx}
 
 	d.Index[id] = offset
 
@@ -314,30 +298,13 @@ func (d *Db) writeOnLoad(id int, mapIdx uint16, lock *sync.RWMutex, offset int64
 }
 
 func (d *Db) writeOnDefragmentation(id int, v []uint8, mapIdx uint16) Error {
-	var idx uint16
-	var m *[3000]*[]uint8
-
 	// check if the entry already exists
 	if _, ok := d.IdLookupMap[id]; ok {
 		return nil
 	}
 
-	// r/w operation, create uint64 index
-	idx = d.idFactory.Next()
-
-	m, ok := d.InternalDb[mapIdx]
-
-	if !ok {
-		// current block does not exist, created a new one
-		m = &[3000]*[]uint8{}
-		d.InternalDb[mapIdx] = m
-	}
-
 	// r operation, add COMPUTED index to the index map
-	d.IdLookupMap[id] = [2]uint16{idx, mapIdx}
-
-	// saving the pointer address of the data, not the actual data
-	m[idx] = &v
+	d.IdLookupMap[id] = [2]uint16{uint16(d.AutoIncrementCounter % 2999), mapIdx}
 
 	_, _, err := d.FsDriver.Save(prepareData(id, v), mapIdx)
 
@@ -399,6 +366,5 @@ func (d *Db) init() {
 
 	d.IdLookupMap = make(map[int][2]uint16)
 
-	d.idFactory = newIdFactory()
 	d.CurrMapIdx = 0
 }
