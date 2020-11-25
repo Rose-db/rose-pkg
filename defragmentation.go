@@ -206,7 +206,17 @@ func writeBackupToDb(log bool) Error {
 			i, _ := strconv.Atoi(underscoreSplit[1])
 			mapIdx := uint16(i)
 
-			err = m.writeOnDefragmentation(string(val.id), val.val, mapIdx)
+			strId := string(val.id)
+			id, atoiErr := strconv.Atoi(strId)
+
+			if atoiErr != nil {
+				return &dbIntegrityError{
+					Code:    DbIntegrityViolationCode,
+					Message: fmt.Sprintf("Database integrity violation while defragmenting. Cannot populate database. Encountered an error while converting string to int with underlying message: %s", atoiErr.Error()),
+				}
+			}
+
+			err = m.writeOnDefragmentation(id, val.val, mapIdx)
 
 			if err != nil {
 				fsErr := closeFile(file)

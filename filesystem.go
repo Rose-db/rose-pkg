@@ -84,7 +84,7 @@ func loadDbInMemory(m *Db, log bool) Error {
 	if len(errors[1:]) > 0 {
 		fmt.Printf("Errors occurred while trying to load the database. For brevity, only the first 5 errors are shown here. Go to %s for more information\n", roseLogDir())
 
-		e := errors[1:6]
+		e := errors[1:]
 
 		for _, err := range e {
 			fmt.Println(err)
@@ -175,7 +175,20 @@ func loadSingleFile(m *Db, dataCh<- chan os.FileInfo, wg *sync.WaitGroup, errCha
 		i, _ := strconv.Atoi(underscoreSplit[1])
 		mapIdx := uint16(i)
 
-		err = m.writeOnLoad(string(val.id), mapIdx, lock, offset)
+		strId := string(val.id)
+		intId, atoiErr := strconv.Atoi(strId)
+
+		if atoiErr != nil {
+			errChan<- &dbIntegrityError{
+				Code:    DbIntegrityViolationCode,
+				Message: "Database integrity violation. Cannot populate database. Could not convert ID to integer",
+			}
+
+			wg.Done()
+			return
+		}
+
+		err = m.writeOnLoad(intId, mapIdx, lock, offset)
 
 		if err != nil {
 			fsErr := closeFile(file)

@@ -3,13 +3,13 @@ package rose
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
+	"strconv"
 	"sync"
 )
 
 type dbReadResult struct {
-	Idx uint16
-	Id string
+	Idx    uint16
+	ID    int
 	Result interface{}
 }
 
@@ -24,15 +24,16 @@ type dbReadResult struct {
 	increaments can be called blocks.
 	Blocks can hold up to 3000 indexes (value). When the reach max size, a new map
 	is created with the same size.
- */
+*/
 type Db struct {
 	InternalDb map[uint16]*[3000]*[]uint8
 	// map of user supplied ids to InternalDb indexes
 	// IdLookupMap::string -> idx::uint -> InternalDb[idx] -> []uint8
-	IdLookupMap map[string][2]uint16
-	Index map[string]int64
-	idFactory *idFactory
-	CurrMapIdx uint16
+	IdLookupMap          map[int][2]uint16
+	Index                map[int]int64
+	AutoIncrementCounter int
+	idFactory            *idFactory
+	CurrMapIdx           uint16
 	sync.RWMutex
 
 	FsDriver *fsDriver
@@ -56,12 +57,11 @@ func newMemoryDb(fsDriver *fsDriver) *Db {
 		- if the block does not exist, a new block is created
 	- the value is stored in the block with its index
 */
-func (d *Db) Write(v []uint8, fsWrite bool) (int, string,  Error) {
-	id := uuid.New().String()
-
+func (d *Db) Write(v []uint8, fsWrite bool) (int, int, Error) {
+	id := d.AutoIncrementCounter
 	// check if the entry already exists
 	if _, ok := d.IdLookupMap[id]; ok {
-		return 0, "", &dbIntegrityError{
+		return 0, 0, &dbIntegrityError{
 			Code:    DbIntegrityViolationCode,
 			Message: fmt.Sprintf("A uuid that is already exists has been generated. This must not happen. Please, try this method again"),
 		}
@@ -72,45 +72,39 @@ func (d *Db) Write(v []uint8, fsWrite bool) (int, string,  Error) {
 	// r/w operation, create uint64 index
 	idx = d.idFactory.Next()
 
-	//m, created := d.getBlock()
-
 	// r operation, add COMPUTED index to the index map
 	d.IdLookupMap[id] = [2]uint16{idx, d.CurrMapIdx}
 
 	if fsWrite {
 		bytesWritten, size, err := d.saveOnFs(id, v)
+		offset := size - bytesWritten
 
-		d.Index[id] = size - bytesWritten
+		d.Index[id] = offset
 
 		if err != nil {
-			return 0, "", err
+			return 0, 0, err
 		}
 	}
-
-	// saving the pointer address of the data, not the actual data
-	//m[idx] = &v
 
 	if idx == 2999 {
 		d.CurrMapIdx++
 	}
 
-/*	if created {
-		return NewBlockCreatedStatus, id,  nil
-	}*/
-	
+	d.AutoIncrementCounter += 1
+
 	return NormalExecutionStatus, id, nil
 }
 
 func (d *Db) GoWrite(v []uint8, fsWrite bool, goRes chan *GoAppResult) {
 	d.Lock()
 
-	id := uuid.New().String()
+	id := d.AutoIncrementCounter
 
 	// check if the entry already exists
 	if _, ok := d.IdLookupMap[id]; ok {
 		res := &GoAppResult{
 			Result: nil,
-			Err:    &systemError{
+			Err: &systemError{
 				Code:    DbIntegrityViolationCode,
 				Message: "Uuid integrity validation. Duplicate uuid found. This should not happen. Try this write again",
 			},
@@ -118,7 +112,7 @@ func (d *Db) GoWrite(v []uint8, fsWrite bool, goRes chan *GoAppResult) {
 
 		d.Unlock()
 
-		goRes<- res
+		goRes <- res
 
 		return
 	}
@@ -139,7 +133,7 @@ func (d *Db) GoWrite(v []uint8, fsWrite bool, goRes chan *GoAppResult) {
 		if err != nil {
 			res := &GoAppResult{
 				Result: nil,
-				Err:    &systemError{
+				Err: &systemError{
 					Code:    DbIntegrityViolationCode,
 					Message: fmt.Sprintf("Unable to save document to the filesystem. Underlying message is: '%s'", err.Error()),
 				},
@@ -147,7 +141,7 @@ func (d *Db) GoWrite(v []uint8, fsWrite bool, goRes chan *GoAppResult) {
 
 			d.Unlock()
 
-			goRes<- res
+			goRes <- res
 
 			return
 		}
@@ -159,7 +153,7 @@ func (d *Db) GoWrite(v []uint8, fsWrite bool, goRes chan *GoAppResult) {
 
 	res := &GoAppResult{
 		Result: &AppResult{
-			Uuid:  id,
+			ID:   id,
 			Method: WriteMethodType,
 			Status: OkResultStatus,
 			Reason: "",
@@ -167,12 +161,14 @@ func (d *Db) GoWrite(v []uint8, fsWrite bool, goRes chan *GoAppResult) {
 		Err: nil,
 	}
 
+	d.AutoIncrementCounter++
+
 	d.Unlock()
 
-	goRes<- res
+	goRes <- res
 }
 
-func (d *Db) Delete(id string) (bool, Error) {
+func (d *Db) Delete(id int) (bool, Error) {
 	var idData [2]uint16
 	var mapId uint16
 
@@ -184,8 +180,7 @@ func (d *Db) Delete(id string) (bool, Error) {
 
 	mapId = idData[1]
 
-	a := []uint8(id)
-	err := d.deleteFromFs(&a, mapId)
+	err := d.deleteFromFs(id, mapId)
 
 	if err != nil {
 		return false, err
@@ -197,7 +192,7 @@ func (d *Db) Delete(id string) (bool, Error) {
 	return true, nil
 }
 
-func (d *Db) GoDelete(id string, resChan chan *GoAppResult) {
+func (d *Db) GoDelete(id int, resChan chan *GoAppResult) {
 	d.Lock()
 
 	var idData [2]uint16
@@ -208,11 +203,11 @@ func (d *Db) GoDelete(id string, resChan chan *GoAppResult) {
 	if !ok {
 		d.Unlock()
 
-		resChan<- &GoAppResult{
+		resChan <- &GoAppResult{
 			Result: nil,
-			Err:    &dataError{
+			Err: &dataError{
 				Code:    DataErrorCode,
-				Message: fmt.Sprintf("Document under uuid %s does not exist", id),
+				Message: fmt.Sprintf("Document under uuid %d does not exist", id),
 			},
 		}
 
@@ -221,13 +216,12 @@ func (d *Db) GoDelete(id string, resChan chan *GoAppResult) {
 
 	mapId = idData[1]
 
-	a := []uint8(id)
-	err := d.deleteFromFs(&a, mapId)
+	err := d.deleteFromFs(id, mapId)
 
 	if err != nil {
 		d.Unlock()
 
-		resChan<- &GoAppResult{
+		resChan <- &GoAppResult{
 			Result: nil,
 			Err:    err,
 		}
@@ -240,19 +234,23 @@ func (d *Db) GoDelete(id string, resChan chan *GoAppResult) {
 
 	d.Unlock()
 
-	resChan<- &GoAppResult{
+	resChan <- &GoAppResult{
 		Result: &AppResult{
-			Uuid:  id,
+			ID:   id,
 			Method: DeleteMethodType,
 			Status: DeletedResultStatus,
 			Reason: "",
 		},
-		Err:    nil,
+		Err: nil,
 	}
 }
 
-func (d *Db) Read(id string, v interface{}) *dbReadResult {
+func (d *Db) Read(id int, v interface{}) *dbReadResult {
 	idData, ok := d.IdLookupMap[id]
+
+	if !ok {
+		return nil
+	}
 
 	idx := idData[0]
 	mapId := idData[1]
@@ -266,7 +264,7 @@ func (d *Db) Read(id string, v interface{}) *dbReadResult {
 	b, err := d.FsDriver.Read(index, mapId)
 
 	if err != nil {
-		panic(err)
+		return nil
 	}
 
 	e := json.Unmarshal(*b, v)
@@ -277,7 +275,7 @@ func (d *Db) Read(id string, v interface{}) *dbReadResult {
 
 	return &dbReadResult{
 		Idx:    idx,
-		Id:     id,
+		ID:     id,
 		Result: v,
 	}
 }
@@ -288,11 +286,10 @@ func (d *Db) Shutdown() Error {
 	return d.FsDriver.Shutdown()
 }
 
-func (d *Db) writeOnLoad(id string, mapIdx uint16, lock *sync.RWMutex, offset int64) Error {
+func (d *Db) writeOnLoad(id int, mapIdx uint16, lock *sync.RWMutex, offset int64) Error {
 	lock.Lock()
 
 	var idx uint16
-	var m *[3000]*[]uint8
 
 	// check if the entry already exists
 	if _, ok := d.IdLookupMap[id]; ok {
@@ -304,25 +301,19 @@ func (d *Db) writeOnLoad(id string, mapIdx uint16, lock *sync.RWMutex, offset in
 	// r/w operation, create uint64 index
 	idx = d.idFactory.Next()
 
-	m, ok := d.InternalDb[mapIdx]
-
-	if !ok {
-		// current block does not exist, created a new one
-		m = &[3000]*[]uint8{}
-		d.InternalDb[mapIdx] = m
-	}
-
 	// r operation, add COMPUTED index to the index map
 	d.IdLookupMap[id] = [2]uint16{idx, mapIdx}
 
 	d.Index[id] = offset
+
+	d.AutoIncrementCounter += 1
 
 	lock.Unlock()
 
 	return nil
 }
 
-func (d *Db) writeOnDefragmentation(id string, v []uint8, mapIdx uint16) Error {
+func (d *Db) writeOnDefragmentation(id int, v []uint8, mapIdx uint16) Error {
 	var idx uint16
 	var m *[3000]*[]uint8
 
@@ -358,29 +349,33 @@ func (d *Db) writeOnDefragmentation(id string, v []uint8, mapIdx uint16) Error {
 }
 
 /**
-	PRIVATE METHOD. DO NOT USE IN CLIENT CODE
+PRIVATE METHOD. DO NOT USE IN CLIENT CODE
 
-	Save the data on the filesystem
- */
-func (d *Db) saveOnFs(id string, v []uint8) (int64, int64, Error) {
+Save the data on the filesystem
+*/
+func (d *Db) saveOnFs(id int, v []uint8) (int64, int64, Error) {
 	return d.FsDriver.Save(prepareData(id, v), d.CurrMapIdx)
 }
 
-func (d *Db) deleteFromFs(id *[]uint8, mapIdx uint16) Error {
-	idx, ok := d.Index[string(*id)]
+func (d *Db) deleteFromFs(id int, mapIdx uint16) Error {
+	idx, ok := d.Index[id]
+
+	idStr := strconv.Itoa(id)
+	idByte := []uint8(idStr)
+	idPtr := &idByte
 
 	if !ok {
-		return d.FsDriver.MarkDeleted(id, mapIdx)
+		return d.FsDriver.MarkDeleted(idPtr, mapIdx)
 	}
 
-	return d.FsDriver.MarkStrategicDeleted(id, mapIdx, idx)
+	return d.FsDriver.MarkStrategicDeleted(idPtr, mapIdx, idx)
 }
 
 /**
-	PRIVATE METHOD. DO NOT USE IN CLIENT CODE
+PRIVATE METHOD. DO NOT USE IN CLIENT CODE
 
-	Returns an existing memory block if exists. If not, creates a new one and returns it
- */
+Returns an existing memory block if exists. If not, creates a new one and returns it
+*/
 func (d *Db) getBlock() (*[3000]*[]uint8, bool) {
 	// check if the current block exists or need to be created
 	m, ok := d.InternalDb[d.CurrMapIdx]
@@ -399,9 +394,10 @@ func (d *Db) getBlock() (*[3000]*[]uint8, bool) {
 func (d *Db) init() {
 	d.InternalDb = make(map[uint16]*[3000]*[]uint8)
 	d.InternalDb[0] = &[3000]*[]uint8{}
-	d.Index = make(map[string]int64)
+	d.Index = make(map[int]int64)
+	d.AutoIncrementCounter = 0
 
-	d.IdLookupMap = make(map[string][2]uint16)
+	d.IdLookupMap = make(map[int][2]uint16)
 
 	d.idFactory = newIdFactory()
 	d.CurrMapIdx = 0

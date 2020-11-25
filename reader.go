@@ -51,7 +51,7 @@ func NewLineReader(r *os.File) *lineReader {
 	line in a file until io.EOF is reached
  */
 func (s *lineReader) Read() (int64, *lineReaderData, bool, Error) {
-	ok, err := s.populateBuffer()
+	currOffset, ok, err := s.populateBuffer()
 
 	if !ok {
 		s.internalReader = nil
@@ -67,9 +67,9 @@ func (s *lineReader) Read() (int64, *lineReaderData, bool, Error) {
 
 	d := s.getData()
 
-	offset := s.offset
+	offset := s.offset - currOffset
 
-	s.offset += int64(len(s.buf) + 1)
+	//s.offset += int64(len(s.buf) + 1)
 
 	s.buf = make([]uint8, 1)
 
@@ -98,22 +98,26 @@ func (s *lineReader) getData() *lineReaderData {
 	}
 }
 
-func (s *lineReader) populateBuffer() (bool, Error) {
+func (s *lineReader) populateBuffer() (int64, bool, Error) {
 	d := ""
 	skip := false
+	var offset int64
 	for {
 		b, err := s.internalReader.ReadByte()
 
 		if err == io.EOF {
-			return false, nil
+			return 0, false, nil
 		}
 
 		if err != nil {
-			return false, &dbIntegrityError{
+			return 0, false, &dbIntegrityError{
 				Code:    DbIntegrityViolationCode,
 				Message: fmt.Sprintf("Unable to read filesystem database with message: %s", err.Error()),
 			}
 		}
+
+		s.offset++
+		offset++
 
 		if b == 10 {
 			if skip {
@@ -144,7 +148,7 @@ func (s *lineReader) populateBuffer() (bool, Error) {
 
 	s.buf = s.buf[1:]
 
-	return true, nil
+	return offset, true, nil
 }
 
 func NewOffsetReader(f *os.File) *offsetReader {

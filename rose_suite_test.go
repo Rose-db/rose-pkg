@@ -2,7 +2,6 @@ package rose
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -106,7 +105,7 @@ var _ = GinkgoDescribe("Misc tests", func() {
 		n := 5000
 
 		// write 5000
-		uuids := [5000]string{}
+		uuids := [5000]int{}
 		for i := 0; i < n; i++ {
 			s := testAsJson("some value")
 			res, err := a.Write(s)
@@ -114,12 +113,11 @@ var _ = GinkgoDescribe("Misc tests", func() {
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
-			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
-			uuids[i] = res.Uuid
+			uuids[i] = res.ID
 		}
 
-		deletedUuids := [3000]string{}
+		deletedUuids := [3000]int{}
 		// delete 3000
 		for i := 0; i < 3000; i++ {
 			u := uuids[i]
@@ -129,9 +127,8 @@ var _ = GinkgoDescribe("Misc tests", func() {
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
-			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
-			deletedUuids[i] = res.Uuid
+			deletedUuids[i] = res.ID
 		}
 
 		if err := a.Shutdown(); err != nil {
@@ -154,7 +151,6 @@ var _ = GinkgoDescribe("Misc tests", func() {
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
-			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 		}
 
 		if err := a.Shutdown(); err != nil {
@@ -180,16 +176,14 @@ var _ = GinkgoDescribe("Input validity tests", func() {
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
-		gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
-		key := res.Uuid
+		key := res.ID
 		s := ""
 		res, err = a.Read(key, &s)
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
-		gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 		gomega.Expect(s).To(gomega.Equal(data))
 
 		res, err = a.Delete(key)
@@ -197,14 +191,12 @@ var _ = GinkgoDescribe("Input validity tests", func() {
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
-		gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
 		res, err = a.Read(key, &s)
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
-		gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
 		if err := a.Shutdown(); err != nil {
 			testRemoveFileSystemDb()
@@ -227,16 +219,14 @@ var _ = GinkgoDescribe("Input validity tests", func() {
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
-		gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
-		key := res.Uuid
+		key := res.ID
 		s := ""
 		res, err = a.Read(key, &s)
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
-		gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 		gomega.Expect(s).To(gomega.Equal(data))
 
 		res, err = a.Delete(key)
@@ -244,14 +234,12 @@ var _ = GinkgoDescribe("Input validity tests", func() {
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
-		gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
 		res, err = a.Read(key, &s)
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
-		gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
 		if err := a.Shutdown(); err != nil {
 			testRemoveFileSystemDb()
@@ -266,43 +254,6 @@ var _ = GinkgoDescribe("Input validity tests", func() {
 })
 
 var _ = GinkgoDescribe("Successfully failing tests", func() {
-	GinkgoIt("Should fail read/delete because of an empty string id", func() {
-		a := testCreateRose(false)
-
-		s := ""
-		_, readErr := a.Read("", &s)
-
-		if readErr == nil {
-			ginkgo.Fail("err should not be nil")
-
-			return
-		}
-
-		gomega.Expect(readErr.GetCode()).To(gomega.Equal(DataErrorCode), "DataErrorCode should have been returned as Error.Status")
-		gomega.Expect(readErr.Error()).To(gomega.Equal("Code: 1, Message: Id cannot be an empty string"))
-
-		_, delErr := a.Delete("")
-
-		if delErr == nil {
-			ginkgo.Fail("err should not be nil")
-
-			return
-		}
-
-		gomega.Expect(delErr.GetCode()).To(gomega.Equal(DataErrorCode), "DataErrorCode should have been returned as Error.Status")
-		gomega.Expect(delErr.Error()).To(gomega.Equal("Code: 1, Message: Id cannot be an empty string"))
-
-		if err := a.Shutdown(); err != nil {
-			testRemoveFileSystemDb()
-
-			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
-
-			return
-		}
-
-		testRemoveFileSystemDb()
-	})
-
 	GinkgoIt("Should fail if data is not a json byte array", func() {
 		a := testCreateRose(false)
 
@@ -381,7 +332,7 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 		a := testCreateRose(false)
 
 		var s string
-		res, err := a.Read("id", &s)
+		res, err := a.Read(67, &s)
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
@@ -400,7 +351,7 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	GinkgoIt("Should fail to delete a document if not exist", func() {
 		a := testCreateRose(false)
 
-		res, err := a.Delete("id")
+		res, err := a.Delete(89)
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
@@ -430,7 +381,6 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
-			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 		}
 
 		dirs, err := ioutil.ReadDir(roseDbDir())
@@ -446,16 +396,15 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 		a := testCreateRose(false)
 		n := 100000
 
-		uuids := [100000]string{}
+		ids := [100000]int{}
 		for i := 0; i < n; i++ {
 			res, err := a.Write(s)
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
-			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
-			uuids[i] = res.Uuid
+			ids[i] = res.ID
 		}
 
 		dirs, err := ioutil.ReadDir(roseDbDir())
@@ -471,13 +420,9 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 		a = testCreateRose(false)
 		total := 0
-		for _, Uuid := range uuids {
-			if Uuid == "" {
-				continue
-			}
-
+		for _, id := range ids {
 			s := ""
-			res, err := a.Read(Uuid, &s)
+			res, err := a.Read(id, &s)
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
@@ -486,7 +431,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 			total++
 		}
 
-		gomega.Expect(total).To(gomega.Equal(len(uuids)))
+		gomega.Expect(total).To(gomega.Equal(len(ids)))
 
 		if err := a.Shutdown(); err != nil {
 			testRemoveFileSystemDb()
@@ -504,62 +449,58 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 		a := testCreateRose(false)
 		counter := 0
 
-		firstWrite := [2500]string{}
+		firstWrite := [2500]int{}
 		for i := 0; i < 2500; i++ {
 			res, err := a.Write(s)
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
-			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
-			firstWrite[i] = res.Uuid
+			firstWrite[i] = res.ID
 		}
 
 		gomega.Expect(roseBlockFile(0, roseDbDir())).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
 
-		secondWrite := [501]string{}
+		secondWrite := [501]int{}
 		for i := 2501; i < 3002; i++ {
 			res, err := a.Write(s)
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
-			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
-			secondWrite[counter] = res.Uuid
+			secondWrite[counter] = res.ID
 			counter++
 		}
 
 		gomega.Expect(roseBlockFile(1, roseDbDir())).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
 
 		counter = 0
-		thirdWrite := [3000]string{}
+		thirdWrite := [3000]int{}
 		for i := 3002; i < 6002; i++ {
 			res, err := a.Write(s)
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
-			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
-			thirdWrite[counter] = res.Uuid
+			thirdWrite[counter] = res.ID
 			counter++
 		}
 
 		gomega.Expect(roseBlockFile(2, roseDbDir())).To(gomega.Equal(a.db.FsDriver.CurrentHandler.File.Name()))
 
 		counter = 0
-		fourthWrite := [3000]string{}
+		fourthWrite := [3000]int{}
 		for i := 6002; i < 9002; i++ {
 			res, err := a.Write(s)
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
-			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
-			fourthWrite[counter] = res.Uuid
+			fourthWrite[counter] = res.ID
 			counter++
 		}
 
@@ -631,16 +572,15 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 		n := 1000
 		s := testAsJson(testString)
 
-		uuids := [1000]string{}
+		ids := [1000]int{}
 		for i := 0; i < n; i++ {
 			res, err := a.Write(s)
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
-			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
-			uuids[i] = res.Uuid
+			ids[i] = res.ID
 		}
 
 		if err := a.Shutdown(); err != nil {
@@ -653,35 +593,20 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 		a = testCreateRose(false)
 
-		for i, id := range uuids {
-			if i == 0 {
+		for _, id := range ids {
+			// skip one
+			if id == 0 {
 				continue
 			}
-
 			res, err := a.Delete(id)
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
-			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
-		}
-		
-		if err := a.Shutdown(); err != nil {
-			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
-
-			return
 		}
 
-		a = nil
-
-		a = testCreateRose(false)
-		
 		count := 0
-		for _, id := range uuids {
-			if id == "" {
-				continue
-			}
-
+		for _, id := range ids {
 			t := ""
 			res, err := a.Read(id, &t)
 
@@ -690,7 +615,33 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 			if res.Status == FoundResultStatus {
 				gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
 				gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
-				gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
+
+				count++
+			}
+		}
+
+		gomega.Expect(count).To(gomega.Equal(1))
+
+		if err := a.Shutdown(); err != nil {
+			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
+
+			return
+		}
+
+		a = nil
+
+		a = testCreateRose(false)
+		
+		count = 0
+		for _, id := range ids {
+			t := ""
+			res, err := a.Read(id, &t)
+
+			gomega.Expect(err).To(gomega.BeNil())
+
+			if res.Status == FoundResultStatus {
+				gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
+				gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
 
 				count++
 			}
@@ -714,16 +665,15 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 		n := 4000
 		s := testAsJson(testString)
 
-		uuids := [4000]string{}
+		ids := [4000]int{}
 		for i := 0; i < n; i++ {
 			res, err := a.Write(s)
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
-			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
-			uuids[i] = res.Uuid
+			ids[i] = res.ID
 		}
 
 		if err := a.Shutdown(); err != nil {
@@ -739,13 +689,12 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 		strategy := []int{0, 10, 150, 987, 1000, 1001, 1002, 3000, 3001, 3002, 1, 3998, 3999, 2367}
 
 		for _, key := range strategy {
-			id := uuids[key]
+			id := ids[key]
 			res, err := a.Delete(id)
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
-			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 		}
 
 		if err := a.Shutdown(); err != nil {
@@ -759,7 +708,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 		a = testCreateRose(false)
 
 		count := 0
-		for _, id := range uuids {
+		for _, id := range ids {
 			t := ""
 			res, err := a.Read(id, &t)
 
@@ -768,7 +717,6 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 			if res.Status == FoundResultStatus {
 				gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
 				gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
-				gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
 				count++
 			}
@@ -787,14 +735,13 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 		a = testCreateRose(false)
 
 		for _, key := range strategy {
-			id := uuids[key]
+			id := ids[key]
 			t := ""
 			res, err := a.Read(id, &t)
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
-			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 		}
 
 		if err := a.Shutdown(); err != nil {
@@ -823,7 +770,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			results[i] = resChan
 		}
 
-		uuids := [10000]string{}
+		ids := [10000]int{}
 		count := 0
 		for i, c := range results {
 			res := <-c
@@ -832,7 +779,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			gomega.Expect(res.Result.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(res.Result.Method).To(gomega.Equal(WriteMethodType))
 
-			uuids[i] = res.Result.Uuid
+			ids[i] = res.Result.ID
 
 			count++
 		}
@@ -841,32 +788,30 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 		// assert that every uuid is a valid uuid
 		count = 0
-		for _, Uuid := range uuids {
-			gomega.Expect(testIsValidUUID(Uuid)).To(gomega.BeTrue())
-
+		for _, id := range ids {
+			id = id
 			count++
 		}
 
 		gomega.Expect(count).To(gomega.Equal(n))
 
 		// assert that there are no duplicate ids
-		uuidsMap := make(map[string]interface{})
-		for _, Uuid := range uuids {
-			_, ok := uuidsMap[Uuid]
+		uuidsMap := make(map[int]interface{})
+		for _, id := range ids {
+			_, ok := uuidsMap[id]
 
 			gomega.Expect(ok).To(gomega.BeFalse())
 
-			uuidsMap[Uuid] = nil
+			uuidsMap[id] = nil
 		}
 
-		for _, Uuid := range uuids {
+		for _, id := range ids {
 			s := ""
-			res, err := a.Read(Uuid, &s)
+			res, err := a.Read(id, &s)
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
-			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 		}
 
 		if err := a.Shutdown(); err != nil {
@@ -884,7 +829,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 		a := testCreateRose(false)
 		n := 10000
 
-		uuids := [10000]string{}
+		ids := [10000]int{}
 		for i := 0; i < n; i++ {
 			s := testAsJson(testString)
 
@@ -892,15 +837,14 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
-			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 
-			uuids[i] = res.Uuid
+			ids[i] = res.ID
 		}
 
 		goResults := [10000]chan *GoAppResult{}
-		for i, Uuid := range uuids {
-			resChan := a.GoDelete(Uuid)
+		for i, id := range ids {
+			resChan := a.GoDelete(id)
 
 			goResults[i] = resChan
 		}
@@ -911,7 +855,6 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 			gomega.Expect(res.Err).To(gomega.BeNil())
 			gomega.Expect(res.Result).To(gomega.Not(gomega.BeNil()))
-			gomega.Expect(testIsValidUUID(res.Result.Uuid)).To(gomega.BeTrue())
 			gomega.Expect(res.Result.Status).To(gomega.Equal(DeletedResultStatus))
 			gomega.Expect(res.Result.Method).To(gomega.Equal(DeleteMethodType))
 
@@ -920,14 +863,13 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 		gomega.Expect(count).To(gomega.Equal(n))
 
-		for _, Uuid := range uuids {
+		for _, id := range ids {
 			s := ""
-			res, err := a.Read(Uuid, &s)
+			res, err := a.Read(id, &s)
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
-			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 		}
 
 		if err := a.Shutdown(); err != nil {
@@ -940,14 +882,13 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 		a = testCreateRose(false)
 
-		for _, Uuid := range uuids {
+		for _, id := range ids {
 			s := ""
-			res, err := a.Read(Uuid, &s)
+			res, err := a.Read(id, &s)
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
-			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 		}
 
 		if err := a.Shutdown(); err != nil {
@@ -965,7 +906,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 		a := testCreateRose(false)
 		n := 10000
 
-		uuids := [10000]string{}
+		uuids := [10000]int{}
 		goResults := [10000]chan *GoAppResult{}
 		for i := 0; i < n; i++ {
 			s := testAsJson(testString)
@@ -980,20 +921,18 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 			gomega.Expect(res.Err).To(gomega.BeNil())
 			gomega.Expect(res.Result.Status).To(gomega.Equal(OkResultStatus))
-			gomega.Expect(testIsValidUUID(res.Result.Uuid)).To(gomega.BeTrue())
 			gomega.Expect(res.Result.Method).To(gomega.Equal(WriteMethodType))
 
-			ch := a.GoDelete(res.Result.Uuid)
+			ch := a.GoDelete(res.Result.ID)
 
 			delRes := <-ch
 
 			gomega.Expect(delRes.Err).To(gomega.BeNil())
 			gomega.Expect(delRes.Result).To(gomega.Not(gomega.BeNil()))
-			gomega.Expect(testIsValidUUID(res.Result.Uuid)).To(gomega.BeTrue())
 			gomega.Expect(delRes.Result.Status).To(gomega.Equal(DeletedResultStatus))
 			gomega.Expect(delRes.Result.Method).To(gomega.Equal(DeleteMethodType))
 
-			uuids[i] = res.Result.Uuid
+			uuids[i] = res.Result.ID
 		}
 
 		if err := a.Shutdown(); err != nil {
@@ -1013,7 +952,6 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
-			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 		}
 
 		if err := a.Shutdown(); err != nil {
@@ -1051,16 +989,14 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 			gomega.Expect(res.Err).To(gomega.BeNil())
 			gomega.Expect(res.Result.Status).To(gomega.Equal(OkResultStatus))
-			gomega.Expect(testIsValidUUID(res.Result.Uuid)).To(gomega.BeTrue())
 			gomega.Expect(res.Result.Method).To(gomega.Equal(WriteMethodType))
 
 			s := ""
-			appResult, err := a.Read(res.Result.Uuid, &s)
+			appResult, err := a.Read(res.Result.ID, &s)
 
 			gomega.Expect(value).To(gomega.Equal(s))
 
 			gomega.Expect(err).To(gomega.BeNil())
-			gomega.Expect(testIsValidUUID(appResult.Uuid)).To(gomega.BeTrue())
 			gomega.Expect(appResult.Status).To(gomega.Equal(FoundResultStatus))
 			gomega.Expect(appResult.Method).To(gomega.Equal(ReadMethodType))
 		}
@@ -1089,7 +1025,6 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(result.Status).To(gomega.Equal(OkResultStatus))
-			gomega.Expect(testIsValidUUID(result.Uuid)).To(gomega.BeTrue())
 			gomega.Expect(result.Method).To(gomega.Equal(WriteMethodType))
 
 			results[i] = result
@@ -1097,7 +1032,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 		goResults := [10000]chan *GoAppResult{}
 		for i, res := range results {
-			ch := a.GoDelete(res.Uuid)
+			ch := a.GoDelete(res.ID)
 
 			goResults[i] = ch
 		}
@@ -1109,7 +1044,6 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 			gomega.Expect(res.Err).To(gomega.BeNil())
 			gomega.Expect(res.Result).To(gomega.Not(gomega.BeNil()))
-			gomega.Expect(testIsValidUUID(res.Result.Uuid)).To(gomega.BeTrue())
 			gomega.Expect(res.Result.Status).To(gomega.Equal(DeletedResultStatus))
 			gomega.Expect(res.Result.Method).To(gomega.Equal(DeleteMethodType))
 		}
@@ -1137,7 +1071,6 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
-		gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
 		if err := a.Shutdown(); err != nil {
 			testRemoveFileSystemDb()
@@ -1163,7 +1096,6 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
-			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
 			currId++
 		}
@@ -1193,7 +1125,6 @@ var _ = GinkgoDescribe("Read tests", func() {
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
-		gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 		gomega.Expect(r).To(gomega.Equal("sdčkfjalsčkjfdlsčakdfjlčk"))
 
 		if err := a.Shutdown(); err != nil {
@@ -1210,7 +1141,7 @@ var _ = GinkgoDescribe("Read tests", func() {
 	GinkgoIt("Should perform multiple reads", func() {
 		a := testCreateRose(false)
 
-		ids := make([]string, 0)
+		ids := make([]int, 0)
 		for i := 0; i < 100000; i++ {
 			value := testAsJson(fmt.Sprintf("id-value-%d", i))
 
@@ -1219,10 +1150,8 @@ var _ = GinkgoDescribe("Read tests", func() {
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
-			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
-			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
-			ids = append(ids, res.Uuid)
+			ids = append(ids, res.ID)
 		}
 
 		for _, id := range ids {
@@ -1231,7 +1160,6 @@ var _ = GinkgoDescribe("Read tests", func() {
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
-			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
 		}
 
@@ -1249,7 +1177,7 @@ var _ = GinkgoDescribe("Read tests", func() {
 	GinkgoIt("Should assert fs db integrity after multiple inserts", func() {
 		a := testCreateRose(false)
 
-		ids := make([]string, 0)
+		ids := make([]int, 0)
 		fsData := ""
 		for i := 0; i < 10000; i++ {
 			value := testAsJson(fmt.Sprintf("id-value-%d", i))
@@ -1259,13 +1187,11 @@ var _ = GinkgoDescribe("Read tests", func() {
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
-			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
-			gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
-			fsData += string(*prepareData(res.Uuid, data))
+			fsData += string(*prepareData(res.ID, data))
 
-			ids = append(ids, res.Uuid)
+			ids = append(ids, res.ID)
 		}
 
 		if err := a.Shutdown(); err != nil {
@@ -1289,24 +1215,21 @@ var _ = GinkgoDescribe("Read tests", func() {
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
-		gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
-		Uuid := res.Uuid
+		id := res.ID
 
-		res, err = a.Delete(Uuid)
+		res, err = a.Delete(id)
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
-		gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
 		r := ""
-		res, err = a.Read(Uuid, &r)
+		res, err = a.Read(id, &r)
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
-		gomega.Expect(testIsValidUUID(res.Uuid)).To(gomega.BeTrue())
 
 		if err = a.Shutdown(); err != nil {
 			testRemoveFileSystemDb()
@@ -1346,19 +1269,24 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 
 	GinkgoIt("Should successfully perform and inspect deletes", func() {
 		r := testCreateRose(false)
-		n := 10000
+		const n = 10000
 
 		m := r.db
 
-		_, ids := testInsertFixture(m,n, []uint8{})
+		ids := testInsertFixture(m, n, []uint8{})
 
 		// since block index starts at 0, expected must be 3
 		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(3)))
 		assertIndexIntegrity(m, n)
 
+		zerosDeleted := 0
 		for _, id := range ids {
-			if id == "" {
+			if id == 0 && zerosDeleted == 1 {
 				continue
+			}
+
+			if id == 0 && zerosDeleted == 0 {
+				zerosDeleted++
 			}
 
 			status, err := m.Delete(id)
@@ -1386,7 +1314,7 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 
 		m := r.db
 
-		_, ids := testInsertFixture(m,10000, []uint8{})
+		ids := testInsertFixture(m,10000, []uint8{})
 
 		// since block index starts at 0, expected must be 3
 		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(3)))
@@ -1394,10 +1322,6 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		assertIndexIntegrity(m, 10000)
 
 		for _, id := range ids {
-			if id == "" {
-				continue
-			}
-
 			status, err := m.Delete(id)
 
 			gomega.Expect(err).To(gomega.BeNil())
@@ -1423,7 +1347,7 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	})
 })
 
-func testFixtureSingleInsert(value []uint8, a *Rose) string {
+func testFixtureSingleInsert(value []uint8, a *Rose) int {
 	res, appErr := a.Write(value)
 
 	if appErr != nil {
@@ -1434,7 +1358,7 @@ func testFixtureSingleInsert(value []uint8, a *Rose) string {
 		panic(fmt.Sprintf("Invalid result status given. Expected: %s, given: %s", OkResultStatus, res.Status))
 	}
 
-	return res.Uuid
+	return res.ID
 }
 
 func testCreateRose(doDefragmentation bool) *Rose {
@@ -1470,63 +1394,26 @@ func testRemoveFileSystemDb() {
 	}
 }
 
-func testInsertFixture(m *Db, num int, value []uint8) (int, []string) {
-	uuids := make([]string, num)
+func testInsertFixture(m *Db, num int, value []uint8) map[int]int {
+	ids := make(map[int]int, num)
 	for i := 0; i < num; i++ {
 		if len(value) == 0 {
 			value = testAsJson("sdkfjsdjfsadfjklsajdfkčl")
 		}
 
-		_, Uuid,  err := m.Write(value, true)
+		_, id,  err := m.Write(value, true)
 
 		gomega.Expect(err).To(gomega.BeNil())
-		gomega.Expect(testIsValidUUID(Uuid)).To(gomega.BeTrue())
 
-		uuids = append(uuids, Uuid)
+		ids[i] = id
 	}
 
-	uuidCount := 0
-	for _, Uuid := range uuids {
-		if Uuid != "" {
-			uuidCount++
-		}
-	}
-
-	return uuidCount, uuids
-}
-
-func testIsValidUUID(u string) bool {
-	_, err := uuid.Parse(u)
-	return err == nil
-}
-
-func assertInternalDbIntegrity(m *Db, expectedLen int, expectedCapacity int) {
-	gomega.Expect(len(m.InternalDb)).To(gomega.Equal(expectedCapacity))
-
-	fullNum := 0
-
-	for _, list := range m.InternalDb {
-		for _, a := range list {
-			if a != nil {
-				fullNum++
-			}
-		}
-	}
-
-	gomega.Expect(fullNum).To(gomega.Equal(expectedLen))
-	gomega.Expect(len(m.IdLookupMap)).To(gomega.Equal(expectedLen))
+	return ids
 }
 
 func assertIndexIntegrity(m *Db, expectedLen int) {
 	index := m.Index
 
 	gomega.Expect(len(index)).To(gomega.Equal(expectedLen))
-
-	if len(index) > 0 {
-		for Uuid, _ := range index {
-			gomega.Expect(testIsValidUUID(Uuid)).To(gomega.BeTrue())
-		}
-	}
-
 }
 

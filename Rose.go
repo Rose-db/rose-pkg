@@ -10,7 +10,7 @@ type Rose struct {
 }
 
 type AppResult struct {
-	Uuid string
+	ID   int
 	Method string
 	Status string
 	Reason string
@@ -18,7 +18,7 @@ type AppResult struct {
 
 type GoAppResult struct {
 	Result *AppResult
-	Err Error
+	Err    Error
 }
 
 func New(doDefragmentation bool, log bool) (*Rose, Error) {
@@ -35,7 +35,7 @@ func New(doDefragmentation bool, log bool) (*Rose, Error) {
 
 	if doDefragmentation {
 		if log {
-			fmt.Println(string("\033[33mWARNING:\033[0m"),"Defragmenting existing database. DO NOT STOP THIS PROCESS! Depending on the size of the database, this may take some time...")
+			fmt.Println(string("\033[33mWARNING:\033[0m"), "Defragmenting existing database. DO NOT STOP THIS PROCESS! Depending on the size of the database, this may take some time...")
 		}
 
 		if err := defragment(log); err != nil {
@@ -91,7 +91,7 @@ func (a *Rose) Write(data []uint8) (*AppResult, Error) {
 	}
 
 	return &AppResult{
-		Uuid: id,
+		ID:   id,
 		Method: WriteMethodType,
 		Status: OkResultStatus,
 	}, nil
@@ -101,7 +101,7 @@ func (a *Rose) GoWrite(data []uint8) chan *GoAppResult {
 	resChan := make(chan *GoAppResult)
 
 	if err := validateData(data); err != nil {
-		resChan<- &GoAppResult{
+		resChan <- &GoAppResult{
 			Result: nil,
 			Err:    err,
 		}
@@ -113,40 +113,25 @@ func (a *Rose) GoWrite(data []uint8) chan *GoAppResult {
 	return resChan
 }
 
-func (a *Rose) Read(id string, v interface{}) (*AppResult, Error) {
-	if id == "" {
-		return nil, &dataError{
-			Code:    DataErrorCode,
-			Message: "Id cannot be an empty string",
-		}
-	}
-
+func (a *Rose) Read(id int, v interface{}) (*AppResult, Error) {
 	res := a.db.Read(id, v)
 
 	if res == nil {
 		return &AppResult{
-			Uuid: id,
+			ID: id,
 			Method: ReadMethodType,
 			Status: NotFoundResultStatus,
-			Reason: fmt.Sprintf("Rose: Entry with id %s not found", id),
+			Reason: fmt.Sprintf("Rose: Entry with id %d not found", id),
 		}, nil
 	}
 
 	return &AppResult{
-		Uuid: id,
 		Method: ReadMethodType,
 		Status: FoundResultStatus,
 	}, nil
 }
 
-func (a *Rose) Delete(id string) (*AppResult, Error) {
-	if id == "" {
-		return nil, &dataError{
-			Code:    DataErrorCode,
-			Message: "Id cannot be an empty string",
-		}
-	}
-
+func (a *Rose) Delete(id int) (*AppResult, Error) {
 	res, err := a.db.Delete(id)
 
 	if err != nil {
@@ -155,33 +140,21 @@ func (a *Rose) Delete(id string) (*AppResult, Error) {
 
 	if !res {
 		return &AppResult{
-			Uuid: id,
+			ID: id,
 			Method: DeleteMethodType,
 			Status: NotFoundResultStatus,
-			Reason: fmt.Sprintf("Rose: Entry with id %s not found", id),
+			Reason: fmt.Sprintf("Rose: Entry with id %d not found", id),
 		}, nil
 	}
 
 	return &AppResult{
-		Uuid: id,
 		Method: DeleteMethodType,
 		Status: DeletedResultStatus,
 	}, nil
 }
 
-func (a *Rose) GoDelete(id string) chan *GoAppResult {
+func (a *Rose) GoDelete(id int) chan *GoAppResult {
 	resChan := make(chan *GoAppResult)
-	if id == "" {
-		resChan<- &GoAppResult{
-			Result: nil,
-			Err:    &dataError{
-				Code:    DataErrorCode,
-				Message: "Id cannot be an empty string",
-			},
-		}
-
-		return resChan
-	}
 
 	go a.db.GoDelete(id, resChan)
 

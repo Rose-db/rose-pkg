@@ -27,8 +27,6 @@ func benchmarkAppInsert(i int, a *Rose) {
 }
 
 func BenchmarkAppInsertTenThousand(b *testing.B) {
-	benchmarkRemoveFileSystemDb()
-
 	var a *Rose
 
 	defer benchmarkRemoveFileSystemDb()

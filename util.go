@@ -6,11 +6,10 @@ import (
 	"os"
 )
 
-func prepareData(id string, data []uint8) *[]uint8 {
-	i := id + delim + string(data) + "\n"
-	a := []uint8(i)
+func prepareData(id int, data []uint8) *[]uint8 {
+	s := []uint8(fmt.Sprintf("%d%s%s%s", id, delim, string(data), "\n"))
 
-	return &a
+	return &s
 }
 
 func isJSON(s []uint8) bool {
