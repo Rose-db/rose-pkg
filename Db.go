@@ -56,13 +56,13 @@ func newMemoryDb(fsDriver *fsDriver) *Db {
 		- if the block does not exist, a new block is created
 	- the value is stored in the block with its index
 */
-func (d *Db) Write(v []uint8, fsWrite bool) (int, int, Error) {
+func (d *Db) Write(data []uint8, fsWrite bool) (int, int, Error) {
 	id := d.AutoIncrementCounter
 	// check if the entry already exists
 	if _, ok := d.IdLookupMap[id]; ok {
 		return 0, 0, &dbIntegrityError{
 			Code:    DbIntegrityViolationCode,
-			Message: fmt.Sprintf("A uuid that is already exists has been generated. This must not happen. Please, try this method again"),
+			Message: fmt.Sprintf("ID integrity validation. Duplicate ID found. This should not happen. Try this write again"),
 		}
 	}
 
@@ -70,7 +70,7 @@ func (d *Db) Write(v []uint8, fsWrite bool) (int, int, Error) {
 	d.IdLookupMap[id] = [2]uint16{uint16(d.AutoIncrementCounter % 2999), d.CurrMapIdx}
 
 	if fsWrite {
-		bytesWritten, size, err := d.saveOnFs(id, v)
+		bytesWritten, size, err := d.saveOnFs(id, data)
 		offset := size - bytesWritten
 
 		d.Index[id] = offset
@@ -89,7 +89,7 @@ func (d *Db) Write(v []uint8, fsWrite bool) (int, int, Error) {
 	return NormalExecutionStatus, id, nil
 }
 
-func (d *Db) GoWrite(v []uint8, fsWrite bool, goRes chan *GoAppResult) {
+func (d *Db) GoWrite(data []uint8, fsWrite bool, goRes chan *GoAppResult) {
 	d.Lock()
 
 	id := d.AutoIncrementCounter
@@ -115,7 +115,7 @@ func (d *Db) GoWrite(v []uint8, fsWrite bool, goRes chan *GoAppResult) {
 	d.IdLookupMap[id] = [2]uint16{uint16(d.AutoIncrementCounter % 2999), d.CurrMapIdx}
 
 	if fsWrite {
-		bytesWritten, size, err := d.saveOnFs(id, v)
+		bytesWritten, size, err := d.saveOnFs(id, data)
 
 		d.Index[id] = size - bytesWritten
 
@@ -234,7 +234,7 @@ func (d *Db) GoDelete(id int, resChan chan *GoAppResult) {
 	}
 }
 
-func (d *Db) Read(id int, v interface{}) *dbReadResult {
+func (d *Db) Read(id int, data interface{}) *dbReadResult {
 	idData, ok := d.IdLookupMap[id]
 
 	if !ok {
@@ -256,7 +256,7 @@ func (d *Db) Read(id int, v interface{}) *dbReadResult {
 		return nil
 	}
 
-	e := json.Unmarshal(*b, v)
+	e := json.Unmarshal(*b, data)
 
 	if e != nil {
 		panic(e)
@@ -265,14 +265,20 @@ func (d *Db) Read(id int, v interface{}) *dbReadResult {
 	return &dbReadResult{
 		Idx:    idx,
 		ID:     id,
-		Result: v,
+		Result: data,
 	}
 }
 
 func (d *Db) Shutdown() Error {
 	d.init()
 
-	return d.FsDriver.Shutdown()
+	if err := d.FsDriver.Shutdown(); err != nil {
+		return err
+	}
+
+	d.FsDriver = nil
+
+	return nil
 }
 
 func (d *Db) writeOnLoad(id int, mapIdx uint16, lock *sync.RWMutex, offset int64) Error {
