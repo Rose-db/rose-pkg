@@ -86,7 +86,7 @@ func (d *Db) Write(v []uint8, fsWrite bool) (int, int, Error) {
 		}
 	}
 
-	if idx == 2999 {
+	if d.AutoIncrementCounter != 0 && d.AutoIncrementCounter % 2999 == 0 {
 		d.CurrMapIdx++
 	}
 
@@ -106,7 +106,7 @@ func (d *Db) GoWrite(v []uint8, fsWrite bool, goRes chan *GoAppResult) {
 			Result: nil,
 			Err: &systemError{
 				Code:    DbIntegrityViolationCode,
-				Message: "Uuid integrity validation. Duplicate uuid found. This should not happen. Try this write again",
+				Message: "ID integrity validation. Duplicate ID found. This should not happen. Try this write again",
 			},
 		}
 
@@ -147,9 +147,11 @@ func (d *Db) GoWrite(v []uint8, fsWrite bool, goRes chan *GoAppResult) {
 		}
 	}
 
-	if idx == 2999 {
+	if d.AutoIncrementCounter != 0 && d.AutoIncrementCounter % 2999 == 0 {
 		d.CurrMapIdx++
 	}
+
+	d.AutoIncrementCounter += 1
 
 	res := &GoAppResult{
 		Result: &AppResult{
@@ -160,8 +162,6 @@ func (d *Db) GoWrite(v []uint8, fsWrite bool, goRes chan *GoAppResult) {
 		},
 		Err: nil,
 	}
-
-	d.AutoIncrementCounter++
 
 	d.Unlock()
 
