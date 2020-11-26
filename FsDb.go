@@ -37,17 +37,7 @@ func newFsDb(b uint16, dbDir string) (*fsDb, Error) {
 }
 
 func (fs *fsDb) Write(d *[]uint8) (int64, int64, Error) {
-	if fs.File == nil {
-		err := fs.WakeUp()
-
-		if err != nil {
-			return 0, 0, err
-		}
-	}
-
-	var err error
-
-	_, err = fs.File.Write(*d)
+	_, err := fs.File.Write(*d)
 
 	if err != nil {
 		name := fs.File.Name()
@@ -64,12 +54,6 @@ func (fs *fsDb) Write(d *[]uint8) (int64, int64, Error) {
 }
 
 func (fs *fsDb) Read(offset int64) (*[]uint8, Error) {
-	if fs.File == nil {
-		if err := fs.WakeUp(); err != nil {
-			return nil, err
-		}
-	}
-
 	_, e := fs.File.Seek(offset, 0)
 
 	if e != nil {
@@ -91,12 +75,6 @@ func (fs *fsDb) Read(offset int64) (*[]uint8, Error) {
 }
 
 func (fs *fsDb) StrategicDelete(id *[]uint8, offset int64) Error {
-	if fs.File == nil {
-		if err := fs.WakeUp(); err != nil {
-			return err
-		}
-	}
-
 	_, e := fs.File.Seek(offset, 0)
 
 	if e != nil {
@@ -114,29 +92,6 @@ func (fs *fsDb) StrategicDelete(id *[]uint8, offset int64) Error {
 			Message: fmt.Sprintf("Unable to delete %s: %s", string(*id), fsErr.Error()),
 		}
 	}
-
-	return nil
-}
-
-
-func (fs *fsDb) Sleep() Error {
-	if err := fs.SyncAndClose(); err != nil {
-		return err
-	}
-
-	fs.File = nil
-
-	return nil
-}
-
-func (fs *fsDb) WakeUp() Error {
-	file, err := createFile(fs.Path, os.O_RDWR)
-
-	if err != nil {
-		return err
-	}
-
-	fs.File = file
 
 	return nil
 }
