@@ -331,15 +331,11 @@ func (d *Db) saveOnFs(id int, v []uint8) (int64, int64, Error) {
 }
 
 func (d *Db) deleteFromFs(id int, mapIdx uint16) Error {
-	idx, ok := d.Index[id]
+	idx, _ := d.Index[id]
 
 	idStr := strconv.Itoa(id)
 	idByte := []uint8(idStr)
 	idPtr := &idByte
-
-	if !ok {
-		return d.FsDriver.MarkDeleted(idPtr, mapIdx)
-	}
 
 	return d.FsDriver.MarkStrategicDeleted(idPtr, mapIdx, idx)
 }
