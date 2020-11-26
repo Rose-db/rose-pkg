@@ -90,53 +90,6 @@ func (fs *fsDb) Read(offset int64) (*[]uint8, Error) {
 	return &data.val, nil
 }
 
-func (fs *fsDb) Delete(id *[]uint8) Error {
-	if fs.File == nil {
-		if err := fs.WakeUp(); err != nil {
-			return err
-		}
-	}
-
-	_, e := fs.File.Seek(0, 0)
-
-	if e != nil {
-		return &dbError{
-			Code:    DbErrorCode,
-			Message: fmt.Sprintf("Unable to delete %s: %s", string(*id), e.Error()),
-		}
-	}
-
-	or := NewOffsetReader(fs.File)
-
-	found, offset, err := or.GetOffset(string(*id))
-
-	if err != nil {
-		return err
-	}
-
-	if found {
-		_, oe := fs.File.Seek(offset, 0)
-
-		if oe != nil {
-			return &dbError{
-				Code:    DbErrorCode,
-				Message: fmt.Sprintf("Unable to delete %s: %s", string(*id), oe.Error()),
-			}
-		}
-
-		_, e := fs.File.Write([]uint8(delMark))
-
-		if e != nil {
-			return &dbError{
-				Code:    DbErrorCode,
-				Message: fmt.Sprintf("Unable to delete %s: %s", string(*id), e.Error()),
-			}
-		}
-	}
-
-	return nil
-}
-
 func (fs *fsDb) StrategicDelete(id *[]uint8, offset int64) Error {
 	if fs.File == nil {
 		if err := fs.WakeUp(); err != nil {
