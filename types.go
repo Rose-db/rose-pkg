@@ -32,3 +32,5 @@ const maxValSize = 16000000
 
 const delim = "[##]{{}#]"
 const delMark = "{[{del}]}"
+
+const blockMark = 2999

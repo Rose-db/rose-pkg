@@ -1084,7 +1084,7 @@ var _ = GinkgoDescribe("Read tests", func() {
 
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 		id := testFixtureSingleInsert(s, a)
-
+		
 		r := ""
 		res, err := a.Read(id, &r)
 
@@ -1277,15 +1277,16 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 
 	GinkgoIt("Should successfully perform and inspect delete reallocation", func() {
 		r := testCreateRose(false)
+		n := 10000
 
 		m := r.db
 
-		ids := testInsertFixture(m,10000, []uint8{})
+		ids := testInsertFixture(m,n, []uint8{})
 
 		// since block index starts at 0, expected must be 3
 		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(3)))
 
-		assertIndexIntegrity(m, 10000)
+		assertIndexIntegrity(m, n)
 
 		for _, id := range ids {
 			status, err := m.Delete(id)
@@ -1294,12 +1295,15 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 			gomega.Expect(status).To(gomega.Equal(true))
 		}
 
+		gomega.Expect(m.AutoIncrementCounter).To(gomega.Equal(n))
 		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(3)))
 		assertIndexIntegrity(m, 0)
 
-		testInsertFixture(m,50000, []uint8{})
+		n = 50000
+		testInsertFixture(m,n, []uint8{})
 
 		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(20)))
+		gomega.Expect(m.AutoIncrementCounter).To(gomega.Equal(60000))
 
 		if err := r.Shutdown(); err != nil {
 			testRemoveFileSystemDb()

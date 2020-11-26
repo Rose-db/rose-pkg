@@ -67,7 +67,7 @@ func (d *Db) Write(data []uint8, fsWrite bool) (int, int, Error) {
 	}
 
 	// r operation, add COMPUTED index to the index map
-	d.IdLookupMap[id] = [2]uint16{uint16(d.AutoIncrementCounter % 2999), d.CurrMapIdx}
+	d.IdLookupMap[id] = [2]uint16{uint16(d.AutoIncrementCounter % blockMark), d.CurrMapIdx}
 
 	if fsWrite {
 		bytesWritten, size, err := d.saveOnFs(id, data)
@@ -80,7 +80,7 @@ func (d *Db) Write(data []uint8, fsWrite bool) (int, int, Error) {
 		}
 	}
 
-	if d.AutoIncrementCounter != 0 && d.AutoIncrementCounter % 2999 == 0 {
+	if d.AutoIncrementCounter != 0 && d.AutoIncrementCounter % blockMark == 0 {
 		d.CurrMapIdx++
 	}
 
@@ -112,7 +112,7 @@ func (d *Db) GoWrite(data []uint8, fsWrite bool, goRes chan *GoAppResult) {
 	}
 
 	// r operation, add COMPUTED index to the index map
-	d.IdLookupMap[id] = [2]uint16{uint16(d.AutoIncrementCounter % 2999), d.CurrMapIdx}
+	d.IdLookupMap[id] = [2]uint16{uint16(d.AutoIncrementCounter % blockMark), d.CurrMapIdx}
 
 	if fsWrite {
 		bytesWritten, size, err := d.saveOnFs(id, data)
@@ -136,7 +136,7 @@ func (d *Db) GoWrite(data []uint8, fsWrite bool, goRes chan *GoAppResult) {
 		}
 	}
 
-	if d.AutoIncrementCounter != 0 && d.AutoIncrementCounter % 2999 == 0 {
+	if d.AutoIncrementCounter != 0 && d.AutoIncrementCounter % blockMark == 0 {
 		d.CurrMapIdx++
 	}
 
@@ -292,7 +292,7 @@ func (d *Db) writeOnLoad(id int, mapIdx uint16, lock *sync.RWMutex, offset int64
 	}
 
 	// r operation, add COMPUTED index to the index map
-	d.IdLookupMap[id] = [2]uint16{uint16(d.AutoIncrementCounter % 2999), mapIdx}
+	d.IdLookupMap[id] = [2]uint16{uint16(d.AutoIncrementCounter % blockMark), mapIdx}
 
 	d.Index[id] = offset
 
@@ -310,7 +310,7 @@ func (d *Db) writeOnDefragmentation(id int, v []uint8, mapIdx uint16) Error {
 	}
 
 	// r operation, add COMPUTED index to the index map
-	d.IdLookupMap[id] = [2]uint16{uint16(d.AutoIncrementCounter % 2999), mapIdx}
+	d.IdLookupMap[id] = [2]uint16{uint16(d.AutoIncrementCounter % blockMark), mapIdx}
 
 	_, _, err := d.FsDriver.Save(prepareData(id, v), mapIdx)
 
