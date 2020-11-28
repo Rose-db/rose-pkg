@@ -124,7 +124,7 @@ func (d *Db) GoWrite(data []uint8, fsWrite bool, goRes chan *GoAppResult) {
 				Result: nil,
 				Err: &systemError{
 					Code:    DbIntegrityViolationCode,
-					Message: fmt.Sprintf("Unable to save document to the filesystem. Underlying message is: '%s'", err.Error()),
+					Message: fmt.Sprintf("Unable to save document to disk. Underlying message is: '%s'", err.Error()),
 				},
 			}
 
@@ -205,7 +205,7 @@ func (d *Db) GoDelete(id int, resChan chan *GoAppResult) {
 			Result: nil,
 			Err: &dataError{
 				Code:    DataErrorCode,
-				Message: fmt.Sprintf("Document under uuid %d does not exist", id),
+				Message: fmt.Sprintf("Document under ID %d does not exist", id),
 			},
 		}
 

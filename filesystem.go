@@ -71,7 +71,7 @@ func loadIndexes(m *Db, log bool) Error {
 	close(errChan)
 
 	if len(errors[1:]) > 0 {
-		fmt.Printf("Errors occurred while trying to load the database. For brevity, only the first 5 errors are shown here. Go to %s for more information\n", roseLogDir())
+		fmt.Printf("Errors occurred while trying to load indexes. For brevity, only the first 5 errors are shown here. Go to %s for more information\n", roseLogDir())
 
 		e := errors[1:]
 
