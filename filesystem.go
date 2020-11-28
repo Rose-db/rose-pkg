@@ -2,17 +2,15 @@ package rose
 
 import (
 	"fmt"
-	"github.com/cheggaaa/pb/v3"
 	"io/ioutil"
 	"os"
 	"runtime"
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 )
 
-func loadDbInMemory(m *Db, log bool) Error {
+func loadIndexes(m *Db, log bool) Error {
 	files, fsErr := ioutil.ReadDir(roseDbDir())
 
 	if fsErr != nil {
@@ -42,12 +40,6 @@ func loadDbInMemory(m *Db, log bool) Error {
 	// Creates as many batches as there are files, 50 files per batch
 	batch := createFileInfoBatch(files, limit)
 
-
-	var bar *pb.ProgressBar
-	if log {
-		bar = pb.StartNew(len(files))
-		bar.SetRefreshRate(time.Millisecond)
-	}
 	/**
 	Every batch has a sender goroutine that sends a single
 	file to a receiver goroutine. There can be only 1 sender but
@@ -69,9 +61,6 @@ func loadDbInMemory(m *Db, log bool) Error {
 
 		// receiver
 		for i := 0; i < len(b); i++ {
-			if log {
-				bar.Increment()
-			}
 			wg.Add(1)
 			go loadSingleFile(m, dataCh, wg, errChan, lock)
 		}
@@ -97,10 +86,6 @@ func loadDbInMemory(m *Db, log bool) Error {
 	}
 
 	m.CurrMapIdx = uint16(len(files)) - 1
-
-	if log {
-		bar.Finish()
-	}
 
 	return nil
 }
@@ -230,7 +215,7 @@ func createDbIfNotExists(log bool) (bool, Error) {
 	updated := 0
 
 	if log {
-		fmt.Println(string("\033[32mINFO:\033[0m"), "Creating the database on the filesystem if not exists...")
+		fmt.Println(string("\033[32minfo:\033[0m"), "Creating the database on the filesystem if not exists...")
 	}
 
 	roseDbCreated := false
@@ -246,14 +231,14 @@ func createDbIfNotExists(log bool) (bool, Error) {
 			if fsErr != nil {
 				return false, &systemError{
 					Code:    SystemErrorCode,
-					Message: fmt.Sprintf("Trying to create directory %s failed with underlying message: %s", d, fsErr.Error()),
+					Message: fmt.Sprintf("      Trying to create directory %s failed with underlying message: %s", d, fsErr.Error()),
 				}
 			}
 		}
 	}
 
 	if log && updated > 0 && updated != 3 {
-		fmt.Println("  Some directories were missing. They have been created again.")
+		fmt.Println("      Some directories were missing. They have been created again.")
 	}
 
 	created := false
@@ -265,7 +250,7 @@ func createDbIfNotExists(log bool) (bool, Error) {
 		if err != nil {
 			return false, &systemError{
 				Code:    SystemErrorCode,
-				Message: fmt.Sprintf("Trying to create initial block file failed with underlying message: %s", err.Error()),
+				Message: fmt.Sprintf("      Trying to create initial block file failed with underlying message: %s", err.Error()),
 			}
 		}
 
@@ -274,18 +259,18 @@ func createDbIfNotExists(log bool) (bool, Error) {
 
 	if log {
 		if created {
-			fmt.Printf("\tFilesystem database created for the first time\n\n")
+			fmt.Printf("      Filesystem database created for the first time\n")
 
 			err = closeFile(file)
 
 			if err != nil {
 				return false, &systemError{
 					Code:    SystemErrorCode,
-					Message: fmt.Sprintf("Trying to close initial block file failed with underlying message: %s", err.Error()),
+					Message: fmt.Sprintf("  Trying to close initial block file failed with underlying message: %s", err.Error()),
 				}
 			}
 		} else {
-			fmt.Printf("  Filesystem database already exists. Nothing to update\n\n")
+			fmt.Printf("      Filesystem database already exists. Nothing to update\n")
 		}
 	}
 

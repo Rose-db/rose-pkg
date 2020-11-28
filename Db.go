@@ -62,7 +62,7 @@ func (d *Db) Write(data []uint8, fsWrite bool) (int, int, Error) {
 	if _, ok := d.IdLookupMap[id]; ok {
 		return 0, 0, &dbIntegrityError{
 			Code:    DbIntegrityViolationCode,
-			Message: fmt.Sprintf("ID integrity validation. Duplicate ID found. This should not happen. Try this write again"),
+			Message: "ID integrity validation. Duplicate ID found. This should not happen. Try this write again",
 		}
 	}
 
@@ -167,9 +167,18 @@ func (d *Db) Delete(id int) (bool, Error) {
 		return false, nil
 	}
 
+	idx, ok := d.Index[id]
+
+	if !ok {
+		return false, &dbIntegrityError{
+			Code:    DbIntegrityViolationCode,
+			Message: fmt.Sprintf("Index integrity violation. Index for ID %d does not exist. Please, restart Rose and try again", id),
+		}
+	}
+
 	mapId = idData[1]
 
-	err := d.deleteFromFs(id, mapId)
+	err := d.deleteFromFs(id, mapId, idx)
 
 	if err != nil {
 		return false, err
@@ -203,9 +212,23 @@ func (d *Db) GoDelete(id int, resChan chan *GoAppResult) {
 		return
 	}
 
+	idx, ok := d.Index[id]
+
+	if !ok {
+		resChan <- &GoAppResult{
+			Result: nil,
+			Err: &dataError{
+				Code:    DataErrorCode,
+				Message: fmt.Sprintf("Index integrity violation. Index for ID %d does not exist. Please, restart Rose and try again", id),
+			},
+		}
+
+		return
+	}
+
 	mapId = idData[1]
 
-	err := d.deleteFromFs(id, mapId)
+	err := d.deleteFromFs(id, mapId, idx)
 
 	if err != nil {
 		d.Unlock()
@@ -330,9 +353,7 @@ func (d *Db) saveOnFs(id int, v []uint8) (int64, int64, Error) {
 	return d.FsDriver.Save(prepareData(id, v), d.CurrMapIdx)
 }
 
-func (d *Db) deleteFromFs(id int, mapIdx uint16) Error {
-	idx, _ := d.Index[id]
-
+func (d *Db) deleteFromFs(id int, mapIdx uint16, idx int64) Error {
 	idStr := strconv.Itoa(id)
 	idByte := []uint8(idStr)
 	idPtr := &idByte

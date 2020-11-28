@@ -23,6 +23,7 @@ type GoAppResult struct {
 
 func New(doDefragmentation bool, log bool) (*Rose, Error) {
 	if log {
+		fmt.Println("")
 		fmt.Println("=============")
 		fmt.Println("")
 	}
@@ -35,7 +36,7 @@ func New(doDefragmentation bool, log bool) (*Rose, Error) {
 
 	if doDefragmentation {
 		if log {
-			fmt.Println(string("\033[33mWARNING:\033[0m"), "Defragmenting existing database. DO NOT STOP THIS PROCESS! Depending on the size of the database, this may take some time...")
+			fmt.Println(string("\033[33mwarning:\033[0m"), "Defragmenting existing database. DO NOT STOP THIS PROCESS! Depending on the size of the database, this may take some time...")
 		}
 
 		if err := defragment(log); err != nil {
@@ -51,19 +52,16 @@ func New(doDefragmentation bool, log bool) (*Rose, Error) {
 	m := newMemoryDb(newFsDriver(roseDbDir()))
 
 	if log {
-		fmt.Println("=============")
 		fmt.Println("")
-		fmt.Printf(string("\033[32mINFO: \033[0m") + "Loading existing filesystem database in memory. Depending on the size of the database, this may take some time...\n\n")
+		fmt.Println(string("\033[32minfo:\033[0m ") + "Loading indexes...")
 	}
 
-	if err := loadDbInMemory(m, log); err != nil {
+	if err := loadIndexes(m, log); err != nil {
 		return nil, err
 	}
 
 	if log {
-		fmt.Println("")
-		fmt.Printf(string("\033[32mINFO: \033[0m") + "Filesystem database is loaded successfully!\n\n")
-		fmt.Println("=============")
+		fmt.Println("      Indexes loaded")
 		fmt.Println("")
 	}
 
@@ -72,7 +70,12 @@ func New(doDefragmentation bool, log bool) (*Rose, Error) {
 	}
 
 	if log {
-		fmt.Printf(string("\033[32mINFO: ") + "Rose is ready to use!" + string("\033[0m") + "\n\n")
+		fmt.Printf(string("\033[32m") + "Rose is ready to use!" + string("\033[0m") + "\n\n")
+	}
+
+	if log {
+		fmt.Println("=============")
+		fmt.Println("")
 	}
 
 	return r, nil
