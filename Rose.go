@@ -87,14 +87,14 @@ func (a *Rose) Write(data []uint8) (*AppResult, Error) {
 	}
 
 	// save the entry under idx into memory
-	_, id, err := a.db.Write(data, true)
+	_, ID, err := a.db.Write(data, true)
 
 	if err != nil {
 		return nil, err
 	}
 
 	return &AppResult{
-		ID:   id,
+		ID:   ID,
 		Method: WriteMethodType,
 		Status: OkResultStatus,
 	}, nil
@@ -116,15 +116,15 @@ func (a *Rose) GoWrite(data []uint8) chan *GoAppResult {
 	return resChan
 }
 
-func (a *Rose) Read(id int, v interface{}) (*AppResult, Error) {
-	res := a.db.Read(id, v)
+func (a *Rose) Read(ID int, v interface{}) (*AppResult, Error) {
+	res := a.db.Read(ID, v)
 
 	if res == nil {
 		return &AppResult{
-			ID: id,
+			ID: ID,
 			Method: ReadMethodType,
 			Status: NotFoundResultStatus,
-			Reason: fmt.Sprintf("Rose: Entry with id %d not found", id),
+			Reason: fmt.Sprintf("Rose: Entry with ID %d not found", ID),
 		}, nil
 	}
 
@@ -134,8 +134,8 @@ func (a *Rose) Read(id int, v interface{}) (*AppResult, Error) {
 	}, nil
 }
 
-func (a *Rose) Delete(id int) (*AppResult, Error) {
-	res, err := a.db.Delete(id)
+func (a *Rose) Delete(ID int) (*AppResult, Error) {
+	res, err := a.db.Delete(ID)
 
 	if err != nil {
 		return nil, err
@@ -143,10 +143,10 @@ func (a *Rose) Delete(id int) (*AppResult, Error) {
 
 	if !res {
 		return &AppResult{
-			ID: id,
+			ID: ID,
 			Method: DeleteMethodType,
 			Status: NotFoundResultStatus,
-			Reason: fmt.Sprintf("Rose: Entry with id %d not found", id),
+			Reason: fmt.Sprintf("Rose: Entry with ID %d not found", ID),
 		}, nil
 	}
 
@@ -156,10 +156,10 @@ func (a *Rose) Delete(id int) (*AppResult, Error) {
 	}, nil
 }
 
-func (a *Rose) GoDelete(id int) chan *GoAppResult {
+func (a *Rose) GoDelete(ID int) chan *GoAppResult {
 	resChan := make(chan *GoAppResult)
 
-	go a.db.GoDelete(id, resChan)
+	go a.db.GoDelete(ID, resChan)
 
 	return resChan
 }
