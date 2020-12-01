@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
+	"time"
 )
 
 func prepareData(id int, data []uint8) *[]uint8 {
@@ -81,4 +83,133 @@ func createFileInfoBatch(files []os.FileInfo, size int) map[int][]os.FileInfo {
 	}
 
 	return m
+}
+
+func secureBlockingCreateFile(a string) (*os.File, Error) {
+	it := 0
+	var file *os.File
+	var err Error
+
+	for {
+		file, err = createFile(a, os.O_RDWR|os.O_CREATE)
+
+		if err != nil {
+			err = getFsError(err, "create")
+
+			if it == 200 {
+				return nil, err
+			}
+
+			if err.GetCode() == TooManyOpenFiles {
+				continue
+			}
+
+			time.Sleep(100 * time.Millisecond)
+			it++
+
+			continue
+		}
+
+		return file, nil
+	}
+}
+
+func secureBlockingWriteFile(f *os.File, d *[]uint8) Error {
+	it := 0
+	var err error
+
+	for {
+		_, err = f.Write(*d)
+
+		if err != nil {
+			e := getFsError(err, "write")
+
+			if it == 200 {
+				return getFsError(err, "write")
+			}
+
+			if e.GetCode() == TooManyOpenFiles {
+				continue
+			}
+
+			time.Sleep(100 * time.Millisecond)
+			it++
+
+			continue
+		}
+
+		return nil
+	}
+}
+
+func secureBlockingSeekFile(f *os.File, offset int64) Error {
+	it := 0
+	var err error
+
+	for {
+		_, err = f.Seek(offset, 0)
+
+		if err != nil {
+			e := getFsError(err, "write")
+
+			if it == 200 {
+				return getFsError(err, "write")
+			}
+
+			if e.GetCode() == TooManyOpenFiles {
+				continue
+			}
+
+			time.Sleep(100 * time.Millisecond)
+			it++
+
+			continue
+		}
+
+		return nil
+	}
+}
+
+func secureBlockingWriteAtFile(f *os.File, d []uint8, offset int64) Error {
+	it := 0
+	var err error
+
+	for {
+		_, err = f.WriteAt(d, offset)
+
+		if err != nil {
+			e := getFsError(err, "writeAt")
+
+			if it == 200 {
+				return getFsError(err, "writeAt")
+			}
+
+			if e.GetCode() == TooManyOpenFiles {
+				continue
+			}
+
+			time.Sleep(100 * time.Millisecond)
+			it++
+
+			continue
+		}
+
+		return nil
+	}
+}
+
+func getFsError(err error, op string) Error {
+	msg := err.Error()
+
+	if strings.Contains(msg, "too many open files") {
+		return &systemError{
+			Code:    TooManyOpenFiles,
+			Message: fmt.Sprintf("Operating system error. Cannot do %s file operation with underlying message: %s", op, msg),
+		}
+	}
+
+	return &dbError{
+		Code:    DbIntegrityViolationCode,
+		Message: fmt.Sprintf("Database integrity violation. Cannot do %s file operation with underlying message: %s", op, msg),
+	}
 }

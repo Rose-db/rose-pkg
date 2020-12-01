@@ -3,7 +3,6 @@ package rose
 import (
 	"fmt"
 	"os"
-	"strings"
 )
 
 type fsDb struct {
@@ -15,7 +14,7 @@ type fsDb struct {
 func newFsDb(b uint16, dbDir string) (*fsDb, Error) {
 	a := roseBlockFile(b, dbDir)
 
-	file, err := createFile(a, os.O_RDWR|os.O_CREATE)
+	file, err := secureBlockingCreateFile(a)
 
 	if err != nil {
 		return nil, err
@@ -38,23 +37,10 @@ func newFsDb(b uint16, dbDir string) (*fsDb, Error) {
 }
 
 func (fs *fsDb) Write(d *[]uint8) (int64, int64, Error) {
-	_, err := fs.File.Write(*d)
+	err := secureBlockingWriteFile(fs.File, d)
 
 	if err != nil {
-		name := fs.File.Name()
-		msg := err.Error()
-
-		if strings.Contains(msg, "too many open files") {
-			return 0, 0, &systemError{
-				Code:    TooManyOpenFiles,
-				Message: fmt.Sprintf("Operating system error. Cannot write to existing file %s with underlying message: %s", name, msg),
-			}
-		}
-
-		return 0, 0, &dbError{
-			Code:    DbIntegrityViolationCode,
-			Message: fmt.Sprintf("Database integrity violation. Cannot write to existing file %s with underlying message: %s", name, msg),
-		}
+		return 0, 0, err
 	}
 
 	fs.Size += int64(len(*d))
@@ -63,7 +49,7 @@ func (fs *fsDb) Write(d *[]uint8) (int64, int64, Error) {
 }
 
 func (fs *fsDb) Read(offset int64) (*[]uint8, Error) {
-	_, e := fs.File.Seek(offset, 0)
+	e := secureBlockingSeekFile(fs.File, offset)
 
 	if e != nil {
 		return nil, &dbError{
@@ -84,21 +70,12 @@ func (fs *fsDb) Read(offset int64) (*[]uint8, Error) {
 }
 
 func (fs *fsDb) StrategicDelete(id *[]uint8, offset int64) Error {
-	_, e := fs.File.Seek(offset, 0)
+	err := secureBlockingWriteAtFile(fs.File, []uint8(delMark), offset)
 
-	if e != nil {
+	if err != nil {
 		return &dbError{
 			Code:    DbErrorCode,
-			Message: fmt.Sprintf("Unable to delete %s: %s", string(*id), e.Error()),
-		}
-	}
-
-	_, fsErr := fs.File.Write([]uint8(delMark))
-
-	if fsErr != nil {
-		return &dbError{
-			Code:    DbErrorCode,
-			Message: fmt.Sprintf("Unable to delete %s: %s", string(*id), fsErr.Error()),
+			Message: fmt.Sprintf("Unable to delete %s with underlying message: %s", string(*id), err.Error()),
 		}
 	}
 
