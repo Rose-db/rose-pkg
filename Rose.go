@@ -49,7 +49,8 @@ func New(doDefragmentation bool, log bool) (*Rose, Error) {
 		}
 	}
 
-	m := newMemoryDb(newFsDriver(roseDbDir()))
+	dbDir := roseDbDir()
+	m := newMemoryDb(newFsDriver(dbDir), newFsDriver(dbDir), newFsDriver(dbDir))
 
 	if log {
 		fmt.Println("")
@@ -116,8 +117,8 @@ func (a *Rose) GoWrite(data []uint8) chan *GoAppResult {
 	return resChan
 }
 
-func (a *Rose) Read(ID int, v interface{}) (*AppResult, Error) {
-	res := a.db.Read(ID, v)
+func (a *Rose) Read(ID int, data interface{}) (*AppResult, Error) {
+	res := a.db.Read(ID, data)
 
 	if res == nil {
 		return &AppResult{

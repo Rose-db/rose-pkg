@@ -3,6 +3,7 @@ package rose
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
 type fsDb struct {
@@ -41,10 +42,18 @@ func (fs *fsDb) Write(d *[]uint8) (int64, int64, Error) {
 
 	if err != nil {
 		name := fs.File.Name()
+		msg := err.Error()
+
+		if strings.Contains(msg, "too many open files") {
+			return 0, 0, &systemError{
+				Code:    TooManyOpenFiles,
+				Message: fmt.Sprintf("Operating system error. Cannot write to existing file %s with underlying message: %s", name, msg),
+			}
+		}
 
 		return 0, 0, &dbError{
-			Code:    DbErrorCode,
-			Message: fmt.Sprintf("Database integrity violation. Cannot write to existing file %s with underlying message: %s", name, err.Error()),
+			Code:    DbIntegrityViolationCode,
+			Message: fmt.Sprintf("Database integrity violation. Cannot write to existing file %s with underlying message: %s", name, msg),
 		}
 	}
 

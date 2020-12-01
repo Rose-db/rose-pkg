@@ -35,12 +35,16 @@ type Db struct {
 	CurrMapIdx           uint16
 	sync.RWMutex
 
-	FsDriver *fsDriver
+	WriteDriver *fsDriver
+	ReadDriver *fsDriver
+	DeleteDriver *fsDriver
 }
 
-func newMemoryDb(fsDriver *fsDriver) *Db {
+func newMemoryDb(write *fsDriver, read *fsDriver, delete *fsDriver) *Db {
 	d := &Db{
-		FsDriver: fsDriver,
+		WriteDriver: write,
+		ReadDriver: read,
+		DeleteDriver: delete,
 	}
 
 	d.init()
@@ -273,7 +277,7 @@ func (d *Db) Read(id int, data interface{}) *dbReadResult {
 
 	index, _ := d.Index[id]
 
-	b, err := d.FsDriver.Read(index, mapId)
+	b, err := d.ReadDriver.Read(index, mapId)
 
 	if err != nil {
 		return nil
@@ -292,15 +296,16 @@ func (d *Db) Read(id int, data interface{}) *dbReadResult {
 	}
 }
 
+// shutdown does not do anything for now until I decide what to do with multiple drivers
 func (d *Db) Shutdown() Error {
 	d.init()
 
-	if err := d.FsDriver.Shutdown(); err != nil {
+/*	if err := d.FsDriver.Shutdown(); err != nil {
 		return err
 	}
 
 	d.FsDriver = nil
-
+*/
 	return nil
 }
 
@@ -335,7 +340,7 @@ func (d *Db) writeOnDefragmentation(id int, v []uint8, mapIdx uint16) Error {
 	// r operation, add COMPUTED index to the index map
 	d.IdLookupMap[id] = [2]uint16{uint16(d.AutoIncrementCounter % blockMark), mapIdx}
 
-	_, _, err := d.FsDriver.Save(prepareData(id, v), mapIdx)
+	_, _, err := d.WriteDriver.Save(prepareData(id, v), mapIdx)
 
 	if err != nil {
 		return err
@@ -350,7 +355,7 @@ PRIVATE METHOD. DO NOT USE IN CLIENT CODE
 Save the data on the filesystem
 */
 func (d *Db) saveOnFs(id int, v []uint8) (int64, int64, Error) {
-	return d.FsDriver.Save(prepareData(id, v), d.CurrMapIdx)
+	return d.WriteDriver.Save(prepareData(id, v), d.CurrMapIdx)
 }
 
 func (d *Db) deleteFromFs(id int, mapIdx uint16, idx int64) Error {
@@ -358,7 +363,7 @@ func (d *Db) deleteFromFs(id int, mapIdx uint16, idx int64) Error {
 	idByte := []uint8(idStr)
 	idPtr := &idByte
 
-	return d.FsDriver.MarkStrategicDeleted(idPtr, mapIdx, idx)
+	return d.DeleteDriver.MarkStrategicDeleted(idPtr, mapIdx, idx)
 }
 
 /**

@@ -134,7 +134,8 @@ func copyToBackup(fileName string) Error {
 func writeBackupToDb(log bool) Error {
 	backupDir := fmt.Sprintf("%s/backup", roseDbDir())
 
-	m := newMemoryDb(newFsDriver(roseDbDir()))
+	dbDir := roseDbDir()
+	m := newMemoryDb(newFsDriver(dbDir), newFsDriver(dbDir), newFsDriver(dbDir))
 
 	files, fsErr := ioutil.ReadDir(backupDir)
 

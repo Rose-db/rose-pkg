@@ -11,6 +11,7 @@ const DataErrorCode = 1
 const SystemErrorCode = 2
 const DbIntegrityViolationCode = 3
 const DbErrorCode = 4
+const TooManyOpenFiles = 5
 
 // result status
 const OkResultStatus = "ok"
