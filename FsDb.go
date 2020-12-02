@@ -46,7 +46,7 @@ func newFsDb(b uint16, dbDir string) (*fsDb, Error) {
 func (fs *fsDb) Write(d *[]uint8) (int64, int64, Error) {
 	_, err := fs.File.Write(*d)
 
-	if err != nil && strings.Contains(err.Error(), "too many open") {
+	if err != nil {
 		e := secureBlockingWriteFile(fs.File, d)
 
 		if e != nil {
@@ -62,7 +62,7 @@ func (fs *fsDb) Write(d *[]uint8) (int64, int64, Error) {
 func (fs *fsDb) Read(offset int64) (*[]uint8, Error) {
 	_, err := fs.File.Seek(offset, 0)
 
-	if err != nil && strings.Contains(err.Error(), "too many open") {
+	if err != nil {
 		e := secureBlockingSeekFile(fs.File, offset)
 
 		if e != nil {
@@ -84,7 +84,7 @@ func (fs *fsDb) Read(offset int64) (*[]uint8, Error) {
 func (fs *fsDb) StrategicDelete(id *[]uint8, offset int64) Error {
 	_, err := fs.File.WriteAt([]uint8(delMark), offset)
 
-	if err != nil && strings.Contains(err.Error(), "too many open") {
+	if err != nil {
 		e := secureBlockingWriteAtFile(fs.File, []uint8(delMark), offset)
 
 		if e != nil {
