@@ -129,6 +129,33 @@ var _ = GinkgoDescribe("Misc tests", func() {
 
 		testRemoveFileSystemDb()
 	})
+
+	GinkgoIt("Should create a new collection", func() {
+		a := testCreateRose(false)
+		collName := "some_collection"
+
+		err := a.NewCollection(collName)
+
+		gomega.Expect(err).To(gomega.BeNil())
+
+		path := fmt.Sprintf("%s/%s", roseDbDir(), collName)
+		stat, statErr := os.Stat(path)
+
+		gomega.Expect(statErr).To(gomega.BeNil())
+
+		gomega.Expect(stat.IsDir()).To(gomega.BeTrue())
+		gomega.Expect(path).To(gomega.Equal(fmt.Sprintf("%s/%s", roseDbDir(), stat.Name())))
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb()
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb()
+	})
 })
 
 var _ = GinkgoDescribe("Input validity tests", func() {

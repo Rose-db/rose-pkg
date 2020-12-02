@@ -3,6 +3,7 @@ package rose
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 )
 
 type Rose struct {
@@ -80,6 +81,18 @@ func New(doDefragmentation bool, log bool) (*Rose, Error) {
 	}
 
 	return r, nil
+}
+
+func (a *Rose) NewCollection(name string) Error {
+	collDir := fmt.Sprintf("%s/%s", roseDbDir(), name)
+	if err := os.Mkdir(collDir, 0666); err != nil {
+		return &systemError{
+			Code:    SystemErrorCode,
+			Message: fmt.Sprintf("Unable to create collection directory with underlying error: %s", err.Error()),
+		}
+	}
+
+	return nil
 }
 
 func (a *Rose) Write(data []uint8) (*AppResult, Error) {
