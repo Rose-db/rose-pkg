@@ -104,7 +104,7 @@ func secureBlockingCreateFile(a string) (*os.File, Error) {
 				continue
 			}
 
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(50 * time.Millisecond)
 			it++
 
 			continue
@@ -132,7 +132,7 @@ func secureBlockingWriteFile(f *os.File, d *[]uint8) Error {
 				continue
 			}
 
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(50 * time.Millisecond)
 			it++
 
 			continue
@@ -160,7 +160,7 @@ func secureBlockingSeekFile(f *os.File, offset int64) Error {
 				continue
 			}
 
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(50 * time.Millisecond)
 			it++
 
 			continue
@@ -188,7 +188,7 @@ func secureBlockingWriteAtFile(f *os.File, d []uint8, offset int64) Error {
 				continue
 			}
 
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(50 * time.Millisecond)
 			it++
 
 			continue

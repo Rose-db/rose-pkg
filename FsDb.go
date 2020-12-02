@@ -3,6 +3,7 @@ package rose
 import (
 	"fmt"
 	"os"
+	"strings"
 )
 
 type fsDb struct {
@@ -13,11 +14,17 @@ type fsDb struct {
 
 func newFsDb(b uint16, dbDir string) (*fsDb, Error) {
 	a := roseBlockFile(b, dbDir)
+	var file *os.File
+	var err Error
 
-	file, err := secureBlockingCreateFile(a)
+	file, err = createFile(a, os.O_RDWR|os.O_CREATE)
 
-	if err != nil {
-		return nil, err
+	if err != nil && strings.Contains(err.Error(), "too many open") {
+		file, err = secureBlockingCreateFile(a)
+
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	stat, statErr := os.Stat(a)
@@ -37,10 +44,14 @@ func newFsDb(b uint16, dbDir string) (*fsDb, Error) {
 }
 
 func (fs *fsDb) Write(d *[]uint8) (int64, int64, Error) {
-	err := secureBlockingWriteFile(fs.File, d)
+	_, err := fs.File.Write(*d)
 
-	if err != nil {
-		return 0, 0, err
+	if err != nil && strings.Contains(err.Error(), "too many open") {
+		e := secureBlockingWriteFile(fs.File, d)
+
+		if e != nil {
+			return 0, 0, e
+		}
 	}
 
 	fs.Size += int64(len(*d))
@@ -49,28 +60,37 @@ func (fs *fsDb) Write(d *[]uint8) (int64, int64, Error) {
 }
 
 func (fs *fsDb) Read(offset int64) (*[]uint8, Error) {
-	e := secureBlockingSeekFile(fs.File, offset)
+	_, err := fs.File.Seek(offset, 0)
 
-	if e != nil {
-		return nil, &dbError{
-			Code:    DbErrorCode,
-			Message: fmt.Sprintf("Unable to seek index %d with underlying error: %s", offset, e.Error()),
+	if err != nil && strings.Contains(err.Error(), "too many open") {
+		e := secureBlockingSeekFile(fs.File, offset)
+
+		if e != nil {
+			return nil, e
 		}
 	}
 
 	r := NewLineReader(fs.File)
 
-	_, data, _, err := r.Read()
+	_, data, _, e := r.Read()
 
-	if err != nil {
-		return nil, err
+	if e != nil {
+		return nil, e
 	}
 
 	return &data.val, nil
 }
 
 func (fs *fsDb) StrategicDelete(id *[]uint8, offset int64) Error {
-	err := secureBlockingWriteAtFile(fs.File, []uint8(delMark), offset)
+	_, err := fs.File.WriteAt([]uint8(delMark), offset)
+
+	if err != nil && strings.Contains(err.Error(), "too many open") {
+		e := secureBlockingWriteAtFile(fs.File, []uint8(delMark), offset)
+
+		if e != nil {
+			return e
+		}
+	}
 
 	if err != nil {
 		return &dbError{
