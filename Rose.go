@@ -85,6 +85,13 @@ func New(doDefragmentation bool, log bool) (*Rose, Error) {
 
 func (a *Rose) NewCollection(name string) Error {
 	collDir := fmt.Sprintf("%s/%s", roseDbDir(), name)
+
+	_, err := os.Stat(collDir)
+
+	if err == nil {
+		return nil
+	}
+
 	if err := os.Mkdir(collDir, 0666); err != nil {
 		return &systemError{
 			Code:    SystemErrorCode,

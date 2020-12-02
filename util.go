@@ -100,7 +100,7 @@ func secureBlockingCreateFile(a string) (*os.File, Error) {
 				return nil, err
 			}
 
-			if err.GetCode() == TooManyOpenFiles {
+			if err.GetCode() == TooManyOpenFilesCode {
 				continue
 			}
 
@@ -128,7 +128,7 @@ func secureBlockingWriteFile(f *os.File, d *[]uint8) Error {
 				return getFsError(err, "write")
 			}
 
-			if e.GetCode() == TooManyOpenFiles {
+			if e.GetCode() == TooManyOpenFilesCode {
 				continue
 			}
 
@@ -156,7 +156,7 @@ func secureBlockingSeekFile(f *os.File, offset int64) Error {
 				return getFsError(err, "write")
 			}
 
-			if e.GetCode() == TooManyOpenFiles {
+			if e.GetCode() == TooManyOpenFilesCode {
 				continue
 			}
 
@@ -184,7 +184,7 @@ func secureBlockingWriteAtFile(f *os.File, d []uint8, offset int64) Error {
 				return getFsError(err, "writeAt")
 			}
 
-			if e.GetCode() == TooManyOpenFiles {
+			if e.GetCode() == TooManyOpenFilesCode {
 				continue
 			}
 
@@ -203,7 +203,7 @@ func getFsError(err error, op string) Error {
 
 	if strings.Contains(msg, "too many open files") {
 		return &systemError{
-			Code:    TooManyOpenFiles,
+			Code:    TooManyOpenFilesCode,
 			Message: fmt.Sprintf("Operating system error. Cannot do %s file operation with underlying message: %s", op, msg),
 		}
 	}
