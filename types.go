@@ -5,6 +5,7 @@ const systemErrorType = "system_error"
 const metadataErrorType = "metadata_error"
 const dbErrorType = "db_error"
 const dbIntegrityErrorType = "db_integrity_error"
+const validationErrorType = "validation_error"
 
 // application error codes
 const DataErrorCode = 1
@@ -12,7 +13,7 @@ const SystemErrorCode = 2
 const DbIntegrityViolationCode = 3
 const DbErrorCode = 4
 const TooManyOpenFilesCode = 5
-const CollectionExistsCode = 6
+const ValidationErrorCode = 6
 
 // result status
 const OkResultStatus = "ok"

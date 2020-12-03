@@ -31,6 +31,28 @@ type dbError struct {
 	Message string
 }
 
+type validationError struct {
+	Code int
+	Message string
+}
+
+
+func (e *validationError) Error() string {
+	return fmt.Sprintf("Code: %d, Message: %s", e.Code, e.Message)
+}
+
+func (e *validationError) Type() string {
+	return validationErrorType
+}
+
+func (e *validationError) GetCode() int {
+	return ValidationErrorCode
+}
+
+func (e *validationError) JSON() map[string]interface{} {
+	return map[string]interface{}{}
+}
+
 
 
 func (e *systemError) Error() string {
