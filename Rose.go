@@ -20,6 +20,7 @@ type GoAppResult struct {
 
 type Rose struct {
 	db *Db
+	isInShutdown bool
 }
 
 func New(doDefragmentation bool, log bool) (*Rose, Error) {
@@ -84,6 +85,10 @@ func New(doDefragmentation bool, log bool) (*Rose, Error) {
 }
 
 func (a *Rose) NewCollection(name string) Error {
+	if a.isInShutdown {
+		return nil
+	}
+
 	collDir := fmt.Sprintf("%s/%s", roseDbDir(), name)
 
 	_, err := os.Stat(collDir)
@@ -103,6 +108,10 @@ func (a *Rose) NewCollection(name string) Error {
 }
 
 func (a *Rose) Write(m WriteMetadata) (*AppResult, Error) {
+	if a.isInShutdown {
+		return nil, nil
+	}
+
 	if err := validateData(m.Data); err != nil {
 		return nil, err
 	}
@@ -122,6 +131,10 @@ func (a *Rose) Write(m WriteMetadata) (*AppResult, Error) {
 }
 
 func (a *Rose) GoWrite(m WriteMetadata) chan *GoAppResult {
+	if a.isInShutdown {
+		return make(chan *GoAppResult)
+	}
+
 	resChan := make(chan *GoAppResult)
 
 	if err := validateData(m.Data); err != nil {
@@ -138,6 +151,10 @@ func (a *Rose) GoWrite(m WriteMetadata) chan *GoAppResult {
 }
 
 func (a *Rose) Read(m ReadMetadata) (*AppResult, Error) {
+	if a.isInShutdown {
+		return nil, nil
+	}
+
 	res := a.db.Read(m.ID, m.Data)
 
 	if res == nil {
@@ -156,6 +173,10 @@ func (a *Rose) Read(m ReadMetadata) (*AppResult, Error) {
 }
 
 func (a *Rose) Delete(m DeleteMetadata) (*AppResult, Error) {
+	if a.isInShutdown {
+		return nil, nil
+	}
+
 	res, err := a.db.Delete(m.ID)
 
 	if err != nil {
@@ -178,6 +199,10 @@ func (a *Rose) Delete(m DeleteMetadata) (*AppResult, Error) {
 }
 
 func (a *Rose) GoDelete(m DeleteMetadata) chan *GoAppResult {
+	if a.isInShutdown {
+		return make(chan *GoAppResult)
+	}
+
 	resChan := make(chan *GoAppResult)
 
 	go a.db.GoDelete(m.ID, resChan)
@@ -186,6 +211,10 @@ func (a *Rose) GoDelete(m DeleteMetadata) chan *GoAppResult {
 }
 
 func (a *Rose) Size() (uint64, Error) {
+	if a.isInShutdown {
+		return 0, nil
+	}
+
 	files, err := ioutil.ReadDir(roseDbDir())
 
 	if err != nil {
@@ -205,5 +234,24 @@ func (a *Rose) Size() (uint64, Error) {
 }
 
 func (a *Rose) Shutdown() Error {
-	return a.db.Shutdown()
+	a.isInShutdown = true
+	errors := a.db.Shutdown()
+	msg := ""
+
+	for _, e := range errors {
+		if e != nil {
+			msg += e.Error() + "\n"
+		}
+	}
+
+	if msg != "" {
+		base := fmt.Sprintf("Shutdown failed with these errors:\n%s", msg)
+
+		return &systemError{
+			Code:    SystemErrorCode,
+			Message: base,
+		}
+	}
+
+	return nil
 }

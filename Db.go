@@ -297,16 +297,24 @@ func (d *Db) Read(id int, data interface{}) *dbReadResult {
 }
 
 // shutdown does not do anything for now until I decide what to do with multiple drivers
-func (d *Db) Shutdown() Error {
+func (d *Db) Shutdown() [3]Error {
 	d.init()
 
-/*	if err := d.FsDriver.Shutdown(); err != nil {
-		return err
+	errors := [3]Error{}
+
+	if err := d.WriteDriver.Shutdown(); err != nil {
+		errors[0] = err
 	}
 
-	d.FsDriver = nil
-*/
-	return nil
+	if err := d.ReadDriver.Shutdown(); err != nil {
+		errors[1] = err
+	}
+
+	if err := d.DeleteDriver.Shutdown(); err != nil {
+		errors[2] = err
+	}
+
+	return errors
 }
 
 func (d *Db) writeOnLoad(id int, mapIdx uint16, lock *sync.RWMutex, offset int64) Error {
