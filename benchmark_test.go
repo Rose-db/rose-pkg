@@ -12,7 +12,7 @@ func benchmarkAppInsert(i int, a *Rose) {
 	s := testAsJson(testString)
 
 	for c := 0; c < i; c++ {
-		res, err := a.Write(s)
+		res, err := a.Write(WriteMetadata{Data: s})
 
 		if err != nil {
 			panic(fmt.Sprintf("Error when writing: %s", err.Error()))

@@ -6,10 +6,6 @@ import (
 	"os"
 )
 
-type Rose struct {
-	db *Db
-}
-
 type AppResult struct {
 	ID   int
 	Method string
@@ -20,6 +16,10 @@ type AppResult struct {
 type GoAppResult struct {
 	Result *AppResult
 	Err    Error
+}
+
+type Rose struct {
+	db *Db
 }
 
 func New(doDefragmentation bool, log bool) (*Rose, Error) {
@@ -102,13 +102,13 @@ func (a *Rose) NewCollection(name string) Error {
 	return nil
 }
 
-func (a *Rose) Write(data []uint8) (*AppResult, Error) {
-	if err := validateData(data); err != nil {
+func (a *Rose) Write(m WriteMetadata) (*AppResult, Error) {
+	if err := validateData(m.Data); err != nil {
 		return nil, err
 	}
 
 	// save the entry under idx into memory
-	_, ID, err := a.db.Write(data, true)
+	_, ID, err := a.db.Write(m.Data, true)
 
 	if err != nil {
 		return nil, err
@@ -121,10 +121,10 @@ func (a *Rose) Write(data []uint8) (*AppResult, Error) {
 	}, nil
 }
 
-func (a *Rose) GoWrite(data []uint8) chan *GoAppResult {
+func (a *Rose) GoWrite(m WriteMetadata) chan *GoAppResult {
 	resChan := make(chan *GoAppResult)
 
-	if err := validateData(data); err != nil {
+	if err := validateData(m.Data); err != nil {
 		resChan <- &GoAppResult{
 			Result: nil,
 			Err:    err,
@@ -132,20 +132,20 @@ func (a *Rose) GoWrite(data []uint8) chan *GoAppResult {
 	}
 
 	// save the entry under idx into memory
-	go a.db.GoWrite(data, true, resChan)
+	go a.db.GoWrite(m.Data, true, resChan)
 
 	return resChan
 }
 
-func (a *Rose) Read(ID int, data interface{}) (*AppResult, Error) {
-	res := a.db.Read(ID, data)
+func (a *Rose) Read(m ReadMetadata) (*AppResult, Error) {
+	res := a.db.Read(m.ID, m.Data)
 
 	if res == nil {
 		return &AppResult{
-			ID: ID,
+			ID: m.ID,
 			Method: ReadMethodType,
 			Status: NotFoundResultStatus,
-			Reason: fmt.Sprintf("Rose: Entry with ID %d not found", ID),
+			Reason: fmt.Sprintf("Rose: Entry with ID %d not found", m.ID),
 		}, nil
 	}
 
@@ -155,8 +155,8 @@ func (a *Rose) Read(ID int, data interface{}) (*AppResult, Error) {
 	}, nil
 }
 
-func (a *Rose) Delete(ID int) (*AppResult, Error) {
-	res, err := a.db.Delete(ID)
+func (a *Rose) Delete(m DeleteMetadata) (*AppResult, Error) {
+	res, err := a.db.Delete(m.ID)
 
 	if err != nil {
 		return nil, err
@@ -164,10 +164,10 @@ func (a *Rose) Delete(ID int) (*AppResult, Error) {
 
 	if !res {
 		return &AppResult{
-			ID: ID,
+			ID: m.ID,
 			Method: DeleteMethodType,
 			Status: NotFoundResultStatus,
-			Reason: fmt.Sprintf("Rose: Entry with ID %d not found", ID),
+			Reason: fmt.Sprintf("Rose: Entry with ID %d not found", m.ID),
 		}, nil
 	}
 
@@ -177,10 +177,10 @@ func (a *Rose) Delete(ID int) (*AppResult, Error) {
 	}, nil
 }
 
-func (a *Rose) GoDelete(ID int) chan *GoAppResult {
+func (a *Rose) GoDelete(m DeleteMetadata) chan *GoAppResult {
 	resChan := make(chan *GoAppResult)
 
-	go a.db.GoDelete(ID, resChan)
+	go a.db.GoDelete(m.ID, resChan)
 
 	return resChan
 }
