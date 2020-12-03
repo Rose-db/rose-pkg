@@ -28,10 +28,17 @@ func (m WriteMetadata) Validate() Error {
 		}
 	}
 
+	if m.Data == nil {
+		return &validationError{
+			Code:    ValidationErrorCode,
+			Message: "Validation error. Invalid write method data. Data is empty. Data must be a non empty byte array",
+		}
+	}
+
 	if len(m.Data) == 0 {
 		return &validationError{
 			Code:    ValidationErrorCode,
-			Message: "Validation error. Invalid write method data. Data cannot be empty",
+			Message: "Validation error. Invalid write method data. Data is empty. Data must be a non empty byte array",
 		}
 	}
 
@@ -43,6 +50,13 @@ func (m ReadMetadata) Validate() Error {
 		return &validationError{
 			Code:    ValidationErrorCode,
 			Message: "Validation error. Invalid collection name. Collection name cannot be an empty string",
+		}
+	}
+
+	if m.Data == nil {
+		return &validationError{
+			Code:    ValidationErrorCode,
+			Message: "Validation error. Invalid read method data. Data is empty. Data must be a non empty byte array",
 		}
 	}
 
