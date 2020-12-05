@@ -9,6 +9,40 @@ import (
 )
 
 var _ = GinkgoDescribe("Misc tests", func() {
+	GinkgoIt("Should generate ids in expected order", func() {
+		var currId uint16
+
+		fac := newBlockIdFactory()
+		iterations := 0
+
+		for {
+			if iterations == 100000 {
+				break
+			}
+
+			id := fac.Next()
+
+			condition := false
+
+			if id > 2999 {
+				condition = false
+			} else {
+				condition = true
+			}
+
+			gomega.Expect(condition).To(gomega.Equal(true))
+			gomega.Expect(currId).To(gomega.Equal(id))
+
+			currId++
+
+			iterations++
+
+			if currId > 2999 {
+				currId = 0
+			}
+		}
+	})
+
 	GinkgoIt("Should return the real size of the database", func() {
 		a := testCreateRose(false)
 
