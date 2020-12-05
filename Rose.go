@@ -19,7 +19,7 @@ type GoAppResult struct {
 }
 
 type Rose struct {
-	db *Db
+	db *db
 	isInShutdown bool
 }
 
@@ -73,7 +73,7 @@ func New(doDefragmentation bool, log bool) (*Rose, Error) {
 	}
 
 	if log {
-		fmt.Printf(string("\033[32m") + "Rose is ready to use!" + string("\033[0m") + "\n\n")
+		fmt.Printf("\033[32m" + "Rose is ready to use!" + "\033[0m" + "\n\n")
 	}
 
 	if log {

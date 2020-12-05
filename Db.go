@@ -25,7 +25,7 @@ type dbReadResult struct {
 	Blocks can hold up to 3000 indexes (value). When the reach max size, a new map
 	is created with the same size.
 */
-type Db struct {
+type db struct {
 	InternalDb map[uint16]*[3000]*[]uint8
 	// map of user supplied ids to InternalDb indexes
 	// IdLookupMap::string -> idx::uint -> InternalDb[idx] -> []uint8
@@ -41,8 +41,8 @@ type Db struct {
 	DeleteDriver *fsDriver
 }
 
-func newMemoryDb(write *fsDriver, read *fsDriver, delete *fsDriver) *Db {
-	d := &Db{
+func newMemoryDb(write *fsDriver, read *fsDriver, delete *fsDriver) *db {
+	d := &db{
 		WriteDriver: write,
 		ReadDriver: read,
 		DeleteDriver: delete,
@@ -61,7 +61,7 @@ func newMemoryDb(write *fsDriver, read *fsDriver, delete *fsDriver) *Db {
 		- if the block does not exist, a new block is created
 	- the value is stored in the block with its index
 */
-func (d *Db) Write(data []uint8, fsWrite bool) (int, int, Error) {
+func (d *db) Write(data []uint8, fsWrite bool) (int, int, Error) {
 	id := d.AutoIncrementCounter
 	// check if the entry already exists
 	if _, ok := d.IdLookupMap[id]; ok {
@@ -96,7 +96,7 @@ func (d *Db) Write(data []uint8, fsWrite bool) (int, int, Error) {
 	return NormalExecutionStatus, id, nil
 }
 
-func (d *Db) GoWrite(data []uint8, fsWrite bool, goRes chan *GoAppResult) {
+func (d *db) GoWrite(data []uint8, fsWrite bool, goRes chan *GoAppResult) {
 	d.Lock()
 
 	id := d.AutoIncrementCounter
@@ -166,7 +166,7 @@ func (d *Db) GoWrite(data []uint8, fsWrite bool, goRes chan *GoAppResult) {
 	goRes <- res
 }
 
-func (d *Db) Delete(id int) (bool, Error) {
+func (d *db) Delete(id int) (bool, Error) {
 	var idData [2]uint16
 	var mapId uint16
 
@@ -199,7 +199,7 @@ func (d *Db) Delete(id int) (bool, Error) {
 	return true, nil
 }
 
-func (d *Db) GoDelete(id int, resChan chan *GoAppResult) {
+func (d *db) GoDelete(id int, resChan chan *GoAppResult) {
 	d.Lock()
 
 	var idData [2]uint16
@@ -266,7 +266,7 @@ func (d *Db) GoDelete(id int, resChan chan *GoAppResult) {
 	}
 }
 
-func (d *Db) Read(id int, data interface{}) *dbReadResult {
+func (d *db) Read(id int, data interface{}) *dbReadResult {
 	idData, ok := d.IdLookupMap[id]
 
 	if !ok {
@@ -302,7 +302,7 @@ func (d *Db) Read(id int, data interface{}) *dbReadResult {
 }
 
 // shutdown does not do anything for now until I decide what to do with multiple drivers
-func (d *Db) Shutdown() [3]Error {
+func (d *db) Shutdown() [3]Error {
 	d.init()
 
 	errors := [3]Error{}
@@ -322,7 +322,7 @@ func (d *Db) Shutdown() [3]Error {
 	return errors
 }
 
-func (d *Db) writeOnLoad(id int, mapIdx uint16, lock *sync.RWMutex, offset int64) Error {
+func (d *db) writeOnLoad(id int, mapIdx uint16, lock *sync.RWMutex, offset int64) Error {
 	lock.Lock()
 
 	// check if the entry already exists
@@ -344,7 +344,7 @@ func (d *Db) writeOnLoad(id int, mapIdx uint16, lock *sync.RWMutex, offset int64
 	return nil
 }
 
-func (d *Db) writeOnDefragmentation(id int, v []uint8, mapIdx uint16) Error {
+func (d *db) writeOnDefragmentation(id int, v []uint8, mapIdx uint16) Error {
 	// check if the entry already exists
 	if _, ok := d.IdLookupMap[id]; ok {
 		return nil
@@ -367,11 +367,11 @@ PRIVATE METHOD. DO NOT USE IN CLIENT CODE
 
 Save the data on the filesystem
 */
-func (d *Db) saveOnFs(id int, v []uint8) (int64, int64, Error) {
+func (d *db) saveOnFs(id int, v []uint8) (int64, int64, Error) {
 	return d.WriteDriver.Save(prepareData(id, v), d.CurrMapIdx)
 }
 
-func (d *Db) deleteFromFs(id int, mapIdx uint16, idx int64) Error {
+func (d *db) deleteFromFs(id int, mapIdx uint16, idx int64) Error {
 	idStr := strconv.Itoa(id)
 	idByte := []uint8(idStr)
 	idPtr := &idByte
@@ -379,27 +379,7 @@ func (d *Db) deleteFromFs(id int, mapIdx uint16, idx int64) Error {
 	return d.DeleteDriver.MarkStrategicDeleted(idPtr, mapIdx, idx)
 }
 
-/**
-PRIVATE METHOD. DO NOT USE IN CLIENT CODE
-
-Returns an existing memory block if exists. If not, creates a new one and returns it
-*/
-func (d *Db) getBlock() (*[3000]*[]uint8, bool) {
-	// check if the current block exists or need to be created
-	m, ok := d.InternalDb[d.CurrMapIdx]
-
-	if !ok {
-		// current block does not exist, created a new one
-		m = &[3000]*[]uint8{}
-		d.InternalDb[d.CurrMapIdx] = m
-
-		return m, true
-	}
-
-	return m, false
-}
-
-func (d *Db) init() {
+func (d *db) init() {
 	d.InternalDb = make(map[uint16]*[3000]*[]uint8)
 	d.InternalDb[0] = &[3000]*[]uint8{}
 	d.Index = make(map[int]int64)

@@ -8,27 +8,6 @@ import (
 )
 
 var _ = GinkgoDescribe("Population tests and integrity tests", func() {
-	GinkgoIt("Should assert block number based on different write numbers", func() {
-		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
-		a := testCreateRose(false)
-		n := 100000
-
-		for i := 0; i < n; i++ {
-			res, err := a.Write(WriteMetadata{Data: s})
-
-			gomega.Expect(err).To(gomega.BeNil())
-			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
-			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
-		}
-
-		dirs, err := ioutil.ReadDir(roseDbDir())
-
-		gomega.Expect(err).To(gomega.BeNil())
-		gomega.Expect(len(dirs)).To(gomega.Equal(n / 3000 + 1))
-
-		testRemoveFileSystemDb()
-	})
-
 	GinkgoIt("Should assert that the memory database is populated correctly from an existing fs database", func() {
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 		a := testCreateRose(false)

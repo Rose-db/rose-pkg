@@ -85,7 +85,7 @@ func testRemoveFileSystemDb() {
 	}
 }
 
-func testInsertFixture(m *Db, num int, value []uint8) map[int]int {
+func testInsertFixture(m *db, num int, value []uint8) map[int]int {
 	ids := make(map[int]int, num)
 	for i := 0; i < num; i++ {
 		if len(value) == 0 {
@@ -102,7 +102,7 @@ func testInsertFixture(m *Db, num int, value []uint8) map[int]int {
 	return ids
 }
 
-func assertIndexIntegrity(m *Db, expectedLen int) {
+func assertIndexIntegrity(m *db, expectedLen int) {
 	index := m.Index
 
 	gomega.Expect(len(index)).To(gomega.Equal(expectedLen))

@@ -10,7 +10,7 @@ import (
 	"sync"
 )
 
-func loadIndexes(m *Db, log bool) Error {
+func loadIndexes(m *db, log bool) Error {
 	files, fsErr := ioutil.ReadDir(roseDbDir())
 
 	if fsErr != nil {
@@ -90,7 +90,7 @@ func loadIndexes(m *Db, log bool) Error {
 	return nil
 }
 
-func loadSingleFile(m *Db, dataCh<- chan os.FileInfo, wg *sync.WaitGroup, errChan chan Error, lock *sync.RWMutex) {
+func loadSingleFile(m *db, dataCh<- chan os.FileInfo, wg *sync.WaitGroup, errChan chan Error, lock *sync.RWMutex) {
 	f := <-dataCh
 
 	db := fmt.Sprintf("%s/%s", roseDbDir(), f.Name())
