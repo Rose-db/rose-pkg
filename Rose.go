@@ -38,7 +38,7 @@ func New(doDefragmentation bool, log bool) (*Rose, Error) {
 
 	if doDefragmentation {
 		if log {
-			fmt.Println(string("\033[33mwarning:\033[0m"), "Defragmenting existing database. DO NOT STOP THIS PROCESS! Depending on the size of the database, this may take some time...")
+			fmt.Println("\033[33mwarning:\033[0m", "Defragmenting existing database. DO NOT STOP THIS PROCESS! Depending on the size of the database, this may take some time...")
 		}
 
 		if err := defragment(log); err != nil {
@@ -56,7 +56,7 @@ func New(doDefragmentation bool, log bool) (*Rose, Error) {
 
 	if log {
 		fmt.Println("")
-		fmt.Println(string("\033[32minfo:\033[0m ") + "Loading indexes...")
+		fmt.Println("\033[32minfo:\033[0m " + "Loading indexes...")
 	}
 
 	if err := loadIndexes(m, log); err != nil {
