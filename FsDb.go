@@ -81,8 +81,8 @@ func (fs *fsDb) Read(offset int64) (*[]uint8, Error) {
 	return &data.val, nil
 }
 
-func (fs *fsDb) StrategicDelete(id *[]uint8, offset int64) Error {
-	_, err := fs.File.WriteAt([]uint8(delMark), offset)
+func (fs *fsDb) StrategicDelete(id *[]uint8, del []uint8, offset int64) Error {
+	_, err := fs.File.WriteAt(del, offset)
 
 	if err != nil {
 		e := secureBlockingWriteAtFile(fs.File, []uint8(delMark), offset)

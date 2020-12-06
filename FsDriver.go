@@ -28,12 +28,12 @@ func (d *fsDriver) Read(index int64, mapIdx uint16) (*[]uint8, Error) {
 	return d.Handler.Read(index)
 }
 
-func (d *fsDriver) MarkStrategicDeleted(id *[]uint8, mapIdx uint16, offset int64) Error {
+func (d *fsDriver) MarkStrategicDeleted(id *[]uint8, del []uint8, mapIdx uint16, offset int64) Error {
 	if err := d.loadHandler(mapIdx); err != nil {
 		return err
 	}
 
-	return d.Handler.StrategicDelete(id, offset)
+	return d.Handler.StrategicDelete(id, del, offset)
 }
 
 func (d *fsDriver) Shutdown() Error {
