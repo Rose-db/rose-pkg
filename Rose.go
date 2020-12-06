@@ -52,7 +52,7 @@ func New(doDefragmentation bool, log bool) (*Rose, Error) {
 	}
 
 	dbDir := roseDbDir()
-	m := newMemoryDb(newFsDriver(dbDir), newFsDriver(dbDir), newFsDriver(dbDir))
+	m := newDb(newFsDriver(dbDir), newFsDriver(dbDir), newFsDriver(dbDir))
 
 	if log {
 		fmt.Println("")

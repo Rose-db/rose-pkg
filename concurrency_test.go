@@ -232,7 +232,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			values[i] = value
 		}
 
-		time.Sleep(15 * time.Second)
+		time.Sleep(20 * time.Second)
 
 		for i, resChan := range goResults {
 			res := <-resChan

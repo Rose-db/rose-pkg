@@ -41,7 +41,7 @@ type db struct {
 	DeleteDriver *fsDriver
 }
 
-func newMemoryDb(write *fsDriver, read *fsDriver, delete *fsDriver) *db {
+func newDb(write *fsDriver, read *fsDriver, delete *fsDriver) *db {
 	d := &db{
 		WriteDriver: write,
 		ReadDriver: read,

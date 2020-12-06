@@ -28,7 +28,7 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 
 		testRemoveFileSystemDb()
 	})
-	
+
 	GinkgoIt("Should successfully perform and inspect inserts", func() {
 		r := testCreateRose(false)
 		n := 10000
