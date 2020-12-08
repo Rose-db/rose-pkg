@@ -92,7 +92,7 @@ func testInsertFixture(m *db, num int, value []uint8) map[int]int {
 			value = testAsJson("sdkfjsdjfsadfjklsajdfkčl")
 		}
 
-		_, id,  err := m.Write(value, true)
+		_, id,  err := m.Write(value)
 
 		gomega.Expect(err).To(gomega.BeNil())
 

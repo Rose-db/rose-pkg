@@ -61,7 +61,7 @@ func newDb(write *fsDriver, read *fsDriver, delete *fsDriver) *db {
 		- if the block does not exist, a new block is created
 	- the value is stored in the block with its index
 */
-func (d *db) Write(data []uint8, fsWrite bool) (int, int, Error) {
+func (d *db) Write(data []uint8) (int, int, Error) {
 	id := d.AutoIncrementCounter
 	// check if the entry already exists
 	if _, ok := d.IdLookupMap[id]; ok {
@@ -74,15 +74,13 @@ func (d *db) Write(data []uint8, fsWrite bool) (int, int, Error) {
 	// r operation, add COMPUTED index to the index map
 	d.IdLookupMap[id] = [2]uint16{uint16(d.AutoIncrementCounter % blockMark), d.CurrMapIdx}
 
-	if fsWrite {
-		bytesWritten, size, err := d.saveOnFs(id, data)
-		offset := size - bytesWritten
+	bytesWritten, size, err := d.saveOnFs(id, data)
+	offset := size - bytesWritten
 
-		d.Index[id] = offset
+	d.Index[id] = offset
 
-		if err != nil {
-			return 0, 0, err
-		}
+	if err != nil {
+		return 0, 0, err
 	}
 
 	blockIdx := d.BlockIdFactory.Next()
@@ -96,7 +94,7 @@ func (d *db) Write(data []uint8, fsWrite bool) (int, int, Error) {
 	return NormalExecutionStatus, id, nil
 }
 
-func (d *db) GoWrite(data []uint8, fsWrite bool, goRes chan *GoAppResult) {
+func (d *db) GoWrite(data []uint8, goRes chan *GoAppResult) {
 	d.Lock()
 
 	id := d.AutoIncrementCounter
@@ -121,26 +119,24 @@ func (d *db) GoWrite(data []uint8, fsWrite bool, goRes chan *GoAppResult) {
 	// r operation, add COMPUTED index to the index map
 	d.IdLookupMap[id] = [2]uint16{uint16(d.AutoIncrementCounter % blockMark), d.CurrMapIdx}
 
-	if fsWrite {
-		bytesWritten, size, err := d.saveOnFs(id, data)
+	bytesWritten, size, err := d.saveOnFs(id, data)
 
-		d.Index[id] = size - bytesWritten
+	d.Index[id] = size - bytesWritten
 
-		if err != nil {
-			res := &GoAppResult{
-				Result: nil,
-				Err: &systemError{
-					Code:    DbIntegrityViolationCode,
-					Message: fmt.Sprintf("Unable to save document to disk. Underlying message is: '%s'", err.Error()),
-				},
-			}
-
-			d.Unlock()
-
-			goRes <- res
-
-			return
+	if err != nil {
+		res := &GoAppResult{
+			Result: nil,
+			Err: &systemError{
+				Code:    DbIntegrityViolationCode,
+				Message: fmt.Sprintf("Unable to save document to disk. Underlying message is: '%s'", err.Error()),
+			},
 		}
+
+		d.Unlock()
+
+		goRes <- res
+
+		return
 	}
 
 	blockIdx := d.BlockIdFactory.Next()

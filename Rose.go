@@ -117,7 +117,7 @@ func (a *Rose) Write(m WriteMetadata) (*AppResult, Error) {
 	}
 
 	// save the entry under idx into memory
-	_, ID, err := a.db.Write(m.Data, true)
+	_, ID, err := a.db.Write(m.Data)
 
 	if err != nil {
 		return nil, err
@@ -145,7 +145,7 @@ func (a *Rose) GoWrite(m WriteMetadata) chan *GoAppResult {
 	}
 
 	// save the entry under idx into memory
-	go a.db.GoWrite(m.Data, true, resChan)
+	go a.db.GoWrite(m.Data, resChan)
 
 	return resChan
 }
