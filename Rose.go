@@ -13,11 +13,6 @@ type AppResult struct {
 	Reason string
 }
 
-type GoAppResult struct {
-	Result *AppResult
-	Err    Error
-}
-
 type Rose struct {
 	db *db
 	isInShutdown bool
@@ -130,26 +125,6 @@ func (a *Rose) Write(m WriteMetadata) (*AppResult, Error) {
 	}, nil
 }
 
-func (a *Rose) GoWrite(m WriteMetadata) chan *GoAppResult {
-	if a.isInShutdown {
-		return make(chan *GoAppResult)
-	}
-
-	resChan := make(chan *GoAppResult)
-
-	if err := validateData(m.Data); err != nil {
-		resChan <- &GoAppResult{
-			Result: nil,
-			Err:    err,
-		}
-	}
-
-	// save the entry under idx into memory
-	go a.db.GoWrite(m.Data, resChan)
-
-	return resChan
-}
-
 func (a *Rose) Read(m ReadMetadata) (*AppResult, Error) {
 	if a.isInShutdown {
 		return nil, nil
@@ -196,18 +171,6 @@ func (a *Rose) Delete(m DeleteMetadata) (*AppResult, Error) {
 		Method: DeleteMethodType,
 		Status: DeletedResultStatus,
 	}, nil
-}
-
-func (a *Rose) GoDelete(m DeleteMetadata) chan *GoAppResult {
-	if a.isInShutdown {
-		return make(chan *GoAppResult)
-	}
-
-	resChan := make(chan *GoAppResult)
-
-	go a.db.GoDelete(m.ID, resChan)
-
-	return resChan
 }
 
 func (a *Rose) Size() (uint64, Error) {
