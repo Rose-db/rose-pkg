@@ -12,9 +12,8 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 
 		a := testCreateRose(false)
 
-		res, err := a.Write(WriteMetadata{Data: s})
+		res := testSingleConcurrentInsert(WriteMetadata{Data: s}, a)
 
-		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 
@@ -37,9 +36,8 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 		for i := 0; i < 100000; i++ {
 			s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 
-			res, err := a.Write(WriteMetadata{Data: s})
+			res := testSingleConcurrentInsert(WriteMetadata{Data: s}, a)
 
-			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 
@@ -63,7 +61,8 @@ var _ = GinkgoDescribe("Read tests", func() {
 		a := testCreateRose(false)
 
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
-		id := testFixtureSingleInsert(s, a)
+		temp := testSingleConcurrentInsert(WriteMetadata{Data: s}, a)
+		id := temp.ID
 
 		r := ""
 		res, err := a.Read(ReadMetadata{ID: id, Data: &r})
@@ -91,9 +90,8 @@ var _ = GinkgoDescribe("Read tests", func() {
 		for i := 0; i < 100000; i++ {
 			value := testAsJson(fmt.Sprintf("id-value-%d", i))
 
-			res, err := a.Write(WriteMetadata{Data: value})
+			res := testSingleConcurrentInsert(WriteMetadata{Data: value}, a)
 
-			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 
@@ -156,22 +154,20 @@ var _ = GinkgoDescribe("Read tests", func() {
 
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 
-		res, err := a.Write(WriteMetadata{Data: s})
+		res := testSingleConcurrentInsert(WriteMetadata{Data: s}, a)
 
-		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 
 		id := res.ID
 
-		res, err = a.Delete(DeleteMetadata{ID: id})
+		res = testSingleDelete(DeleteMetadata{ID: id}, a)
 
-		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 
 		r := ""
-		res, err = a.Read(ReadMetadata{ID: id, Data: &r})
+		res, err := a.Read(ReadMetadata{ID: id, Data: &r})
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))

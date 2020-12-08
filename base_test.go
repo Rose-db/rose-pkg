@@ -1,6 +1,7 @@
 package rose
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
@@ -102,9 +103,87 @@ func testInsertFixture(m *db, num int, value []uint8) map[int]int {
 	return ids
 }
 
+func testMultipleConcurrentInsert(num int, value []uint8, r *Rose) map[int]int {
+	ids := make(map[int]int, num)
+
+	for i := 0; i < num; i++ {
+		if len(value) == 0 {
+			value = testAsJson("sdkfjsdjfsadfjklsajdfkčl")
+		}
+
+		res := testSingleConcurrentInsert(WriteMetadata{Data: value}, r)
+
+		ids[i] = res.ID
+	}
+
+	return ids
+}
+
+func testSingleConcurrentInsert(w WriteMetadata, r *Rose) *AppResult {
+	resChan := make(chan *AppResult)
+	go func() {
+		ginkgo.GinkgoRecover()
+
+		res, err := r.Write(w)
+
+		gomega.Expect(err).To(gomega.BeNil())
+
+		resChan<- res
+	}()
+
+	return <-resChan
+}
+
+func testSingleDelete(w DeleteMetadata, r *Rose) *AppResult {
+	resChan := make(chan *AppResult)
+	go func() {
+		ginkgo.GinkgoRecover()
+
+		res, err := r.Delete(w)
+
+		gomega.Expect(err).To(gomega.BeNil())
+
+		resChan<- res
+	}()
+
+	return <-resChan
+}
+
 func assertIndexIntegrity(m *db, expectedLen int) {
 	index := m.Index
 
 	gomega.Expect(len(index)).To(gomega.Equal(expectedLen))
 }
 
+func benchmarkRemoveFileSystemDb() {
+	dir := roseDbDir()
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		panic(err)
+	}
+
+	files, err := ioutil.ReadDir(dir)
+
+	if err != nil {
+		panic(err)
+
+		return
+	}
+
+	for _, f := range files {
+		err = os.Remove(fmt.Sprintf("%s/%s", dir, f.Name()))
+
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+func testAsJson(j string) []uint8 {
+	js, err := json.Marshal(j)
+
+	if err != nil {
+		ginkgo.Fail(fmt.Sprintf("Cannot marshal json with message: %s", err.Error()))
+	}
+
+	return js
+}

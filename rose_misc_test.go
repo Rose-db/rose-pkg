@@ -76,12 +76,8 @@ var _ = GinkgoDescribe("Misc tests", func() {
 		ids := [5000]int{}
 		for i := 0; i < n; i++ {
 			s := testAsJson("some value")
-			res, err := a.Write(WriteMetadata{
-				CollectionName: "",
-				Data:           s,
-			})
+			res := testSingleConcurrentInsert(WriteMetadata{Data: s}, a)
 
-			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 
@@ -93,9 +89,8 @@ var _ = GinkgoDescribe("Misc tests", func() {
 		for i := 0; i < 3000; i++ {
 			u := ids[i]
 
-			res, err := a.Delete(DeleteMetadata{ID: u})
+			res := testSingleDelete(DeleteMetadata{ID: u}, a)
 
-			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 

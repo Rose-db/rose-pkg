@@ -5,6 +5,7 @@ import (
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
 	"io/ioutil"
+	"sync"
 )
 
 var _ = GinkgoDescribe("Internal Memory DB tests", func() {
@@ -14,9 +15,8 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		n := 100000
 
 		for i := 0; i < n; i++ {
-			res, err := a.Write(WriteMetadata{Data: s})
+			res := testSingleConcurrentInsert(WriteMetadata{Data: s}, a)
 
-			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 		}
@@ -35,7 +35,7 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 
 		m := r.db
 
-		testInsertFixture(m,n, []uint8{})
+		testMultipleConcurrentInsert(n, []uint8{}, r)
 
 		// since block index starts at 0, expected must be 3
 		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(3)))
@@ -65,20 +65,29 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		assertIndexIntegrity(m, n)
 
 		zerosDeleted := 0
+		wg := &sync.WaitGroup{}
 		for _, id := range ids {
-			if id == 0 && zerosDeleted == 1 {
-				continue
-			}
+			wg.Add(1)
 
-			if id == 0 && zerosDeleted == 0 {
-				zerosDeleted++
-			}
+			go func(id int, zerosDeleted int, wg *sync.WaitGroup) {
+				if id == 0 && zerosDeleted == 1 {
+					return
+				}
 
-			status, err := m.Delete(id)
+				if id == 0 && zerosDeleted == 0 {
+					zerosDeleted++
+				}
 
-			gomega.Expect(err).To(gomega.BeNil())
-			gomega.Expect(status).To(gomega.Equal(true))
+				status, err := m.Delete(id)
+
+				gomega.Expect(err).To(gomega.BeNil())
+				gomega.Expect(status).To(gomega.Equal(true))
+
+				wg.Done()
+			}(id, zerosDeleted, wg)
 		}
+
+		wg.Wait()
 
 		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(3)))
 		assertIndexIntegrity(m, 0)
@@ -107,12 +116,20 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 
 		assertIndexIntegrity(m, n)
 
+		wg := &sync.WaitGroup{}
 		for _, id := range ids {
-			status, err := m.Delete(id)
+			wg.Add(1)
+			go func(id int, wg *sync.WaitGroup) {
+				status, err := m.Delete(id)
 
-			gomega.Expect(err).To(gomega.BeNil())
-			gomega.Expect(status).To(gomega.Equal(true))
+				gomega.Expect(err).To(gomega.BeNil())
+				gomega.Expect(status).To(gomega.Equal(true))
+
+				wg.Done()
+			}(id, wg)
 		}
+
+		wg.Wait()
 
 		gomega.Expect(m.AutoIncrementCounter).To(gomega.Equal(n))
 		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(3)))

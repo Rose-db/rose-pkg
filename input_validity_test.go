@@ -12,22 +12,21 @@ var _ = GinkgoDescribe("Input validity tests", func() {
 
 		data := "[#]{{}#]"
 
-		res, err := a.Write(WriteMetadata{Data: testAsJson(data)})
+		res := testSingleConcurrentInsert(WriteMetadata{Data: testAsJson(data)}, a)
 
-		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 
 		key := res.ID
 		s := ""
-		res, err = a.Read(ReadMetadata{ID: key, Data: &s})
+		res, err := a.Read(ReadMetadata{ID: key, Data: &s})
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
 		gomega.Expect(s).To(gomega.Equal(data))
 
-		res, err = a.Delete(DeleteMetadata{ID: key})
+		res = testSingleDelete(DeleteMetadata{ID: key}, a)
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
@@ -55,22 +54,21 @@ var _ = GinkgoDescribe("Input validity tests", func() {
 
 		data := "[#]{{\n}#]\n"
 
-		res, err := a.Write(WriteMetadata{Data: testAsJson(data)})
+		res := testSingleConcurrentInsert(WriteMetadata{Data: testAsJson(data)}, a)
 
-		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 
 		key := res.ID
 		s := ""
-		res, err = a.Read(ReadMetadata{ID: key, Data: &s})
+		res, err := a.Read(ReadMetadata{ID: key, Data: &s})
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
 		gomega.Expect(s).To(gomega.Equal(data))
 
-		res, err = a.Delete(DeleteMetadata{ID: key})
+		res = testSingleDelete(DeleteMetadata{ID: key}, a)
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))

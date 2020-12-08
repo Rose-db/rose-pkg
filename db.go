@@ -62,9 +62,13 @@ func newDb(write *fsDriver, read *fsDriver, delete *fsDriver) *db {
 	- the value is stored in the block with its index
 */
 func (d *db) Write(data []uint8) (int, int, Error) {
+	d.Lock()
+
 	id := d.AutoIncrementCounter
 	// check if the entry already exists
 	if _, ok := d.IdLookupMap[id]; ok {
+		d.Unlock()
+
 		return 0, 0, &dbIntegrityError{
 			Code:    DbIntegrityViolationCode,
 			Message: "ID integrity validation. Duplicate ID found. This should not happen. Try this write again",
@@ -80,6 +84,8 @@ func (d *db) Write(data []uint8) (int, int, Error) {
 	d.Index[id] = offset
 
 	if err != nil {
+		d.Unlock()
+
 		return 0, 0, err
 	}
 
@@ -90,6 +96,8 @@ func (d *db) Write(data []uint8) (int, int, Error) {
 	}
 
 	d.AutoIncrementCounter += 1
+
+	d.Unlock()
 
 	return NormalExecutionStatus, id, nil
 }
@@ -163,18 +171,24 @@ func (d *db) GoWrite(data []uint8, goRes chan *GoAppResult) {
 }
 
 func (d *db) Delete(id int) (bool, Error) {
+	d.Lock()
+
 	var idData [2]uint16
 	var mapId uint16
 
 	idData, ok := d.IdLookupMap[id]
 
 	if !ok {
+		d.Unlock()
+
 		return false, nil
 	}
 
 	idx, ok := d.Index[id]
 
 	if !ok {
+		d.Unlock()
+
 		return false, &dbIntegrityError{
 			Code:    DbIntegrityViolationCode,
 			Message: fmt.Sprintf("Index integrity violation. Index for ID %d does not exist. Please, restart Rose and try again", id),
@@ -186,11 +200,15 @@ func (d *db) Delete(id int) (bool, Error) {
 	err := d.deleteFromFs(id, mapId, idx)
 
 	if err != nil {
+		d.Unlock()
+
 		return false, err
 	}
 
 	delete(d.IdLookupMap, id)
 	delete(d.Index, id)
+
+	d.Unlock()
 
 	return true, nil
 }

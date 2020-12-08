@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
+	"sync"
 	"time"
 )
 
@@ -12,25 +13,34 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 		a := testCreateRose(false)
 		n := 10000
 
-		results := [10000]chan *GoAppResult{}
+		results := make(chan *AppResult, n)
+		wg := &sync.WaitGroup{}
 		for i := 0; i < n; i++ {
-			s := testAsJson(testString)
+			wg.Add(1)
+			go func(i int, wg *sync.WaitGroup) {
+				s := testAsJson(testString)
 
-			resChan := a.GoWrite(WriteMetadata{Data: s})
+				res, err := a.Write(WriteMetadata{Data: s})
 
-			results[i] = resChan
+				gomega.Expect(err).To(gomega.BeNil())
+
+				results<- res
+
+				wg.Done()
+			}(i, wg)
 		}
+
+		wg.Wait()
+
+		close(results)
 
 		ids := [10000]int{}
 		count := 0
-		for i, c := range results {
-			res := <-c
+		for res := range results {
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 
-			gomega.Expect(res.Err).To(gomega.BeNil())
-			gomega.Expect(res.Result.Status).To(gomega.Equal(OkResultStatus))
-			gomega.Expect(res.Result.Method).To(gomega.Equal(WriteMethodType))
-
-			ids[i] = res.Result.ID
+			ids[count] = res.ID
 
 			count++
 		}
@@ -93,21 +103,16 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			ids[i] = res.ID
 		}
 
-		goResults := [10000]chan *GoAppResult{}
+		results := [10000]*AppResult{}
 		for i, id := range ids {
-			resChan := a.GoDelete(DeleteMetadata{ID: id})
-
-			goResults[i] = resChan
+			res := testSingleDelete(DeleteMetadata{ID: id}, a)
+			results[i] = res
 		}
 
 		count := 0
-		for _, c := range goResults {
-			res := <-c
-
-			gomega.Expect(res.Err).To(gomega.BeNil())
-			gomega.Expect(res.Result).To(gomega.Not(gomega.BeNil()))
-			gomega.Expect(res.Result.Status).To(gomega.Equal(DeletedResultStatus))
-			gomega.Expect(res.Result.Method).To(gomega.Equal(DeleteMethodType))
+		for _, res := range results {
+			gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 
 			count++
 		}
@@ -158,32 +163,26 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 		n := 10000
 
 		ids := [10000]int{}
-		goResults := [10000]chan *GoAppResult{}
+		results := [10000]*AppResult{}
 		for i := 0; i < n; i++ {
+
 			s := testAsJson(testString)
 
-			resChan := a.GoWrite(WriteMetadata{Data: s})
+			res := testSingleConcurrentInsert(WriteMetadata{Data: s}, a)
 
-			goResults[i] = resChan
+			results[i] = res
 		}
 
-		for i, resChan := range goResults {
-			res := <-resChan
+		for i, res := range results {
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 
-			gomega.Expect(res.Err).To(gomega.BeNil())
-			gomega.Expect(res.Result.Status).To(gomega.Equal(OkResultStatus))
-			gomega.Expect(res.Result.Method).To(gomega.Equal(WriteMethodType))
+			delRes := testSingleDelete(DeleteMetadata{ID: res.ID}, a)
 
-			ch := a.GoDelete(DeleteMetadata{ID: res.Result.ID})
+			gomega.Expect(delRes.Status).To(gomega.Equal(DeletedResultStatus))
+			gomega.Expect(delRes.Method).To(gomega.Equal(DeleteMethodType))
 
-			delRes := <-ch
-
-			gomega.Expect(delRes.Err).To(gomega.BeNil())
-			gomega.Expect(delRes.Result).To(gomega.Not(gomega.BeNil()))
-			gomega.Expect(delRes.Result.Status).To(gomega.Equal(DeletedResultStatus))
-			gomega.Expect(delRes.Result.Method).To(gomega.Equal(DeleteMethodType))
-
-			ids[i] = res.Result.ID
+			ids[i] = res.ID
 		}
 
 		if err := a.Shutdown(); err != nil {
@@ -220,30 +219,34 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 		a := testCreateRose(false)
 		n := 10000
 
-		goResults := [10000]chan *GoAppResult{}
+		results := [10000]*AppResult{}
 		values := [10000]string{}
 		for i := 0; i < n; i++ {
-			value := fmt.Sprintf("value-%d", i)
-			s := testAsJson(value)
+			go func(i int) {
+				ginkgo.GinkgoRecover()
 
-			resChan := a.GoWrite(WriteMetadata{Data: s})
+				value := fmt.Sprintf("value-%d", i)
+				s := testAsJson(value)
 
-			goResults[i] = resChan
-			values[i] = value
+				res, err := a.Write(WriteMetadata{Data: s})
+
+				gomega.Expect(err).To(gomega.BeNil())
+
+				results[i] = res
+				values[i] = value
+			}(i)
 		}
 
-		time.Sleep(20 * time.Second)
+		time.Sleep(5 * time.Second)
 
-		for i, resChan := range goResults {
-			res := <-resChan
+		for i, res := range results {
 			value := values[i]
 
-			gomega.Expect(res.Err).To(gomega.BeNil())
-			gomega.Expect(res.Result.Status).To(gomega.Equal(OkResultStatus))
-			gomega.Expect(res.Result.Method).To(gomega.Equal(WriteMethodType))
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 
 			s := ""
-			appResult, err := a.Read(ReadMetadata{ID: res.Result.ID, Data: &s})
+			appResult, err := a.Read(ReadMetadata{ID: res.ID, Data: &s})
 
 			gomega.Expect(value).To(gomega.Equal(s))
 
@@ -267,36 +270,37 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 		a := testCreateRose(false)
 		n := 10000
 
-		results := [10000] *AppResult{}
+		results := [10000]*AppResult{}
 		for i := 0; i < n; i++ {
 			value := fmt.Sprintf("value-%d", i)
 			s := testAsJson(value)
 
-			result, err := a.Write(WriteMetadata{Data: s})
+			res := testSingleConcurrentInsert(WriteMetadata{Data: s}, a)
 
-			gomega.Expect(err).To(gomega.BeNil())
-			gomega.Expect(result.Status).To(gomega.Equal(OkResultStatus))
-			gomega.Expect(result.Method).To(gomega.Equal(WriteMethodType))
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 
-			results[i] = result
+			results[i] = res
 		}
 
-		goResults := [10000]chan *GoAppResult{}
+		delResults := [10000]*AppResult{}
 		for i, res := range results {
-			ch := a.GoDelete(DeleteMetadata{ID: res.ID})
+			go func(i int, wRes *AppResult) {
+				ginkgo.GinkgoRecover()
 
-			goResults[i] = ch
+				delRes, err := a.Delete(DeleteMetadata{ID: wRes.ID})
+
+				gomega.Expect(err).To(gomega.BeNil())
+
+				delResults[i] = delRes
+			}(i, res)
 		}
 
-		time.Sleep(15 * time.Second)
+		time.Sleep(5 * time.Second)
 
-		for _, resChan := range goResults {
-			res := <-resChan
-
-			gomega.Expect(res.Err).To(gomega.BeNil())
-			gomega.Expect(res.Result).To(gomega.Not(gomega.BeNil()))
-			gomega.Expect(res.Result.Status).To(gomega.Equal(DeletedResultStatus))
-			gomega.Expect(res.Result.Method).To(gomega.Equal(DeleteMethodType))
+		for _, res := range delResults {
+			gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 		}
 
 		if err := a.Shutdown(); err != nil {

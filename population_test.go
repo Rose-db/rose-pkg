@@ -15,9 +15,8 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 		ids := [100000]int{}
 		for i := 0; i < n; i++ {
-			res, err := a.Write(WriteMetadata{Data: s})
+			res := testSingleConcurrentInsert(WriteMetadata{Data: s}, a)
 
-			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 
@@ -68,9 +67,8 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 		firstWrite := [2500]int{}
 		for i := 0; i < 2500; i++ {
-			res, err := a.Write(WriteMetadata{Data: s})
+			res := testSingleConcurrentInsert(WriteMetadata{Data: s}, a)
 
-			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 
@@ -81,9 +79,8 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 		secondWrite := [501]int{}
 		for i := 2501; i < 3002; i++ {
-			res, err := a.Write(WriteMetadata{Data: s})
+			res := testSingleConcurrentInsert(WriteMetadata{Data: s}, a)
 
-			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 
@@ -96,9 +93,8 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 		counter = 0
 		thirdWrite := [3000]int{}
 		for i := 3002; i < 6002; i++ {
-			res, err := a.Write(WriteMetadata{Data: s})
+			res := testSingleConcurrentInsert(WriteMetadata{Data: s}, a)
 
-			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 
@@ -111,9 +107,8 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 		counter = 0
 		fourthWrite := [3000]int{}
 		for i := 6002; i < 9002; i++ {
-			res, err := a.Write(WriteMetadata{Data: s})
+			res := testSingleConcurrentInsert(WriteMetadata{Data: s}, a)
 
-			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 
@@ -134,9 +129,8 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 		a = testCreateRose(false)
 
 		for _, id := range firstWrite {
-			res, err := a.Delete(DeleteMetadata{ID: id})
+			res := testSingleDelete(DeleteMetadata{ID: id}, a)
 
-			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 		}
@@ -144,9 +138,8 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 		gomega.Expect(roseBlockFile(0, roseDbDir())).To(gomega.Equal(a.db.DeleteDriver.Handler.File.Name()))
 
 		for _, id := range secondWrite {
-			res, err := a.Delete(DeleteMetadata{ID: id})
+			res := testSingleDelete(DeleteMetadata{ID: id}, a)
 
-			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 		}
@@ -154,9 +147,8 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 		gomega.Expect(roseBlockFile(1, roseDbDir())).To(gomega.Equal(a.db.DeleteDriver.Handler.File.Name()))
 
 		for _, id := range thirdWrite {
-			res, err := a.Delete(DeleteMetadata{ID: id})
+			res := testSingleDelete(DeleteMetadata{ID: id}, a)
 
-			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 		}
@@ -164,9 +156,8 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 		gomega.Expect(roseBlockFile(2, roseDbDir())).To(gomega.Equal(a.db.DeleteDriver.Handler.File.Name()))
 
 		for _, id := range fourthWrite {
-			res, err := a.Delete(DeleteMetadata{ID: id})
+			res := testSingleDelete(DeleteMetadata{ID: id}, a)
 
-			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 		}
@@ -186,10 +177,10 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 	GinkgoIt("Should skip the deleted entries when booting a populated database", func() {
 		a := testCreateRose(false)
-		n := 1000
+		n := 10000
 		s := testAsJson(testString)
 
-		ids := [1000]int{}
+		ids := [10000]int{}
 		for i := 0; i < n; i++ {
 			res, err := a.Write(WriteMetadata{Data: s})
 
@@ -215,9 +206,9 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 			if id == 0 {
 				continue
 			}
-			res, err := a.Delete(DeleteMetadata{ID: id})
 
-			gomega.Expect(err).To(gomega.BeNil())
+			res := testSingleDelete(DeleteMetadata{ID: id}, a)
+
 			gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 		}
@@ -284,9 +275,8 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 		ids := [4000]int{}
 		for i := 0; i < n; i++ {
-			res, err := a.Write(WriteMetadata{Data: s})
+			res := testSingleConcurrentInsert(WriteMetadata{Data: s}, a)
 
-			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 
@@ -307,9 +297,8 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 		for _, key := range strategy {
 			id := ids[key]
-			res, err := a.Delete(DeleteMetadata{ID: id})
+			res := testSingleDelete(DeleteMetadata{ID: id}, a)
 
-			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 		}
