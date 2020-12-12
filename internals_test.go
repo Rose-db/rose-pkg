@@ -10,20 +10,20 @@ import (
 
 var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	GinkgoIt("Should assert block number based on different write numbers", func() {
-		ginkgo.Skip("")
-
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 		a := testCreateRose(false)
+		collName := testCreateCollection(a, "coll")
+
 		n := 100000
 
 		for i := 0; i < n; i++ {
-			res := testSingleConcurrentInsert(WriteMetadata{Data: s}, a)
+			res := testSingleConcurrentInsert(WriteMetadata{Data: s, CollectionName: collName}, a)
 
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 		}
 
-		dirs, err := ioutil.ReadDir(roseDbDir())
+		dirs, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", roseDbDir(), collName))
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(len(dirs)).To(gomega.Equal(n / 3000 + 1))
@@ -32,14 +32,15 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	})
 
 	GinkgoIt("Should successfully perform and inspect inserts", func() {
-		ginkgo.Skip("")
-
 		r := testCreateRose(false)
+
+		collName := testCreateCollection(r, "coll")
+
 		n := 10000
 
-		m := r.db
+		m := r.Databases[collName]
 
-		testMultipleConcurrentInsert(n, []uint8{}, r)
+		testMultipleConcurrentInsert(n, []uint8{}, r, collName)
 
 		// since block index starts at 0, expected must be 3
 		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(3)))
@@ -57,18 +58,16 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	})
 
 	GinkgoIt("Should successfully perform and inspect deletes", func() {
-		ginkgo.Skip("")
-
 		r := testCreateRose(false)
+
+		collName := testCreateCollection(r, "coll")
 		const n = 10000
 
-		m := r.db
-
-		ids := testInsertFixture(m, n, []uint8{})
+		ids := testMultipleConcurrentInsert(n, testAsJson("sdlčfjasdfjksaldf"), r, collName)
 
 		// since block index starts at 0, expected must be 3
-		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(3)))
-		assertIndexIntegrity(m, n)
+		gomega.Expect(r.Databases[collName].CurrMapIdx).To(gomega.Equal(uint16(3)))
+		assertIndexIntegrity(r.Databases[collName], n)
 
 		zerosDeleted := 0
 		wg := &sync.WaitGroup{}
@@ -84,10 +83,14 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 					zerosDeleted++
 				}
 
-				status, err := m.Delete(id)
+				res, err := r.Delete(DeleteMetadata{
+					CollectionName: collName,
+					ID:             id,
+				})
 
 				gomega.Expect(err).To(gomega.BeNil())
-				gomega.Expect(status).To(gomega.Equal(true))
+				gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
+				gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
 
 				wg.Done()
 			}(id, zerosDeleted, wg)
@@ -95,8 +98,8 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 
 		wg.Wait()
 
-		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(3)))
-		assertIndexIntegrity(m, 0)
+		gomega.Expect(r.Databases[collName].CurrMapIdx).To(gomega.Equal(uint16(3)))
+		assertIndexIntegrity(r.Databases[collName], 0)
 
 		if err := r.Shutdown(); err != nil {
 			testRemoveFileSystemDb(roseDir())
@@ -110,14 +113,13 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	})
 
 	GinkgoIt("Should successfully perform and inspect delete reallocation", func() {
-		ginkgo.Skip("")
-
 		r := testCreateRose(false)
+		collName := testCreateCollection(r, "coll")
 		n := 10000
 
-		m := r.db
+		m := r.Databases[collName]
 
-		ids := testInsertFixture(m,n, []uint8{})
+		ids := testMultipleConcurrentInsert(n, testAsJson("sdlčfjasdfjksaldf"), r, collName)
 
 		// since block index starts at 0, expected must be 3
 		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(3)))
@@ -128,10 +130,14 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		for _, id := range ids {
 			wg.Add(1)
 			go func(id int, wg *sync.WaitGroup) {
-				status, err := m.Delete(id)
+				res, err := r.Delete(DeleteMetadata{
+					CollectionName: collName,
+					ID:             id,
+				})
 
 				gomega.Expect(err).To(gomega.BeNil())
-				gomega.Expect(status).To(gomega.Equal(true))
+				gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
+				gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
 
 				wg.Done()
 			}(id, wg)
@@ -144,7 +150,7 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		assertIndexIntegrity(m, 0)
 
 		n = 50000
-		testInsertFixture(m,n, []uint8{})
+		testMultipleConcurrentInsert(n, testAsJson("sdlčfjasdfjksaldf"), r, collName)
 
 		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(20)))
 		gomega.Expect(m.AutoIncrementCounter).To(gomega.Equal(60000))

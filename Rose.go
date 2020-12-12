@@ -45,7 +45,7 @@ var createDatabases = func() (map[string]*db, Error) {
 	return collections, nil
 }
 
-func New(doDefragmentation bool, output bool) (*Rose, Error) {
+func New(output bool) (*Rose, Error) {
 	if output {
 		fmt.Println("")
 		fmt.Println("=============")
@@ -56,21 +56,6 @@ func New(doDefragmentation bool, output bool) (*Rose, Error) {
 
 	if err != nil {
 		return nil, err
-	}
-
-	if doDefragmentation {
-		if output {
-			fmt.Println("\033[33mwarning:\033[0m", "Defragmenting existing database. DO NOT STOP THIS PROCESS! Depending on the size of the database, this may take some time...")
-		}
-
-		if err := defragment(output); err != nil {
-			return nil, err
-		}
-
-		if output {
-			fmt.Println("  Defragmentation complete!")
-			fmt.Println("")
-		}
 	}
 
 	dbs, err := createDatabases()
@@ -155,6 +140,10 @@ func (a *Rose) Write(m WriteMetadata) (*AppResult, Error) {
 		return nil, nil
 	}
 
+	if err := validateData(m.Data); err != nil {
+		return nil, err
+	}
+
 	db, ok := a.Databases[m.CollectionName]
 
 	if !ok {
@@ -162,10 +151,6 @@ func (a *Rose) Write(m WriteMetadata) (*AppResult, Error) {
 			Code:    DbIntegrityViolationCode,
 			Message: fmt.Sprintf("Invalid write request. Collection %s does not exist", m.CollectionName),
 		}
-	}
-
-	if err := validateData(m.Data); err != nil {
-		return nil, err
 	}
 
 	// save the entry under idx into memory
@@ -253,7 +238,8 @@ func (a *Rose) Size() (uint64, Error) {
 		return 0, nil
 	}
 
-	files, err := ioutil.ReadDir(roseDbDir())
+	var size uint64
+	colls, err := ioutil.ReadDir(roseDbDir())
 
 	if err != nil {
 		return 0, &dbIntegrityError{
@@ -262,10 +248,19 @@ func (a *Rose) Size() (uint64, Error) {
 		}
 	}
 
-	var size uint64
+	for _, fi := range colls {
+		files, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", roseDbDir(), fi.Name()))
 
-	for _, f := range files {
-		size += uint64(f.Size())
+		if err != nil {
+			return 0, &dbIntegrityError{
+				Code:    DbIntegrityViolationCode,
+				Message: fmt.Sprintf("Could not determine size: %s", err.Error()),
+			}
+		}
+
+		for _, f := range files {
+			size += uint64(f.Size())
+		}
 	}
 
 	return size, nil

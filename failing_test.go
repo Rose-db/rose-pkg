@@ -73,13 +73,12 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail if data is not a json byte array", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
+		collName := testCreateCollection(a, "coll")
 
 		data := "string_that_is_not_json"
 
-		_, err := a.Write(WriteMetadata{Data: []uint8(data)})
+		_, err := a.Write(WriteMetadata{Data: []uint8(data), CollectionName: collName})
 
 		if err == nil {
 			ginkgo.Fail("err should not be nil")
@@ -102,9 +101,8 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail because data too large > 16MB", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
+		collName := testCreateCollection(a, "coll")
 
 		str, fsErr := ioutil.ReadFile("large_value.txt")
 
@@ -127,7 +125,7 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 
 		d := generateData()
 
-		_, err := a.Write(WriteMetadata{Data: testAsJson(string(d))})
+		_, err := a.Write(WriteMetadata{Data: testAsJson(string(d)), CollectionName: collName})
 
 		if err == nil {
 			ginkgo.Fail("err should not be nil")
@@ -151,12 +149,12 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail to read a document if not exists", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 
+		collName := testCreateCollection(a, "coll")
+
 		var s string
-		res, err := a.Read(ReadMetadata{ID: 67, Data: &s})
+		res, err := a.Read(ReadMetadata{ID: 67, Data: &s, CollectionName: collName})
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
@@ -173,11 +171,11 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail to delete a document if not exist", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 
-		res, err := a.Delete(DeleteMetadata{ID: 89})
+		collName := testCreateCollection(a, "coll")
+
+		res, err := a.Delete(DeleteMetadata{ID: 89, CollectionName: collName})
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))

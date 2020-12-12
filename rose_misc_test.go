@@ -10,8 +10,6 @@ import (
 
 var _ = GinkgoDescribe("Misc tests", func() {
 	GinkgoIt("Should generate ids in expected order", func() {
-		ginkgo.Skip("")
-
 		var currId uint16
 
 		fac := newBlockIdFactory()
@@ -46,11 +44,19 @@ var _ = GinkgoDescribe("Misc tests", func() {
 	})
 
 	GinkgoIt("Should return the real size of the database", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 
-		files, err := ioutil.ReadDir(roseDbDir())
+		collOne := testCreateCollection(a, "coll_one")
+		collTwo := testCreateCollection(a, "coll_two")
+		collThree := testCreateCollection(a, "coll_three")
+
+		testMultipleConcurrentInsert(10000, testAsJson("člksdjfčlkasjdflčjlsačdfj"), a, collOne)
+		testMultipleConcurrentInsert(10000, testAsJson("člksdjfčlkasjdflčjlsačdfj"), a, collTwo)
+		testMultipleConcurrentInsert(10000, testAsJson("člksdjfčlkasjdflčjlsačdfj"), a, collThree)
+
+		filesOne, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", roseDbDir(), collOne))
+		filesTwo, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", roseDbDir(), collTwo))
+		filesThree, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", roseDbDir(), collThree))
 
 		if err != nil {
 			ginkgo.Fail(fmt.Sprintf("Could not calculate size of the database: %s", err.Error()))
@@ -59,7 +65,15 @@ var _ = GinkgoDescribe("Misc tests", func() {
 		var size uint64
 		var dbSize uint64
 
-		for _, f := range files {
+		for _, f := range filesOne {
+			size += uint64(f.Size())
+		}
+
+		for _, f := range filesTwo {
+			size += uint64(f.Size())
+		}
+
+		for _, f := range filesThree {
 			size += uint64(f.Size())
 		}
 
@@ -72,76 +86,7 @@ var _ = GinkgoDescribe("Misc tests", func() {
 		gomega.Expect(size).To(gomega.Equal(dbSize))
 	})
 
-	GinkgoIt("Rose should defragment after recreating it and not have deleted values in the database", func() {
-		ginkgo.Skip("")
-
-		a := testCreateRose(false)
-		n := 5000
-
-		// write 5000
-		ids := [5000]int{}
-		for i := 0; i < n; i++ {
-			s := testAsJson("some value")
-			res := testSingleConcurrentInsert(WriteMetadata{Data: s}, a)
-
-			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
-			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
-
-			ids[i] = res.ID
-		}
-
-		delIds := [3000]int{}
-		// delete 3000
-		for i := 0; i < 3000; i++ {
-			u := ids[i]
-
-			res := testSingleDelete(DeleteMetadata{ID: u}, a)
-
-			gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
-			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
-
-			delIds[i] = res.ID
-		}
-
-		if err := a.Shutdown(); err != nil {
-
-			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
-
-			return
-		}
-
-		a = nil
-
-		a = testCreateRose(true)
-
-		for i := 0; i < 3000; i++ {
-			u := delIds[i]
-
-			s := ""
-			res, err := a.Read(ReadMetadata{
-				ID:   u,
-				Data: s,
-			})
-
-			gomega.Expect(err).To(gomega.BeNil())
-			gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
-			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
-		}
-
-		if err := a.Shutdown(); err != nil {
-			testRemoveFileSystemDb(roseDir())
-
-			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
-
-			return
-		}
-
-		testRemoveFileSystemDb(roseDir())
-	})
-
 	GinkgoIt("Should create a new collection", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 		collName := "some_collection"
 
@@ -169,8 +114,6 @@ var _ = GinkgoDescribe("Misc tests", func() {
 	})
 
 	GinkgoIt("Should not fail to create a collection because it exists", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 		collName := "some_collection"
 

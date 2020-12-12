@@ -42,7 +42,7 @@ var _ = GinkgoAfterSuite(func() {
 func testCreateRose(doDefragmentation bool) *Rose {
 	var a *Rose
 
-	a, err := New(doDefragmentation, false)
+	a, err := New(false)
 
 	gomega.Expect(err).To(gomega.BeNil())
 
@@ -87,24 +87,7 @@ func testRemoveFileSystemDb(dir string) {
 	gomega.Expect(err).To(gomega.BeNil())
 }
 
-func testInsertFixture(m *db, num int, value []uint8) map[int]int {
-	ids := make(map[int]int, num)
-	for i := 0; i < num; i++ {
-		if len(value) == 0 {
-			value = testAsJson("sdkfjsdjfsadfjklsajdfkčl")
-		}
-
-		_, id,  err := m.Write(value)
-
-		gomega.Expect(err).To(gomega.BeNil())
-
-		ids[i] = id
-	}
-
-	return ids
-}
-
-func testMultipleConcurrentInsert(num int, value []uint8, r *Rose) map[int]int {
+func testMultipleConcurrentInsert(num int, value []uint8, r *Rose, collName string) map[int]int {
 	ids := make(map[int]int, num)
 
 	for i := 0; i < num; i++ {
@@ -112,7 +95,7 @@ func testMultipleConcurrentInsert(num int, value []uint8, r *Rose) map[int]int {
 			value = testAsJson("sdkfjsdjfsadfjklsajdfkčl")
 		}
 
-		res := testSingleConcurrentInsert(WriteMetadata{Data: value}, r)
+		res := testSingleConcurrentInsert(WriteMetadata{Data: value, CollectionName: collName}, r)
 
 		ids[i] = res.ID
 	}

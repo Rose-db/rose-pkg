@@ -10,9 +10,8 @@ import (
 
 var _ = GinkgoDescribe("Concurrency tests", func() {
 	GinkgoIt("Should write values to the database with the concurrent method", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
+		collName := testCreateCollection(a, "coll_name")
 		n := 10000
 
 		results := make(chan *AppResult, n)
@@ -22,7 +21,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			go func(i int, wg *sync.WaitGroup) {
 				s := testAsJson(testString)
 
-				res, err := a.Write(WriteMetadata{Data: s})
+				res, err := a.Write(WriteMetadata{Data: s, CollectionName: collName})
 
 				gomega.Expect(err).To(gomega.BeNil())
 
@@ -70,7 +69,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 		for _, id := range ids {
 			s := ""
-			res, err := a.Read(ReadMetadata{ID: id, Data: &s})
+			res, err := a.Read(ReadMetadata{ID: id, Data: &s, CollectionName: collName})
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
@@ -89,15 +88,15 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 	})
 
 	GinkgoIt("Should delete document from the database with write done synchronously", func() {
-		ginkgo.Skip("")
 		a := testCreateRose(false)
+		collName := testCreateCollection(a, "coll")
 		n := 10000
 
 		ids := [10000]int{}
 		for i := 0; i < n; i++ {
 			s := testAsJson(testString)
 
-			res, err := a.Write(WriteMetadata{Data: s})
+			res, err := a.Write(WriteMetadata{Data: s, CollectionName: collName})
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
@@ -108,7 +107,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 		results := [10000]*AppResult{}
 		for i, id := range ids {
-			res := testSingleDelete(DeleteMetadata{ID: id}, a)
+			res := testSingleDelete(DeleteMetadata{ID: id, CollectionName: collName}, a)
 			results[i] = res
 		}
 
@@ -124,7 +123,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 		for _, id := range ids {
 			s := ""
-			res, err := a.Read(ReadMetadata{ID: id, Data: &s})
+			res, err := a.Read(ReadMetadata{ID: id, Data: &s, CollectionName: collName})
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
@@ -143,7 +142,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 		for _, id := range ids {
 			s := ""
-			res, err := a.Read(ReadMetadata{ID: id, Data: &s})
+			res, err := a.Read(ReadMetadata{ID: id, Data: &s, CollectionName: collName})
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
@@ -162,9 +161,8 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 	})
 
 	GinkgoIt("Should write/delete with sender/receiver patter", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
+		collName := testCreateCollection(a, "coll")
 		n := 10000
 
 		ids := [10000]int{}
@@ -173,7 +171,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 			s := testAsJson(testString)
 
-			res := testSingleConcurrentInsert(WriteMetadata{Data: s}, a)
+			res := testSingleConcurrentInsert(WriteMetadata{Data: s, CollectionName: collName}, a)
 
 			results[i] = res
 		}
@@ -182,7 +180,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 
-			delRes := testSingleDelete(DeleteMetadata{ID: res.ID}, a)
+			delRes := testSingleDelete(DeleteMetadata{ID: res.ID, CollectionName: collName}, a)
 
 			gomega.Expect(delRes.Status).To(gomega.Equal(DeletedResultStatus))
 			gomega.Expect(delRes.Method).To(gomega.Equal(DeleteMethodType))
@@ -202,7 +200,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 		for _, id := range ids {
 			s := ""
-			res, err := a.Read(ReadMetadata{ID: id, Data: &s})
+			res, err := a.Read(ReadMetadata{ID: id, Data: &s, CollectionName: collName})
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
@@ -221,9 +219,8 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 	})
 
 	GinkgoIt("Should write data without waiting for a goroutine to finish and read the results after a timeout", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
+		collName := testCreateCollection(a, "coll_name")
 		n := 10000
 
 		results := [10000]*AppResult{}
@@ -235,7 +232,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 				value := fmt.Sprintf("value-%d", i)
 				s := testAsJson(value)
 
-				res, err := a.Write(WriteMetadata{Data: s})
+				res, err := a.Write(WriteMetadata{Data: s, CollectionName: collName})
 
 				gomega.Expect(err).To(gomega.BeNil())
 
@@ -253,7 +250,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 
 			s := ""
-			appResult, err := a.Read(ReadMetadata{ID: res.ID, Data: &s})
+			appResult, err := a.Read(ReadMetadata{ID: res.ID, Data: &s, CollectionName: collName})
 
 			gomega.Expect(value).To(gomega.Equal(s))
 
@@ -274,9 +271,8 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 	})
 
 	GinkgoIt("Should delete data without waiting for a goroutine to finish and read the results after a timeout", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
+		collName := testCreateCollection(a, "coll")
 		n := 10000
 
 		results := [10000]*AppResult{}
@@ -284,7 +280,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			value := fmt.Sprintf("value-%d", i)
 			s := testAsJson(value)
 
-			res := testSingleConcurrentInsert(WriteMetadata{Data: s}, a)
+			res := testSingleConcurrentInsert(WriteMetadata{Data: s, CollectionName: collName}, a)
 
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
@@ -297,7 +293,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			go func(i int, wRes *AppResult) {
 				ginkgo.GinkgoRecover()
 
-				delRes, err := a.Delete(DeleteMetadata{ID: wRes.ID})
+				delRes, err := a.Delete(DeleteMetadata{ID: wRes.ID, CollectionName: collName})
 
 				gomega.Expect(err).To(gomega.BeNil())
 
