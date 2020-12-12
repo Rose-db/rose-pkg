@@ -9,6 +9,8 @@ import (
 
 var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 	GinkgoIt("Should assert that the memory database is populated correctly from an existing fs database", func() {
+		ginkgo.Skip("")
+
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 		a := testCreateRose(false)
 		n := 100000
@@ -50,17 +52,19 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 		gomega.Expect(total).To(gomega.Equal(len(ids)))
 
 		if err := a.Shutdown(); err != nil {
-			testRemoveFileSystemDb()
+			testRemoveFileSystemDb(roseDir())
 
 			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
 
 			return
 		}
 
-		testRemoveFileSystemDb()
+		testRemoveFileSystemDb(roseDir())
 	})
 
 	GinkgoIt("Should assert correct blocks are opened while deleting", func() {
+		ginkgo.Skip("")
+
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 		a := testCreateRose(false)
 		counter := 0
@@ -165,17 +169,19 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 		gomega.Expect(roseBlockFile(3, roseDbDir())).To(gomega.Equal(a.db.DeleteDriver.Handler.File.Name()))
 
 		if err := a.Shutdown(); err != nil {
-			testRemoveFileSystemDb()
+			testRemoveFileSystemDb(roseDir())
 
 			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
 
 			return
 		}
 
-		testRemoveFileSystemDb()
+		testRemoveFileSystemDb(roseDir())
 	})
 
 	GinkgoIt("Should skip the deleted entries when booting a populated database", func() {
+		ginkgo.Skip("")
+
 		a := testCreateRose(false)
 		n := 10000
 		s := testAsJson(testString)
@@ -258,17 +264,19 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 		gomega.Expect(count).To(gomega.Equal(1))
 
 		if err := a.Shutdown(); err != nil {
-			testRemoveFileSystemDb()
+			testRemoveFileSystemDb(roseDir())
 
 			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
 
 			return
 		}
 
-		testRemoveFileSystemDb()
+		testRemoveFileSystemDb(roseDir())
 	})
 
 	GinkgoIt("Should skip the deleted entries when booting a populated database and strategically removing entries in the database", func() {
+		ginkgo.Skip("")
+
 		a := testCreateRose(false)
 		n := 4000
 		s := testAsJson(testString)
@@ -351,13 +359,13 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 		}
 
 		if err := a.Shutdown(); err != nil {
-			testRemoveFileSystemDb()
+			testRemoveFileSystemDb(roseDir())
 
 			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
 
 			return
 		}
 
-		testRemoveFileSystemDb()
+		testRemoveFileSystemDb(roseDir())
 	})
 })

@@ -10,6 +10,8 @@ import (
 
 var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	GinkgoIt("Should assert block number based on different write numbers", func() {
+		ginkgo.Skip("")
+
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 		a := testCreateRose(false)
 		n := 100000
@@ -26,10 +28,12 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(len(dirs)).To(gomega.Equal(n / 3000 + 1))
 
-		testRemoveFileSystemDb()
+		testRemoveFileSystemDb(roseDir())
 	})
 
 	GinkgoIt("Should successfully perform and inspect inserts", func() {
+		ginkgo.Skip("")
+
 		r := testCreateRose(false)
 		n := 10000
 
@@ -42,17 +46,19 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		assertIndexIntegrity(m, n)
 
 		if err := r.Shutdown(); err != nil {
-			testRemoveFileSystemDb()
+			testRemoveFileSystemDb(roseDir())
 
 			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
 
 			return
 		}
 
-		testRemoveFileSystemDb()
+		testRemoveFileSystemDb(roseDir())
 	})
 
 	GinkgoIt("Should successfully perform and inspect deletes", func() {
+		ginkgo.Skip("")
+
 		r := testCreateRose(false)
 		const n = 10000
 
@@ -93,17 +99,19 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		assertIndexIntegrity(m, 0)
 
 		if err := r.Shutdown(); err != nil {
-			testRemoveFileSystemDb()
+			testRemoveFileSystemDb(roseDir())
 
 			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
 
 			return
 		}
 
-		testRemoveFileSystemDb()
+		testRemoveFileSystemDb(roseDir())
 	})
 
 	GinkgoIt("Should successfully perform and inspect delete reallocation", func() {
+		ginkgo.Skip("")
+
 		r := testCreateRose(false)
 		n := 10000
 
@@ -142,13 +150,13 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		gomega.Expect(m.AutoIncrementCounter).To(gomega.Equal(60000))
 
 		if err := r.Shutdown(); err != nil {
-			testRemoveFileSystemDb()
+			testRemoveFileSystemDb(roseDir())
 
 			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
 
 			return
 		}
 
-		testRemoveFileSystemDb()
+		testRemoveFileSystemDb(roseDir())
 	})
 })

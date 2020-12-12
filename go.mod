@@ -8,4 +8,5 @@ require (
 	github.com/google/uuid v1.1.2
 	github.com/onsi/ginkgo v1.14.2
 	github.com/onsi/gomega v1.10.3
+	golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f
 )

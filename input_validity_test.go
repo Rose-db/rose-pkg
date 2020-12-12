@@ -8,6 +8,8 @@ import (
 
 var _ = GinkgoDescribe("Input validity tests", func() {
 	GinkgoIt("Should successfully save and read data that is similar to the delimiter", func() {
+		ginkgo.Skip("")
+
 		a := testCreateRose(false)
 
 		data := "[#]{{}#]"
@@ -39,17 +41,19 @@ var _ = GinkgoDescribe("Input validity tests", func() {
 		gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
 
 		if err := a.Shutdown(); err != nil {
-			testRemoveFileSystemDb()
+			testRemoveFileSystemDb(roseDir())
 
 			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
 
 			return
 		}
 
-		testRemoveFileSystemDb()
+		testRemoveFileSystemDb(roseDir())
 	})
 
 	GinkgoIt("Should successfully skip newlines in data values and not treat them as document delimiters", func() {
+		ginkgo.Skip("")
+
 		a := testCreateRose(false)
 
 		data := "[#]{{\n}#]\n"
@@ -81,13 +85,13 @@ var _ = GinkgoDescribe("Input validity tests", func() {
 		gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
 
 		if err := a.Shutdown(); err != nil {
-			testRemoveFileSystemDb()
+			testRemoveFileSystemDb(roseDir())
 
 			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
 
 			return
 		}
 
-		testRemoveFileSystemDb()
+		testRemoveFileSystemDb(roseDir())
 	})
 })

@@ -2,210 +2,12 @@ package rose
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"runtime"
-	"strconv"
-	"strings"
-	"sync"
 )
 
-func loadIndexes(m *db, log bool) Error {
-	files, fsErr := ioutil.ReadDir(roseDbDir())
-
-	if fsErr != nil {
-		return &systemError{
-			Code:    SystemErrorCode,
-			Message: fmt.Sprintf("Could not read %s directory with underlynging message: %s", roseDbDir(), fsErr.Error()),
-		}
-	}
-
-	errChan := make(chan Error)
-	errors := make([]string, 1)
-
-	go func(errChan chan Error) {
-		for e := range errChan {
-			if e != nil {
-				errors = append(errors, e.Error())
-			}
-		}
-	}(errChan)
-
-	limit, err := getOpenFileHandleLimit()
-
-	if err != nil {
-		return err
-	}
-
-	// Creates as many batches as there are files, 50 files per batch
-	batch := createFileInfoBatch(files, limit)
-
-	/**
-	Every batch has a sender goroutine that sends a single
-	file to a receiver goroutine. There can be only 1 sender but
-	depending on batch size, there can be {batch_size} receivers.
-	*/
-	for _, b := range batch {
-		dataCh := make(chan os.FileInfo)
-		wg := &sync.WaitGroup{}
-		lock := &sync.RWMutex{}
-
-		// sender
-		go func() {
-			for _, f := range b {
-				dataCh<- f
-			}
-
-			close(dataCh)
-		}()
-
-		// receiver
-		for i := 0; i < len(b); i++ {
-			wg.Add(1)
-			go loadSingleFile(m, dataCh, wg, errChan, lock)
-		}
-
-		wg.Wait()
-	}
-
-	close(errChan)
-
-	if len(errors[1:]) > 0 {
-		fmt.Printf("Errors occurred while trying to load indexes. For brevity, only the first 5 errors are shown here. Go to %s for more information\n", roseLogDir())
-
-		e := errors[1:]
-
-		for _, err := range e {
-			fmt.Println(err)
-		}
-
-		return &dbIntegrityError{
-			Code:    DbIntegrityViolationCode,
-			Message: "Unable to load database into filesystem. Exiting!",
-		}
-	}
-
-	m.CurrMapIdx = uint16(len(files)) - 1
-
-	return nil
-}
-
-func loadSingleFile(m *db, dataCh<- chan os.FileInfo, wg *sync.WaitGroup, errChan chan Error, lock *sync.RWMutex) {
-	f := <-dataCh
-
-	db := fmt.Sprintf("%s/%s", roseDbDir(), f.Name())
-
-	file, err := createFile(db, os.O_RDONLY)
-
-	if err != nil {
-		fsErr := closeFile(file)
-
-		if fsErr != nil {
-			errChan<- fsErr
-			wg.Done()
-			return
-		}
-
-		errChan<- err
-		wg.Done()
-		return
-	}
-
-	reader := NewLineReader(file)
-
-	for {
-		offset, val, ok, err := reader.Read()
-
-		if err != nil {
-			fsErr := closeFile(file)
-
-			if fsErr != nil {
-				errChan<- fsErr
-				wg.Done()
-				return
-			}
-
-			errChan<- &dbIntegrityError{
-				Code:    DbIntegrityViolationCode,
-				Message: fmt.Sprintf("Database integrity violation. Cannot populate database with message: %s", err.Error()),
-			}
-			wg.Done()
-			return
-		}
-
-		if !ok {
-			break
-		}
-
-		if val == nil {
-			fsErr := closeFile(file)
-
-			if fsErr != nil {
-				errChan<- fsErr
-				wg.Done()
-				return
-			}
-
-			errChan<- &dbIntegrityError{
-				Code:    DbIntegrityViolationCode,
-				Message: "Database integrity violation. Cannot populate database. Invalid row encountered.",
-			}
-			wg.Done()
-			return
-		}
-
-		fileName := f.Name()
-		dotSplit := strings.Split(fileName, ".")
-		underscoreSplit := strings.Split(dotSplit[0], "_")
-		i, _ := strconv.Atoi(underscoreSplit[1])
-		mapIdx := uint16(i)
-
-		strId := string(val.id)
-		intId, atoiErr := strconv.Atoi(strId)
-
-		if atoiErr != nil {
-			errChan<- &dbIntegrityError{
-				Code:    DbIntegrityViolationCode,
-				Message: "Database integrity violation. Cannot populate database. Could not convert ID to integer",
-			}
-
-			wg.Done()
-			return
-		}
-
-		err = m.writeOnLoad(intId, mapIdx, lock, offset)
-
-		if err != nil {
-			fsErr := closeFile(file)
-
-			if fsErr != nil {
-				errChan<- fsErr
-				wg.Done()
-				return
-			}
-
-			errChan<- err
-			wg.Done()
-			return
-		}
-	}
-
-	fsErr := closeFile(file)
-
-	if fsErr != nil {
-		errChan<- fsErr
-		wg.Done()
-		return
-	}
-
-	errChan<- nil
-	wg.Done()
-}
-
-func createDbIfNotExists(log bool) (bool, Error) {
+func createDbIfNotExists(output bool) (bool, Error) {
 	var dir, db, logDir string
-	var err Error
-	var file *os.File
 
 	dir = roseDir()
 	db = fmt.Sprintf("%s/db", dir)
@@ -214,18 +16,13 @@ func createDbIfNotExists(log bool) (bool, Error) {
 	dirs := [3]string{dir, db, logDir}
 	updated := 0
 
-	if log {
-		fmt.Println(string("\033[32minfo:\033[0m"), "Creating the database on the filesystem if not exists...")
+	if output {
+		fmt.Println("\033[32minfo:\033[0m", "Creating the database on the filesystem if not exists...")
 	}
 
-	roseDbCreated := false
 	// Create rose directories
-	for i, d := range dirs {
+	for _, d := range dirs {
 		if _, err := os.Stat(d); os.IsNotExist(err) {
-			if i == 0 {
-				roseDbCreated = true
-			}
-
 			updated++
 			fsErr := os.Mkdir(d, os.ModePerm)
 			if fsErr != nil {
@@ -237,44 +34,7 @@ func createDbIfNotExists(log bool) (bool, Error) {
 		}
 	}
 
-	if log && updated > 0 && updated != 3 {
-		fmt.Println("      Some directories were missing. They have been created again.")
-	}
-
-	created := false
-	// create first block file
-	a := roseBlockFile(0, roseDbDir())
-	if _, fsErr := os.Stat(a); os.IsNotExist(fsErr) {
-		file, err = createFile(a, os.O_RDWR|os.O_CREATE)
-
-		if err != nil {
-			return false, &systemError{
-				Code:    SystemErrorCode,
-				Message: fmt.Sprintf("      Trying to create initial block file failed with underlying message: %s", err.Error()),
-			}
-		}
-
-		created = true
-	}
-
-	if log {
-		if created {
-			fmt.Printf("      Filesystem database created for the first time\n")
-
-			err = closeFile(file)
-
-			if err != nil {
-				return false, &systemError{
-					Code:    SystemErrorCode,
-					Message: fmt.Sprintf("  Trying to close initial block file failed with underlying message: %s", err.Error()),
-				}
-			}
-		} else {
-			fmt.Printf("      Filesystem database already exists. Nothing to update\n")
-		}
-	}
-
-	return roseDbCreated, nil
+	return true, nil
 }
 
 func createFile(f string, flag int) (*os.File, Error) {
@@ -283,7 +43,7 @@ func createFile(f string, flag int) (*os.File, Error) {
 	if err != nil {
 		sysErr := &systemError{
 			Code:    SystemErrorCode,
-			Message: err.Error(),
+			Message: fmt.Sprintf("Error occurred trying to create file %s: %s", f, err.Error()),
 		}
 
 		return nil, sysErr
@@ -298,7 +58,7 @@ func closeFile(file *os.File) Error {
 	if fsErr != nil {
 		return &systemError{
 			Code:    SystemErrorCode,
-			Message: fsErr.Error(),
+			Message: fmt.Sprintf("Error occurred trying to sync file: %s", fsErr.Error()),
 		}
 	}
 
@@ -307,7 +67,7 @@ func closeFile(file *os.File) Error {
 	if fsErr != nil {
 		return &systemError{
 			Code:    SystemErrorCode,
-			Message: fsErr.Error(),
+			Message: fmt.Sprintf("Error occurred trying to close file %s: %s", file.Name(), fsErr.Error()),
 		}
 	}
 
@@ -340,10 +100,6 @@ func roseDir() string {
 
 func roseDbDir() string {
 	return fmt.Sprintf("%s/.rose_db/db", userHomeDir())
-}
-
-func roseLogDir() string {
-	return fmt.Sprintf("%s/.rose_db/log", userHomeDir())
 }
 
 func roseBlockFile(block uint16, dbDir string) string {

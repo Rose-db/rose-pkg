@@ -17,7 +17,7 @@ func newFsDb(b uint16, dbDir string) (*fsDb, Error) {
 	var file *os.File
 	var err Error
 
-	file, err = createFile(a, os.O_RDWR|os.O_CREATE)
+	file, err = createFile(a, os.O_RDWR|os.O_CREATE|os.O_APPEND)
 
 	if err != nil && strings.Contains(err.Error(), "too many open") {
 		file, err = secureBlockingCreateFile(a)

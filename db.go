@@ -65,13 +65,14 @@ func (d *db) Write(data []uint8) (int, int, Error) {
 	d.Lock()
 
 	id := d.AutoIncrementCounter
+
 	// check if the entry already exists
 	if _, ok := d.IdLookupMap[id]; ok {
 		d.Unlock()
 
 		return 0, 0, &dbIntegrityError{
 			Code:    DbIntegrityViolationCode,
-			Message: "ID integrity validation. Duplicate ID found. This should not happen. Try this write again",
+			Message: fmt.Sprintf( "ID integrity validation. Duplicate ID %d found. This should not happen. Try this write again", id),
 		}
 	}
 
@@ -201,12 +202,12 @@ func (d *db) Shutdown() [3]Error {
 	return errors
 }
 
-func (d *db) writeOnLoad(id int, mapIdx uint16, lock *sync.RWMutex, offset int64) Error {
-	lock.Lock()
+func (d *db) writeIndex(id int, mapIdx uint16, offset int64) Error {
+	d.Lock()
 
 	// check if the entry already exists
 	if _, ok := d.IdLookupMap[id]; ok {
-		lock.Unlock()
+		d.Unlock()
 
 		return nil
 	}
@@ -218,7 +219,7 @@ func (d *db) writeOnLoad(id int, mapIdx uint16, lock *sync.RWMutex, offset int64
 
 	d.AutoIncrementCounter += 1
 
-	lock.Unlock()
+	d.Unlock()
 
 	return nil
 }

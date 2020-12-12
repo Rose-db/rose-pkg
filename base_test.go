@@ -39,51 +39,52 @@ var _ = GinkgoAfterSuite(func() {
 	}
 })
 
-func testFixtureSingleInsert(value []uint8, a *Rose) int {
-	res, appErr := a.Write(WriteMetadata{Data: value})
-
-	if appErr != nil {
-		panic(appErr)
-	}
-
-	if res.Status != OkResultStatus {
-		panic(fmt.Sprintf("Invalid result status given. Expected: %s, given: %s", OkResultStatus, res.Status))
-	}
-
-	return res.ID
-}
-
 func testCreateRose(doDefragmentation bool) *Rose {
 	var a *Rose
 
 	a, err := New(doDefragmentation, false)
 
-	if err != nil {
-		panic(err)
-	}
+	gomega.Expect(err).To(gomega.BeNil())
 
 	return a
 }
 
-func testRemoveFileSystemDb() {
-	dir := roseDbDir()
+func testCreateCollection(r *Rose, collName string) string {
+	err := r.NewCollection(collName)
+
+	gomega.Expect(err).To(gomega.BeNil())
+
+	return collName
+}
+
+func testRemoveFileSystemDb(dir string) {
+	if dir == "" {
+		panic("Empty dir given to testRemoveFileSysteDb()")
+	}
+
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		panic(err)
 	}
 
 	files, err := ioutil.ReadDir(dir)
 
-	if err != nil {
-		panic(err)
-	}
+	gomega.Expect(err).To(gomega.BeNil())
 
 	for _, f := range files {
-		err = os.Remove(fmt.Sprintf("%s/%s", dir, f.Name()))
+		if f.IsDir() {
+			testRemoveFileSystemDb(fmt.Sprintf("%s/%s", dir, f.Name()))
+		}
 
-		if err != nil {
-			panic(err)
+		if !f.IsDir() {
+			err = os.Remove(fmt.Sprintf("%s/%s", dir, f.Name()))
+
+			gomega.Expect(err).To(gomega.BeNil())
 		}
 	}
+
+	err = os.RemoveAll(dir)
+
+	gomega.Expect(err).To(gomega.BeNil())
 }
 
 func testInsertFixture(m *db, num int, value []uint8) map[int]int {
@@ -122,8 +123,6 @@ func testMultipleConcurrentInsert(num int, value []uint8, r *Rose) map[int]int {
 func testSingleConcurrentInsert(w WriteMetadata, r *Rose) *AppResult {
 	resChan := make(chan *AppResult)
 	go func() {
-		ginkgo.GinkgoRecover()
-
 		res, err := r.Write(w)
 
 		gomega.Expect(err).To(gomega.BeNil())
@@ -137,8 +136,6 @@ func testSingleConcurrentInsert(w WriteMetadata, r *Rose) *AppResult {
 func testSingleDelete(w DeleteMetadata, r *Rose) *AppResult {
 	resChan := make(chan *AppResult)
 	go func() {
-		ginkgo.GinkgoRecover()
-
 		res, err := r.Delete(w)
 
 		gomega.Expect(err).To(gomega.BeNil())
