@@ -1,18 +1,29 @@
 package rose
 
+import "os"
+
 type fsDriver struct {
 	DbDir string
+	DriverType driverType
 	Handler *fsDb
 	HandlerIdx uint16
 }
 
-func newFsDriver(dbDir string) *fsDriver {
+func newFsDriver(dbDir string, t driverType) *fsDriver {
 	return &fsDriver{
 		DbDir: dbDir,
+		DriverType: t,
 	}
 }
 
 func (d *fsDriver) Save(data *[]uint8, mapIdx uint16) (int64, int64, Error) {
+	if d.DriverType != writeDriver {
+		return 0, 0, &systemError{
+			Code:    SystemErrorCode,
+			Message: "Driver not used correctly. This driver must be used as a write driver only",
+		}
+	}
+
 	if err := d.loadHandler(mapIdx); err != nil {
 		return 0, 0, err
 	}
@@ -29,6 +40,13 @@ func (d *fsDriver) Read(index int64, mapIdx uint16) (*[]uint8, Error) {
 }
 
 func (d *fsDriver) MarkStrategicDeleted(id *[]uint8, del []uint8, mapIdx uint16, offset int64) Error {
+	if d.DriverType != updateDriver {
+		return &systemError{
+			Code:    SystemErrorCode,
+			Message: "Driver not used correctly. This driver must be used as an update driver only",
+		}
+	}
+
 	if err := d.loadHandler(mapIdx); err != nil {
 		return err
 	}
@@ -59,7 +77,14 @@ func (d *fsDriver) loadHandler(mapIdx uint16) Error {
 		}
 	}
 
-	handler, err := newFsDb(mapIdx, d.DbDir)
+	t := 0
+	if d.DriverType == writeDriver {
+		t = os.O_RDWR|os.O_CREATE|os.O_APPEND
+	} else if d.DriverType == updateDriver {
+		t = os.O_RDWR|os.O_CREATE
+	}
+
+	handler, err := newFsDb(mapIdx, d.DbDir, t)
 
 	if err != nil {
 		return err

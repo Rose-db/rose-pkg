@@ -9,26 +9,64 @@ import (
 
 var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 	GinkgoIt("Should assert that the memory database is populated correctly from an existing fs database", func() {
-		ginkgo.Skip("")
-
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 		a := testCreateRose(false)
-		n := 100000
 
-		ids := [100000]int{}
-		for i := 0; i < n; i++ {
-			res := testSingleConcurrentInsert(WriteMetadata{Data: s}, a)
+		collOne := testCreateCollection(a, "collOne")
+		collTwo := testCreateCollection(a, "collTwo")
+		collThree := testCreateCollection(a, "collThree")
+
+		firstN := 100000
+		secondN := 234789
+		thirdN := 1234
+
+		// Insert first collection
+		firstIds := [100000]int{}
+		for i := 0; i < firstN; i++ {
+			res := testSingleConcurrentInsert(WriteMetadata{Data: s, CollectionName: collOne}, a)
 
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 
-			ids[i] = res.ID
+			firstIds[i] = res.ID
 		}
 
-		dirs, err := ioutil.ReadDir(roseDbDir())
+
+		// Insert second collection
+		secondIds := [234789]int{}
+		for i := 0; i < secondN; i++ {
+			res := testSingleConcurrentInsert(WriteMetadata{Data: s, CollectionName: collTwo}, a)
+
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
+
+			secondIds[i] = res.ID
+		}
+
+		// Insert third collection
+		thirdIds := [1234]int{}
+		for i := 0; i < thirdN; i++ {
+			res := testSingleConcurrentInsert(WriteMetadata{Data: s, CollectionName: collThree}, a)
+
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
+
+			thirdIds[i] = res.ID
+		}
+
+		firstDirs, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", roseDbDir(), collOne))
+		gomega.Expect(err).To(gomega.BeNil())
+
+		secondDirs, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", roseDbDir(), collTwo))
+		gomega.Expect(err).To(gomega.BeNil())
+
+		thirdDirs, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", roseDbDir(), collThree))
+		gomega.Expect(err).To(gomega.BeNil())
 
 		gomega.Expect(err).To(gomega.BeNil())
-		gomega.Expect(len(dirs)).To(gomega.Equal(n / 3000 + 1))
+		gomega.Expect(len(firstDirs)).To(gomega.Equal(firstN / blockMark + 1))
+		gomega.Expect(len(secondDirs)).To(gomega.Equal(secondN / blockMark + 1))
+		gomega.Expect(len(thirdDirs)).To(gomega.Equal(thirdN / blockMark + 1))
 
 		if err := a.Shutdown(); err != nil {
 			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
@@ -37,10 +75,26 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 		}
 
 		a = testCreateRose(false)
+
+		// Test reads for collection one
 		total := 0
-		for _, id := range ids {
+		for _, id := range firstIds {
 			s := ""
-			res, err := a.Read(ReadMetadata{ID: id, Data: &s})
+			res, err := a.Read(ReadMetadata{ID: id, Data: &s, CollectionName: collOne})
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
+
+			total++
+		}
+		gomega.Expect(total).To(gomega.Equal(len(firstIds)))
+
+		// test reads for collection two
+		total = 0
+		for _, id := range secondIds {
+			s := ""
+			res, err := a.Read(ReadMetadata{ID: id, Data: &s, CollectionName: collTwo})
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
@@ -49,7 +103,22 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 			total++
 		}
 
-		gomega.Expect(total).To(gomega.Equal(len(ids)))
+		gomega.Expect(total).To(gomega.Equal(len(secondIds)))
+
+		// test reads for collection two
+		total = 0
+		for _, id := range thirdIds {
+			s := ""
+			res, err := a.Read(ReadMetadata{ID: id, Data: &s, CollectionName: collTwo})
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
+
+			total++
+		}
+
+		gomega.Expect(total).To(gomega.Equal(len(thirdIds)))
 
 		if err := a.Shutdown(); err != nil {
 			testRemoveFileSystemDb(roseDir())

@@ -12,12 +12,12 @@ type fsDb struct {
 	Size int64
 }
 
-func newFsDb(b uint16, dbDir string) (*fsDb, Error) {
+func newFsDb(b uint16, dbDir string, perms int) (*fsDb, Error) {
 	a := roseBlockFile(b, dbDir)
 	var file *os.File
 	var err Error
 
-	file, err = createFile(a, os.O_RDWR|os.O_CREATE|os.O_APPEND)
+	file, err = createFile(a, perms)
 
 	if err != nil && strings.Contains(err.Error(), "too many open") {
 		file, err = secureBlockingCreateFile(a)

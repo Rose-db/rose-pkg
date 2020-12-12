@@ -92,7 +92,7 @@ func (d *db) Write(data []uint8) (int, int, Error) {
 
 	blockIdx := d.BlockIdFactory.Next()
 
-	if blockIdx == 2999 {
+	if blockIdx == blockMark {
 		d.CurrMapIdx++
 	}
 

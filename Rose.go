@@ -37,7 +37,7 @@ var createDatabases = func() (map[string]*db, Error) {
 		collName := d.Name()
 		driverDir := fmt.Sprintf("%s/%s", roseDbDir(), collName)
 
-		m := newDb(newFsDriver(driverDir), newFsDriver(driverDir), newFsDriver(driverDir))
+		m := newDb(newFsDriver(driverDir, writeDriver), newFsDriver(driverDir, updateDriver), newFsDriver(driverDir, updateDriver))
 
 		collections[collName] = m
 	}
@@ -145,7 +145,7 @@ func (a *Rose) NewCollection(name string) Error {
 		return e
 	}
 
-	a.Databases[name] = newDb(newFsDriver(collDir), newFsDriver(collDir), newFsDriver(collDir))
+	a.Databases[name] = newDb(newFsDriver(collDir, writeDriver), newFsDriver(collDir, updateDriver), newFsDriver(collDir, updateDriver))
 
 	return nil
 }
@@ -192,7 +192,7 @@ func (a *Rose) Read(m ReadMetadata) (*AppResult, Error) {
 	if !ok {
 		return nil, &dbIntegrityError{
 			Code:    DbIntegrityViolationCode,
-			Message: fmt.Sprintf("Invalid write request. Collection %s does not exist", m.CollectionName),
+			Message: fmt.Sprintf("Invalid read request. Collection %s does not exist", m.CollectionName),
 		}
 	}
 
@@ -218,7 +218,16 @@ func (a *Rose) Delete(m DeleteMetadata) (*AppResult, Error) {
 		return nil, nil
 	}
 
-	res, err := a.db.Delete(m.ID)
+	db, ok := a.Databases[m.CollectionName]
+
+	if !ok {
+		return nil, &dbIntegrityError{
+			Code:    DbIntegrityViolationCode,
+			Message: fmt.Sprintf("Invalid read request. Collection %s does not exist", m.CollectionName),
+		}
+	}
+
+	res, err := db.Delete(m.ID)
 
 	if err != nil {
 		return nil, err

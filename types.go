@@ -30,6 +30,11 @@ const ReadMethodType = "read"
 const NewBlockCreatedStatus = 1
 const NormalExecutionStatus = 2
 
+type driverType int
+
+const writeDriver driverType = 1
+const updateDriver driverType = 2
+
 // 16MB
 const maxValSize = 16000000
 

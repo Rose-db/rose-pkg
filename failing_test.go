@@ -8,6 +8,70 @@ import (
 )
 
 var _ = GinkgoDescribe("Successfully failing tests", func() {
+	GinkgoIt("Should fail to write if the collection does not exist", func() {
+		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
+
+		a := testCreateRose(false)
+
+		resChan := make(chan *AppResult)
+		go func() {
+			res, err := a.Write(WriteMetadata{
+				CollectionName: "not_exists",
+				Data:           s,
+			})
+
+			gomega.Expect(err).To(gomega.Not(gomega.BeNil()))
+			gomega.Expect(err.GetCode()).To(gomega.Equal(DbIntegrityViolationCode))
+
+			gomega.Expect(err.Error()).To(gomega.Equal("Code: 3, Message: Invalid write request. Collection not_exists does not exist"))
+
+			resChan<- res
+		}()
+
+		res := <-resChan
+
+		gomega.Expect(res).To(gomega.BeNil())
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
+
+	GinkgoIt("Should fail to read if the collection does not exist", func() {
+		a := testCreateRose(false)
+
+		res, err := a.Read(ReadMetadata{
+			CollectionName: "not_exists",
+			ID:             0,
+			Data:           nil,
+		})
+
+		gomega.Expect(err).To(gomega.Not(gomega.BeNil()))
+		gomega.Expect(res).To(gomega.BeNil())
+
+		gomega.Expect(err).To(gomega.Not(gomega.BeNil()))
+		gomega.Expect(err.GetCode()).To(gomega.Equal(DbIntegrityViolationCode))
+
+		gomega.Expect(err.Error()).To(gomega.Equal("Code: 3, Message: Invalid read request. Collection not_exists does not exist"))
+
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
+
 	GinkgoIt("Should fail if data is not a json byte array", func() {
 		ginkgo.Skip("")
 

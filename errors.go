@@ -99,7 +99,7 @@ func (e *dbIntegrityError) Type() string {
 }
 
 func (e *dbIntegrityError) GetCode() int {
-	return SystemErrorCode
+	return DbIntegrityViolationCode
 }
 
 func (e *dbIntegrityError) JSON() map[string]interface{} {

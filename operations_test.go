@@ -161,60 +161,27 @@ var _ = GinkgoDescribe("Read tests", func() {
 		testRemoveFileSystemDb(roseDir())
 	})
 
-	GinkgoIt("Should assert fs db integrity after multiple inserts", func() {
-		ginkgo.Skip("")
-
-		a := testCreateRose(false)
-
-		ids := make([]int, 0)
-		fsData := ""
-		for i := 0; i < 10000; i++ {
-			value := testAsJson(fmt.Sprintf("id-value-%d", i))
-			data := value
-
-			res, err := a.Write(WriteMetadata{Data: value})
-
-			gomega.Expect(err).To(gomega.BeNil())
-			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
-			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
-
-			fsData += string(*prepareData(res.ID, data))
-
-			ids = append(ids, res.ID)
-		}
-
-		if err := a.Shutdown(); err != nil {
-			testRemoveFileSystemDb(roseDir())
-
-			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
-
-			return
-		}
-
-		testRemoveFileSystemDb(roseDir())
-	})
-
 	GinkgoIt("Should delete a single document", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
+
+		collName := testCreateCollection(a, "test_coll")
 
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 
-		res := testSingleConcurrentInsert(WriteMetadata{Data: s}, a)
+		res := testSingleConcurrentInsert(WriteMetadata{Data: s, CollectionName: collName}, a)
 
 		gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 
 		id := res.ID
 
-		res = testSingleDelete(DeleteMetadata{ID: id}, a)
+		res = testSingleDelete(DeleteMetadata{ID: id, CollectionName: collName}, a)
 
 		gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 
 		r := ""
-		res, err := a.Read(ReadMetadata{ID: id, Data: &r})
+		res, err := a.Read(ReadMetadata{ID: id, Data: &r, CollectionName: collName})
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
