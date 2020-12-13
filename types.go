@@ -6,6 +6,7 @@ const metadataErrorType = "metadata_error"
 const dbErrorType = "db_error"
 const dbIntegrityErrorType = "db_integrity_error"
 const validationErrorType = "validation_error"
+const timeoutErrorType = "timeout_error"
 
 // application error codes
 const DataErrorCode = 1
@@ -14,6 +15,7 @@ const DbIntegrityViolationCode = 3
 const DbErrorCode = 4
 const TooManyOpenFilesCode = 5
 const ValidationErrorCode = 6
+const TimeoutErrorCode = 7
 
 // result status
 const OkResultStatus = "ok"

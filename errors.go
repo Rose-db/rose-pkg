@@ -36,6 +36,31 @@ type validationError struct {
 	Message string
 }
 
+type timeoutError struct {
+	Code int
+	Message string
+}
+
+
+
+func (e *timeoutError) Error() string {
+	return fmt.Sprintf("Code: %d, Message: %s", e.Code, e.Message)
+}
+
+func (e *timeoutError) Type() string {
+	return timeoutErrorType
+}
+
+func (e *timeoutError) GetCode() int {
+	return TimeoutErrorCode
+}
+
+func (e *timeoutError) JSON() map[string]interface{} {
+	return map[string]interface{}{}
+}
+
+
+
 
 func (e *validationError) Error() string {
 	return fmt.Sprintf("Code: %d, Message: %s", e.Code, e.Message)
@@ -70,6 +95,8 @@ func (e *systemError) GetCode() int {
 func (e *systemError) JSON() map[string]interface{} {
 	return map[string]interface{}{}
 }
+
+
 
 
 func (e *dbError) Error() string {

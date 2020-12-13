@@ -202,9 +202,9 @@ func getFsError(err error, op string) Error {
 	msg := err.Error()
 
 	if strings.Contains(msg, "too many open files") {
-		return &systemError{
-			Code:    TooManyOpenFilesCode,
-			Message: fmt.Sprintf("Operating system error. Cannot do %s file operation with underlying message: %s", op, msg),
+		return &timeoutError{
+			Code:    TimeoutErrorCode,
+			Message: fmt.Sprintf("Filesystem timeout error. Cannot do %s file operation with underlying message: %s", op, msg),
 		}
 	}
 
