@@ -353,4 +353,41 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
 		}
 	})
+
+	GinkgoIt("Should delete all values in spawned goroutines", func() {
+		a := testCreateRose(false)
+		collName := testCreateCollection(a, "coll")
+		n := 10000
+
+		results := [10000]int{}
+		for i := 0; i < n; i++ {
+			value := fmt.Sprintf("value-%d", i)
+			s := testAsJson(value)
+
+			res := testSingleConcurrentInsert(WriteMetadata{Data: s, CollectionName: collName}, a)
+
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
+
+			results[i] = res.ID
+		}
+
+		appResults := [10000]*AppResult{}
+		for i := 0; i < n; i++ {
+			go func(i int) {
+				res, err := a.Delete(DeleteMetadata{ID: i, CollectionName: collName})
+
+				gomega.Expect(err).To(gomega.BeNil())
+
+				appResults[i] = res
+			}(i)
+		}
+
+		time.Sleep(5 * time.Second)
+
+		for _, res := range appResults {
+			gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
+		}
+	})
 })

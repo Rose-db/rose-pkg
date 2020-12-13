@@ -38,6 +38,9 @@ const updateDriver driverType = 2
 // 16MB
 const maxValSize = 16000000
 
+const timeoutIteration = 200
+const timeoutInterval = 50
+
 const delim = "[##]{{}#]"
 const delMark = "{[{del}]}"
 

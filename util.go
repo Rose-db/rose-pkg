@@ -96,7 +96,7 @@ func secureBlockingCreateFile(a string) (*os.File, Error) {
 		if err != nil {
 			err = getFsError(err, "create")
 
-			if it == 200 {
+			if it == timeoutIteration {
 				return nil, err
 			}
 
@@ -104,7 +104,7 @@ func secureBlockingCreateFile(a string) (*os.File, Error) {
 				continue
 			}
 
-			time.Sleep(50 * time.Millisecond)
+			time.Sleep(timeoutInterval * time.Millisecond)
 			it++
 
 			continue
@@ -124,7 +124,7 @@ func secureBlockingWriteFile(f *os.File, d *[]uint8) Error {
 		if err != nil {
 			e := getFsError(err, "write")
 
-			if it == 200 {
+			if it == timeoutIteration {
 				return getFsError(err, "write")
 			}
 
@@ -132,7 +132,7 @@ func secureBlockingWriteFile(f *os.File, d *[]uint8) Error {
 				continue
 			}
 
-			time.Sleep(50 * time.Millisecond)
+			time.Sleep(timeoutInterval * time.Millisecond)
 			it++
 
 			continue
@@ -152,7 +152,7 @@ func secureBlockingSeekFile(f *os.File, offset int64) Error {
 		if err != nil {
 			e := getFsError(err, "write")
 
-			if it == 200 {
+			if it == timeoutIteration {
 				return getFsError(err, "write")
 			}
 
@@ -160,7 +160,7 @@ func secureBlockingSeekFile(f *os.File, offset int64) Error {
 				continue
 			}
 
-			time.Sleep(50 * time.Millisecond)
+			time.Sleep(timeoutInterval * time.Millisecond)
 			it++
 
 			continue
@@ -180,7 +180,7 @@ func secureBlockingWriteAtFile(f *os.File, d []uint8, offset int64) Error {
 		if err != nil {
 			e := getFsError(err, "writeAt")
 
-			if it == 200 {
+			if it == timeoutIteration {
 				return getFsError(err, "writeAt")
 			}
 
@@ -188,7 +188,7 @@ func secureBlockingWriteAtFile(f *os.File, d []uint8, offset int64) Error {
 				continue
 			}
 
-			time.Sleep(50 * time.Millisecond)
+			time.Sleep(timeoutInterval * time.Millisecond)
 			it++
 
 			continue
