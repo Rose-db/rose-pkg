@@ -146,7 +146,7 @@ func (d *db) Delete(id int) (bool, Error) {
 	return true, nil
 }
 
-func (d *db) Read(id int, data interface{}) *dbReadResult {
+func (d *db) Read(id int, data interface{}) (*dbReadResult, Error) {
 	d.Lock()
 
 	idData, ok := d.IdLookupMap[id]
@@ -154,7 +154,7 @@ func (d *db) Read(id int, data interface{}) *dbReadResult {
 	if !ok {
 		d.Unlock()
 
-		return nil
+		return nil, nil
 	}
 
 	idx := idData[0]
@@ -167,7 +167,10 @@ func (d *db) Read(id int, data interface{}) *dbReadResult {
 	if err != nil {
 		d.Unlock()
 
-		return nil
+		return nil, &dbIntegrityError{
+			Code:    DbIntegrityViolationCode,
+			Message: fmt.Sprintf("An error occurred while trying to read driver: %s", err.Error()),
+		}
 	}
 
 	e := json.Unmarshal(*b, data)
@@ -175,7 +178,10 @@ func (d *db) Read(id int, data interface{}) *dbReadResult {
 	if e != nil {
 		d.Unlock()
 
-		panic(e)
+		return nil, &systemError{
+			Code:    SystemErrorCode,
+			Message: fmt.Sprintf("Cannot unmarshal JSON string. This can be a bug with Rose or an invalid document. Try deleting and write the document again. The underlying error is: %s", e.Error()),
+		}
 	}
 
 	d.Unlock()
@@ -184,7 +190,7 @@ func (d *db) Read(id int, data interface{}) *dbReadResult {
 		Idx:    idx,
 		ID:     id,
 		Result: data,
-	}
+	}, nil
 }
 
 // shutdown does not do anything for now until I decide what to do with multiple drivers

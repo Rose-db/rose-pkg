@@ -181,15 +181,19 @@ func (a *Rose) Read(m ReadMetadata) (*AppResult, Error) {
 		}
 	}
 
-	res := db.Read(m.ID, m.Data)
+	res, err := db.Read(m.ID, m.Data)
 
-	if res == nil {
+	if res == nil && err == nil {
 		return &AppResult{
 			ID: m.ID,
 			Method: ReadMethodType,
 			Status: NotFoundResultStatus,
 			Reason: fmt.Sprintf("Rose: Entry with ID %d not found", m.ID),
 		}, nil
+	}
+
+	if err != nil {
+		return nil, err
 	}
 
 	return &AppResult{
