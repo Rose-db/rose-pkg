@@ -12,7 +12,7 @@ type blockIdFactory struct {
 
 func newBlockIdFactory() *blockIdFactory {
 	return &blockIdFactory{
-		Max: 2999,
+		Max: blockMark,
 		CurrIdx: 0,
 	}
 }
@@ -27,7 +27,7 @@ func (m *blockIdFactory) Next() uint16 {
 	c := m.CurrIdx
 	m.CurrIdx++
 
-	if m.CurrIdx > 2999 {
+	if m.CurrIdx > blockMark {
 		m.CurrIdx = 0
 	}
 

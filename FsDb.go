@@ -43,8 +43,8 @@ func newFsDb(b uint16, dbDir string, perms int) (*fsDb, Error) {
 	}, nil
 }
 
-func (fs *fsDb) Write(d *[]uint8) (int64, int64, Error) {
-	_, err := fs.File.Write(*d)
+func (fs *fsDb) Write(d []uint8) (int64, int64, Error) {
+	_, err := fs.File.Write(d)
 
 	if err != nil {
 		e := secureBlockingWriteFile(fs.File, d)
@@ -54,9 +54,9 @@ func (fs *fsDb) Write(d *[]uint8) (int64, int64, Error) {
 		}
 	}
 
-	fs.Size += int64(len(*d))
+	fs.Size += int64(len(d))
 
-	return int64(len(*d)), fs.Size, nil
+	return int64(len(d)), fs.Size, nil
 }
 
 func (fs *fsDb) Read(offset int64) (*[]uint8, Error) {
@@ -81,7 +81,7 @@ func (fs *fsDb) Read(offset int64) (*[]uint8, Error) {
 	return &data.val, nil
 }
 
-func (fs *fsDb) StrategicDelete(id *[]uint8, del []uint8, offset int64) Error {
+func (fs *fsDb) StrategicDelete(id []uint8, del []uint8, offset int64) Error {
 	_, err := fs.File.WriteAt(del, offset)
 
 	if err != nil {
@@ -95,7 +95,7 @@ func (fs *fsDb) StrategicDelete(id *[]uint8, del []uint8, offset int64) Error {
 	if err != nil {
 		return &dbError{
 			Code:    DbErrorCode,
-			Message: fmt.Sprintf("Unable to delete %s with underlying message: %s", string(*id), err.Error()),
+			Message: fmt.Sprintf("Unable to delete %s with underlying message: %s", string(id), err.Error()),
 		}
 	}
 

@@ -18,7 +18,7 @@ func newFsDriver(dbDir string, t driverType) *fsDriver {
 	}
 }
 
-func (d *fsDriver) Save(data *[]uint8, mapIdx uint16) (int64, int64, Error) {
+func (d *fsDriver) Save(data []uint8, mapIdx uint16) (int64, int64, Error) {
 	if d.DriverType != writeDriver {
 		return 0, 0, &systemError{
 			Code:    SystemErrorCode,
@@ -41,7 +41,7 @@ func (d *fsDriver) Read(index int64, mapIdx uint16) (*[]uint8, Error) {
 	return d.Handler.Read(index)
 }
 
-func (d *fsDriver) MarkStrategicDeleted(id *[]uint8, del []uint8, mapIdx uint16, offset int64) Error {
+func (d *fsDriver) MarkStrategicDeleted(id []uint8, del []uint8, mapIdx uint16, offset int64) Error {
 	if d.DriverType != updateDriver {
 		return &systemError{
 			Code:    SystemErrorCode,

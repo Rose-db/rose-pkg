@@ -8,10 +8,10 @@ import (
 	"time"
 )
 
-func prepareData(id int, data []uint8) *[]uint8 {
+func prepareData(id int, data []uint8) []uint8 {
 	s := []uint8(fmt.Sprintf("%d%s%s%s", id, delim, string(data), "\n"))
 
-	return &s
+	return s
 }
 
 func isJSON(s []uint8) bool {
@@ -22,8 +22,7 @@ func isJSON(s []uint8) bool {
 func appendByte(slice []uint8, data ...uint8) []uint8 {
 	m := len(slice)
 	n := m + len(data)
-	if n > cap(slice) { // if necessary, reallocate
-		// allocate double what's needed, for future growth.
+	if n > cap(slice) {
 		newSlice := make([]uint8, (n+1)*2)
 		copy(newSlice, slice)
 		slice = newSlice
@@ -114,12 +113,12 @@ func secureBlockingCreateFile(a string) (*os.File, Error) {
 	}
 }
 
-func secureBlockingWriteFile(f *os.File, d *[]uint8) Error {
+func secureBlockingWriteFile(f *os.File, d []uint8) Error {
 	it := 0
 	var err error
 
 	for {
-		_, err = f.Write(*d)
+		_, err = f.Write(d)
 
 		if err != nil {
 			e := getFsError(err, "write")
