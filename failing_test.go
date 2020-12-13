@@ -115,9 +115,7 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 
 		str, fsErr := ioutil.ReadFile("large_value.txt")
 
-		if fsErr != nil {
-			panic(fsErr)
-		}
+		gomega.Expect(fsErr).To(gomega.BeNil())
 
 		// generates a > 16Mb string
 		generateData := func() []uint8 {

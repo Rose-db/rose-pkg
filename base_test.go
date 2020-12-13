@@ -59,7 +59,7 @@ func testCreateCollection(r *Rose, collName string) string {
 
 func testRemoveFileSystemDb(dir string) {
 	if dir == "" {
-		panic("Empty dir given to testRemoveFileSysteDb()")
+		panic("Empty dir given to testRemoveFileSystemDb()")
 	}
 
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
@@ -156,18 +156,12 @@ func benchmarkRemoveFileSystemDb() {
 
 	files, err := ioutil.ReadDir(dir)
 
-	if err != nil {
-		panic(err)
-
-		return
-	}
+	gomega.Expect(err).To(gomega.BeNil())
 
 	for _, f := range files {
 		err = os.Remove(fmt.Sprintf("%s/%s", dir, f.Name()))
 
-		if err != nil {
-			panic(err)
-		}
+		gomega.Expect(err).To(gomega.BeNil())
 	}
 }
 

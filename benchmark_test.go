@@ -2,6 +2,7 @@ package rose
 
 import (
 	"fmt"
+	"github.com/onsi/gomega"
 	"testing"
 )
 
@@ -14,9 +15,7 @@ func benchmarkAppInsert(i int, a *Rose) {
 	for c := 0; c < i; c++ {
 		res, err := a.Write(WriteMetadata{Data: s})
 
-		if err != nil {
-			panic(fmt.Sprintf("Error when writing: %s", err.Error()))
-		}
+		gomega.Expect(err).To(gomega.BeNil())
 
 		if res.Status != OkResultStatus {
 			panic(fmt.Sprintf("Invalid write status: %s", res.Status))
@@ -38,9 +37,7 @@ func BenchmarkAppInsertTenThousand(b *testing.B) {
 
 		err := a.Shutdown()
 
-		if err != nil {
-			panic(err)
-		}
+		gomega.Expect(err).To(gomega.BeNil())
 	}
 }
 
@@ -56,9 +53,7 @@ func BenchmarkAppInsertHundredThousand(b *testing.B) {
 
 		err := a.Shutdown()
 
-		if err != nil {
-			panic(err)
-		}
+		gomega.Expect(err).To(gomega.BeNil())
 
 		benchmarkRemoveFileSystemDb()
 	}
