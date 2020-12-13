@@ -8,8 +8,6 @@ import (
 
 var _ = GinkgoDescribe("Insertion tests", func() {
 	GinkgoIt("Should insert a single piece of data", func() {
-		ginkgo.Skip("")
-
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 
 		a := testCreateRose(false)
@@ -33,8 +31,6 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 	})
 
 	GinkgoIt("Should insert a single piece of data in multiple collection", func() {
-		ginkgo.Skip("")
-
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 
 		a := testCreateRose(false)
@@ -70,8 +66,6 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 	})
 
 	GinkgoIt("Should insert multiple values", func() {
-		ginkgo.Skip("")
-
 		var currId uint64
 
 		a := testCreateRose(false)
@@ -103,8 +97,6 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 
 var _ = GinkgoDescribe("Read tests", func() {
 	GinkgoIt("Should read a single result", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 
 		collName := testCreateCollection(a, "test_coll")
@@ -114,9 +106,8 @@ var _ = GinkgoDescribe("Read tests", func() {
 		id := temp.ID
 
 		r := ""
-		res, err := a.Read(ReadMetadata{ID: id, Data: &r, CollectionName: collName})
+		res := testSingleRead(ReadMetadata{ID: id, Data: &r, CollectionName: collName}, a)
 
-		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
 		gomega.Expect(r).To(gomega.Equal("sdčkfjalsčkjfdlsčakdfjlčk"))
@@ -133,8 +124,6 @@ var _ = GinkgoDescribe("Read tests", func() {
 	})
 
 	GinkgoIt("Should perform multiple reads", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 
 		collName := testCreateCollection(a, "test_coll")
@@ -153,9 +142,8 @@ var _ = GinkgoDescribe("Read tests", func() {
 
 		for _, id := range ids {
 			r := ""
-			res, err := a.Read(ReadMetadata{ID: id, Data: &r, CollectionName: collName})
+			res := testSingleRead(ReadMetadata{ID: id, Data: &r, CollectionName: collName}, a)
 
-			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
 		}
@@ -172,8 +160,6 @@ var _ = GinkgoDescribe("Read tests", func() {
 	})
 
 	GinkgoIt("Should delete a single document", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 
 		collName := testCreateCollection(a, "test_coll")
@@ -193,13 +179,12 @@ var _ = GinkgoDescribe("Read tests", func() {
 		gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 
 		r := ""
-		res, err := a.Read(ReadMetadata{ID: id, Data: &r, CollectionName: collName})
+		res = testSingleRead(ReadMetadata{ID: id, Data: &r, CollectionName: collName}, a)
 
-		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
 
-		if err = a.Shutdown(); err != nil {
+		if err := a.Shutdown(); err != nil {
 			testRemoveFileSystemDb(roseDir())
 
 			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))

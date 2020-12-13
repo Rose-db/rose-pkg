@@ -129,6 +129,19 @@ func testSingleDelete(w DeleteMetadata, r *Rose) *AppResult {
 	return <-resChan
 }
 
+func testSingleRead(w ReadMetadata, r *Rose) *AppResult {
+	resChan := make(chan *AppResult)
+	go func() {
+		res, err := r.Read(w)
+
+		gomega.Expect(err).To(gomega.BeNil())
+
+		resChan<- res
+	}()
+
+	return <-resChan
+}
+
 func assertIndexIntegrity(m *db, expectedLen int) {
 	index := m.Index
 

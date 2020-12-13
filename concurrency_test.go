@@ -10,7 +10,6 @@ import (
 
 var _ = GinkgoDescribe("Concurrency tests", func() {
 	GinkgoIt("Should write values to the database with the concurrent method", func() {
-		ginkgo.Skip("")
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll_name")
 		n := 10000
@@ -70,9 +69,8 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 		for _, id := range ids {
 			s := ""
-			res, err := a.Read(ReadMetadata{ID: id, Data: &s, CollectionName: collName})
+			res := testSingleRead(ReadMetadata{ID: id, Data: &s, CollectionName: collName}, a)
 
-			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
 		}
@@ -89,8 +87,6 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 	})
 
 	GinkgoIt("Should delete document from the database with write done synchronously", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll")
 		n := 10000
@@ -126,9 +122,8 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 		for _, id := range ids {
 			s := ""
-			res, err := a.Read(ReadMetadata{ID: id, Data: &s, CollectionName: collName})
+			res := testSingleRead(ReadMetadata{ID: id, Data: &s, CollectionName: collName}, a)
 
-			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
 		}
@@ -164,8 +159,6 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 	})
 
 	GinkgoIt("Should write/delete with sender/receiver patter", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll")
 		n := 10000
@@ -205,9 +198,8 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 		for _, id := range ids {
 			s := ""
-			res, err := a.Read(ReadMetadata{ID: id, Data: &s, CollectionName: collName})
+			res := testSingleRead(ReadMetadata{ID: id, Data: &s, CollectionName: collName}, a)
 
-			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
 		}
@@ -224,8 +216,6 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 	})
 
 	GinkgoIt("Should write data without waiting for a goroutine to finish and read the results after a timeout", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll_name")
 		n := 10000
@@ -257,11 +247,10 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 
 			s := ""
-			appResult, err := a.Read(ReadMetadata{ID: res.ID, Data: &s, CollectionName: collName})
+			appResult := testSingleRead(ReadMetadata{ID: res.ID, Data: &s, CollectionName: collName}, a)
 
 			gomega.Expect(value).To(gomega.Equal(s))
 
-			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(appResult.Status).To(gomega.Equal(FoundResultStatus))
 			gomega.Expect(appResult.Method).To(gomega.Equal(ReadMethodType))
 		}
@@ -278,8 +267,6 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 	})
 
 	GinkgoIt("Should delete data without waiting for a goroutine to finish and read the results after a timeout", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll")
 		n := 10000
@@ -353,12 +340,13 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 				res, err := a.Read(ReadMetadata{ID: i, CollectionName: collName, Data: &s})
 
 				gomega.Expect(err).To(gomega.BeNil())
+				gomega.Expect(s).To(gomega.Equal(fmt.Sprintf("value-%d", i)))
 
 				appResults[i] = res
 			}(i)
 		}
 
-		time.Sleep(2 * time.Second)
+		time.Sleep(5 * time.Second)
 
 		for _, res := range appResults {
 			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))

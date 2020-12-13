@@ -5,12 +5,11 @@ import (
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
 	"io/ioutil"
+	"sync"
 )
 
 var _ = GinkgoDescribe("Successfully failing tests", func() {
 	GinkgoIt("Should fail to write if the collection does not exist", func() {
-		ginkgo.Skip("")
-
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 
 		a := testCreateRose(false)
@@ -46,23 +45,29 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail to read if the collection does not exist", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 
-		res, err := a.Read(ReadMetadata{
-			CollectionName: "not_exists",
-			ID:             0,
-			Data:           nil,
-		})
+		wg := &sync.WaitGroup{}
+		wg.Add(1)
+		go func(wg *sync.WaitGroup) {
+			res, err := a.Read(ReadMetadata{
+				CollectionName: "not_exists",
+				ID:             0,
+				Data:           nil,
+			})
 
-		gomega.Expect(err).To(gomega.Not(gomega.BeNil()))
-		gomega.Expect(res).To(gomega.BeNil())
+			gomega.Expect(err).To(gomega.Not(gomega.BeNil()))
+			gomega.Expect(res).To(gomega.BeNil())
 
-		gomega.Expect(err).To(gomega.Not(gomega.BeNil()))
-		gomega.Expect(err.GetCode()).To(gomega.Equal(DbIntegrityViolationCode))
+			gomega.Expect(err).To(gomega.Not(gomega.BeNil()))
+			gomega.Expect(err.GetCode()).To(gomega.Equal(DbIntegrityViolationCode))
 
-		gomega.Expect(err.Error()).To(gomega.Equal("Code: 3, Message: Invalid read request. Collection not_exists does not exist"))
+			gomega.Expect(err.Error()).To(gomega.Equal("Code: 3, Message: Invalid read request. Collection not_exists does not exist"))
+
+			wg.Done()
+		}(wg)
+
+		wg.Wait()
 
 
 		if err := a.Shutdown(); err != nil {
@@ -77,8 +82,6 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail if data is not a json byte array", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll")
 
@@ -107,8 +110,6 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail because data too large > 16MB", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll")
 
@@ -157,16 +158,13 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail to read a document if not exists", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 
 		collName := testCreateCollection(a, "coll")
 
 		var s string
-		res, err := a.Read(ReadMetadata{ID: 67, Data: &s, CollectionName: collName})
+		res := testSingleRead(ReadMetadata{ID: 67, Data: &s, CollectionName: collName}, a)
 
-		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
 
 		if err := a.Shutdown(); err != nil {
@@ -181,8 +179,6 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail to delete a document if not exist", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 
 		collName := testCreateCollection(a, "coll")

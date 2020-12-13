@@ -9,8 +9,6 @@ import (
 
 var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 	GinkgoIt("Should assert that the memory database is populated correctly from an existing fs database", func() {
-		ginkgo.Skip("")
-
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 		a := testCreateRose(false)
 
@@ -82,23 +80,22 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 		total := 0
 		for _, id := range firstIds {
 			s := ""
-			res, err := a.Read(ReadMetadata{ID: id, Data: &s, CollectionName: collOne})
+			res := testSingleRead(ReadMetadata{ID: id, Data: &s, CollectionName: collOne}, a)
 
-			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
 
 			total++
 		}
+
 		gomega.Expect(total).To(gomega.Equal(len(firstIds)))
 
 		// test reads for collection two
 		total = 0
 		for _, id := range secondIds {
 			s := ""
-			res, err := a.Read(ReadMetadata{ID: id, Data: &s, CollectionName: collTwo})
+			res := testSingleRead(ReadMetadata{ID: id, Data: &s, CollectionName: collTwo}, a)
 
-			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
 
@@ -111,9 +108,8 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 		total = 0
 		for _, id := range thirdIds {
 			s := ""
-			res, err := a.Read(ReadMetadata{ID: id, Data: &s, CollectionName: collTwo})
+			res := testSingleRead(ReadMetadata{ID: id, Data: &s, CollectionName: collThree}, a)
 
-			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
 
@@ -134,8 +130,6 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 	})
 
 	GinkgoIt("Should assert correct blocks are opened while deleting", func() {
-		ginkgo.Skip("")
-
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll_name")
@@ -252,8 +246,6 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 	})
 
 	GinkgoIt("Should skip the deleted entries when booting a populated database", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 
 		collName := testCreateCollection(a, "coll")
@@ -296,9 +288,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 		count := 0
 		for _, id := range ids {
 			t := ""
-			res, err := a.Read(ReadMetadata{ID: id, Data: &t, CollectionName: collName})
-
-			gomega.Expect(err).To(gomega.BeNil())
+			res := testSingleRead(ReadMetadata{ID: id, Data: &t, CollectionName: collName}, a)
 
 			if res.Status == FoundResultStatus {
 				gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
@@ -323,9 +313,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 		count = 0
 		for _, id := range ids {
 			t := ""
-			res, err := a.Read(ReadMetadata{ID: id, Data: &t, CollectionName: collName})
-
-			gomega.Expect(err).To(gomega.BeNil())
+			res := testSingleRead(ReadMetadata{ID: id, Data: &t, CollectionName: collName}, a)
 
 			if res.Status == FoundResultStatus {
 				gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
@@ -349,8 +337,6 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 	})
 
 	GinkgoIt("Should skip the deleted entries when booting a populated database and strategically removing entries in the database", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll")
 		n := 4000
@@ -399,9 +385,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 		count := 0
 		for _, id := range ids {
 			t := ""
-			res, err := a.Read(ReadMetadata{ID: id, Data: &t, CollectionName: collName})
-
-			gomega.Expect(err).To(gomega.BeNil())
+			res := testSingleRead(ReadMetadata{ID: id, Data: &t, CollectionName: collName}, a)
 
 			if res.Status == FoundResultStatus {
 				gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
@@ -426,9 +410,8 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 		for _, key := range strategy {
 			id := ids[key]
 			t := ""
-			res, err := a.Read(ReadMetadata{ID: id, Data: &t, CollectionName: collName})
+			res := testSingleRead(ReadMetadata{ID: id, Data: &t, CollectionName: collName}, a)
 
-			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
 		}
