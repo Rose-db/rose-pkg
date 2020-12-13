@@ -1,6 +1,8 @@
 package rose
 
-import "os"
+import (
+	"os"
+)
 
 type fsDriver struct {
 	DbDir string

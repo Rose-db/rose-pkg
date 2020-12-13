@@ -10,6 +10,7 @@ import (
 
 var _ = GinkgoDescribe("Concurrency tests", func() {
 	GinkgoIt("Should write values to the database with the concurrent method", func() {
+		ginkgo.Skip("")
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll_name")
 		n := 10000
@@ -88,6 +89,8 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 	})
 
 	GinkgoIt("Should delete document from the database with write done synchronously", func() {
+		ginkgo.Skip("")
+
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll")
 		n := 10000
@@ -161,6 +164,8 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 	})
 
 	GinkgoIt("Should write/delete with sender/receiver patter", func() {
+		ginkgo.Skip("")
+
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll")
 		n := 10000
@@ -219,6 +224,8 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 	})
 
 	GinkgoIt("Should write data without waiting for a goroutine to finish and read the results after a timeout", func() {
+		ginkgo.Skip("")
+
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll_name")
 		n := 10000
@@ -271,6 +278,8 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 	})
 
 	GinkgoIt("Should delete data without waiting for a goroutine to finish and read the results after a timeout", func() {
+		ginkgo.Skip("")
+
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll")
 		n := 10000
@@ -317,5 +326,43 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 		}
 
 		testRemoveFileSystemDb(roseDir())
+	})
+
+	GinkgoIt("Should read all values in spawned goroutines", func() {
+		a := testCreateRose(false)
+		collName := testCreateCollection(a, "coll")
+		n := 10000
+
+		results := [10000]int{}
+		for i := 0; i < n; i++ {
+			value := fmt.Sprintf("value-%d", i)
+			s := testAsJson(value)
+
+			res := testSingleConcurrentInsert(WriteMetadata{Data: s, CollectionName: collName}, a)
+
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
+
+			results[i] = res.ID
+		}
+
+		appResults := [10000]*AppResult{}
+		for i := 0; i < n; i++ {
+			go func(i int) {
+				s := ""
+				res, err := a.Read(ReadMetadata{ID: i, CollectionName: collName, Data: &s})
+
+				gomega.Expect(err).To(gomega.BeNil())
+
+				appResults[i] = res
+			}(i)
+		}
+
+		time.Sleep(2 * time.Second)
+
+		for _, res := range appResults {
+			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
+		}
 	})
 })

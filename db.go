@@ -147,9 +147,13 @@ func (d *db) Delete(id int) (bool, Error) {
 }
 
 func (d *db) Read(id int, data interface{}) *dbReadResult {
+	d.Lock()
+
 	idData, ok := d.IdLookupMap[id]
 
 	if !ok {
+		d.Unlock()
+
 		return nil
 	}
 
@@ -157,6 +161,8 @@ func (d *db) Read(id int, data interface{}) *dbReadResult {
 	mapId := idData[1]
 
 	if !ok {
+		d.Unlock()
+
 		return nil
 	}
 
@@ -165,14 +171,20 @@ func (d *db) Read(id int, data interface{}) *dbReadResult {
 	b, err := d.ReadDriver.Read(index, mapId)
 
 	if err != nil {
+		d.Unlock()
+
 		return nil
 	}
 
 	e := json.Unmarshal(*b, data)
 
 	if e != nil {
+		d.Unlock()
+
 		panic(e)
 	}
+
+	d.Unlock()
 
 	return &dbReadResult{
 		Idx:    idx,
