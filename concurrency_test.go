@@ -352,6 +352,16 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
 		}
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
 	})
 
 	GinkgoIt("Should delete all values in spawned goroutines", func() {
@@ -389,5 +399,176 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
 		}
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
+
+	GinkgoIt("Should read and delete all documents spawned in multiple collections", func() {
+		a := testCreateRose(false)
+		collOne := testCreateCollection(a, "coll_one")
+		collTwo := testCreateCollection(a, "coll_two")
+		collThree := testCreateCollection(a, "coll_three")
+		n := 10000
+
+		oneIds := [10000]int{}
+		twoIds := [10000]int{}
+		threeIds := [10000]int{}
+		insert := func(ids *[10000]int, collName string) {
+			for i := 0; i < n; i++ {
+				go func(ids *[10000]int, collName string, i int) {
+					defer ginkgo.GinkgoRecover()
+					value := fmt.Sprintf("value-%d", i)
+					s := testAsJson(value)
+
+					res, err := a.Write(WriteMetadata{Data: s, CollectionName: collName})
+
+					gomega.Expect(err).To(gomega.BeNil())
+
+					ids[i] = res.ID
+				}(ids, collName, i)
+			}
+		}
+
+		insert(&oneIds, collOne)
+		insert(&twoIds, collTwo)
+		insert(&threeIds, collThree)
+
+		time.Sleep(5 * time.Second)
+
+		readOneResults := [10000]*AppResult{}
+		for i, id := range oneIds {
+			go func(i int, id int) {
+				defer ginkgo.GinkgoRecover()
+
+				s := ""
+				res, err := a.Read(ReadMetadata{ID: id, CollectionName: collOne, Data: &s})
+
+				gomega.Expect(err).To(gomega.BeNil())
+				gomega.Expect(s).To(gomega.Equal(fmt.Sprintf("value-%d", i)))
+
+				readOneResults[i] = res
+			}(i, id)
+		}
+
+		readTwoResults := [10000]*AppResult{}
+		for i, id := range twoIds {
+			go func(i int, id int) {
+				defer ginkgo.GinkgoRecover()
+
+				s := ""
+				res, err := a.Read(ReadMetadata{ID: id, CollectionName: collTwo, Data: &s})
+
+				gomega.Expect(err).To(gomega.BeNil())
+				gomega.Expect(s).To(gomega.Equal(fmt.Sprintf("value-%d", i)))
+
+				readTwoResults[i] = res
+			}(i, id)
+		}
+
+		readThreeResults := [10000]*AppResult{}
+		for i, id := range threeIds {
+			go func(i int, id int) {
+				defer ginkgo.GinkgoRecover()
+
+				s := ""
+				res, err := a.Read(ReadMetadata{ID: id, CollectionName: collThree, Data: &s})
+
+				gomega.Expect(err).To(gomega.BeNil())
+				gomega.Expect(s).To(gomega.Equal(fmt.Sprintf("value-%d", i)))
+
+				readThreeResults[i] = res
+			}(i, id)
+		}
+
+		time.Sleep(5 * time.Second)
+
+		for _, res := range readOneResults {
+			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
+		}
+
+		for _, res := range readTwoResults {
+			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
+		}
+
+		for _, res := range readThreeResults {
+			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
+		}
+
+		deleteOneResults := [10000]*AppResult{}
+		for i, id := range oneIds {
+			go func(i int, id int) {
+				defer ginkgo.GinkgoRecover()
+
+				res, err := a.Delete(DeleteMetadata{ID: id, CollectionName: collOne})
+
+				gomega.Expect(err).To(gomega.BeNil())
+
+				deleteOneResults[i] = res
+			}(i, id)
+		}
+
+		deleteTwoResults := [10000]*AppResult{}
+		for i, id := range twoIds {
+			go func(i int, id int) {
+				defer ginkgo.GinkgoRecover()
+
+				res, err := a.Delete(DeleteMetadata{ID: id, CollectionName: collTwo})
+
+				gomega.Expect(err).To(gomega.BeNil())
+
+				deleteTwoResults[i] = res
+			}(i, id)
+		}
+
+		deleteThreeResults := [10000]*AppResult{}
+		for i, id := range threeIds {
+			go func(i int, id int) {
+				defer ginkgo.GinkgoRecover()
+
+				res, err := a.Delete(DeleteMetadata{ID: id, CollectionName: collThree})
+
+				gomega.Expect(err).To(gomega.BeNil())
+
+				deleteThreeResults[i] = res
+			}(i, id)
+		}
+
+		time.Sleep(5 * time.Second)
+
+		for _, res := range deleteOneResults {
+			gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
+		}
+
+		for _, res := range deleteTwoResults {
+			gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
+		}
+
+		for _, res := range deleteThreeResults {
+			gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
+		}
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
 	})
 })
