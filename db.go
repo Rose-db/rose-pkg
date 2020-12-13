@@ -160,12 +160,6 @@ func (d *db) Read(id int, data interface{}) *dbReadResult {
 	idx := idData[0]
 	mapId := idData[1]
 
-	if !ok {
-		d.Unlock()
-
-		return nil
-	}
-
 	index, _ := d.Index[id]
 
 	b, err := d.ReadDriver.Read(index, mapId)
