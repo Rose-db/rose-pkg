@@ -16,7 +16,6 @@ type AppResult struct {
 type Rose struct {
 	Databases map[string]*db
 	db *db
-	isInShutdown bool
 }
 
 var createDatabases = func() (map[string]*db, Error) {
@@ -95,10 +94,6 @@ func New(output bool) (*Rose, Error) {
 }
 
 func (a *Rose) NewCollection(name string) Error {
-	if a.isInShutdown {
-		return nil
-	}
-
 	collDir := fmt.Sprintf("%s/%s", roseDbDir(), name)
 
 	_, err := os.Stat(collDir)
@@ -136,10 +131,6 @@ func (a *Rose) NewCollection(name string) Error {
 }
 
 func (a *Rose) Write(m WriteMetadata) (*AppResult, Error) {
-	if a.isInShutdown {
-		return nil, nil
-	}
-
 	if err := validateData(m.Data); err != nil {
 		return nil, err
 	}
@@ -168,10 +159,6 @@ func (a *Rose) Write(m WriteMetadata) (*AppResult, Error) {
 }
 
 func (a *Rose) Read(m ReadMetadata) (*AppResult, Error) {
-	if a.isInShutdown {
-		return nil, nil
-	}
-
 	db, ok := a.Databases[m.CollectionName]
 
 	if !ok {
@@ -203,10 +190,6 @@ func (a *Rose) Read(m ReadMetadata) (*AppResult, Error) {
 }
 
 func (a *Rose) Delete(m DeleteMetadata) (*AppResult, Error) {
-	if a.isInShutdown {
-		return nil, nil
-	}
-
 	db, ok := a.Databases[m.CollectionName]
 
 	if !ok {
@@ -238,10 +221,6 @@ func (a *Rose) Delete(m DeleteMetadata) (*AppResult, Error) {
 }
 
 func (a *Rose) Size() (uint64, Error) {
-	if a.isInShutdown {
-		return 0, nil
-	}
-
 	var size uint64
 	colls, err := ioutil.ReadDir(roseDbDir())
 
@@ -271,8 +250,6 @@ func (a *Rose) Size() (uint64, Error) {
 }
 
 func (a *Rose) Shutdown() Error {
-	a.isInShutdown = true
-
 	for _, db := range a.Databases {
 		errors := db.Shutdown()
 		msg := ""
