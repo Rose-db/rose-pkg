@@ -81,13 +81,41 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 		testRemoveFileSystemDb(roseDir())
 	})
 
-	GinkgoIt("Should fail if data is not a json byte array", func() {
+	GinkgoIt("Should fail write() if data is not a json byte array", func() {
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll")
 
 		data := "string_that_is_not_json"
 
 		_, err := a.Write(WriteMetadata{Data: []uint8(data), CollectionName: collName})
+
+		if err == nil {
+			ginkgo.Fail("err should not be nil")
+
+			return
+		}
+
+		gomega.Expect(err.GetCode()).To(gomega.Equal(DataErrorCode), fmt.Sprintf("DataErrorCode should have been returned as Error.Status"))
+		gomega.Expect(err.Error()).To(gomega.Equal("Code: 1, Message: Data must be a JSON byte array"))
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
+
+	GinkgoIt("Should fail replace() if data is not a json byte array", func() {
+		a := testCreateRose(false)
+		collName := testCreateCollection(a, "coll")
+
+		data := "string_that_is_not_json"
+
+		_, err := a.Replace(ReplaceMetadata{Data: []uint8(data), CollectionName: collName, ID: 0})
 
 		if err == nil {
 			ginkgo.Fail("err should not be nil")

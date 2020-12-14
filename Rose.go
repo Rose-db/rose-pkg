@@ -237,6 +237,11 @@ func (a *Rose) Replace(m ReplaceMetadata) (*AppResult, Error) {
 		return nil, err
 	}
 
+	if err := validateData(m.Data); err != nil {
+		return nil, err
+	}
+
+
 	db, ok := a.Databases[m.CollectionName]
 
 	if !ok {
