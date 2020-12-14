@@ -232,12 +232,30 @@ func (a *Rose) Delete(m DeleteMetadata) (*AppResult, Error) {
 	}, nil
 }
 
-func (a *Rose) Replace(m ReplaceMetadata) Error {
+func (a *Rose) Replace(m ReplaceMetadata) (*AppResult, Error) {
 	if err := m.Validate(); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	db, ok := a.Databases[m.CollectionName]
+
+	if !ok {
+		return nil, &dbIntegrityError{
+			Code:    DbIntegrityViolationCode,
+			Message: fmt.Sprintf("Invalid read request. Collection %s does not exist", m.CollectionName),
+		}
+	}
+
+	err := db.Replace(m.ID, m.Data)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &AppResult{
+		Method: ReplaceMethodType,
+		Status: ReplacedResultStatus,
+	}, nil
 }
 
 func (a *Rose) Size() (uint64, Error) {

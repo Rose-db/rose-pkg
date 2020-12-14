@@ -194,4 +194,40 @@ var _ = GinkgoDescribe("Read tests", func() {
 
 		testRemoveFileSystemDb(roseDir())
 	})
+
+	GinkgoIt("Should replace a single document", func() {
+		a := testCreateRose(false)
+
+		collName := testCreateCollection(a, "test_coll")
+
+		s := testAsJson("value_one")
+
+		res := testSingleConcurrentInsert(WriteMetadata{Data: s, CollectionName: collName}, a)
+
+		gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+		gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
+
+		id := res.ID
+
+		res = testSingleReplace(ReplaceMetadata{ID: id, CollectionName: collName, Data: testAsJson("value_replaced")}, a)
+
+		gomega.Expect(res.Status).To(gomega.Equal(ReplacedResultStatus))
+		gomega.Expect(res.Method).To(gomega.Equal(ReplaceMethodType))
+
+		d := ""
+		res = testSingleRead(ReadMetadata{CollectionName: collName, ID: id, Data: &d}, a)
+
+		gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
+		gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
 })

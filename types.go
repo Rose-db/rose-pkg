@@ -22,11 +22,13 @@ const OkResultStatus = "ok"
 const FoundResultStatus = "found"
 const NotFoundResultStatus = "not_found"
 const DeletedResultStatus = "deleted"
+const ReplacedResultStatus = "replaced"
 
 // method types
 const WriteMethodType = "insert"
 const DeleteMethodType = "delete"
 const ReadMethodType = "read"
+const ReplaceMethodType = "replace"
 
 // memory db status types
 const NewBlockCreatedStatus = 1

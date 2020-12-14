@@ -29,7 +29,7 @@ type db struct {
 	InternalDb map[uint16]*[3000]*[]uint8
 	// map of user supplied ids to InternalDb indexes
 	// IdLookupMap::string -> idx::uint -> InternalDb[idx] -> []uint8
-	IdLookupMap          map[int][2]uint16
+	IdLookupMap          map[int]uint16
 	Index                map[int]int64
 	AutoIncrementCounter int
 	CurrMapIdx           uint16
@@ -77,9 +77,9 @@ func (d *db) Write(data []uint8) (int, int, Error) {
 	}
 
 	// r operation, add COMPUTED index to the index map
-	d.IdLookupMap[id] = [2]uint16{uint16(d.AutoIncrementCounter % blockMark), d.CurrMapIdx}
+	d.IdLookupMap[id] = d.CurrMapIdx
 
-	bytesWritten, size, err := d.saveOnFs(id, data)
+	bytesWritten, size, err := d.saveOnFs(id, data, d.CurrMapIdx)
 	offset := size - bytesWritten
 
 	d.Index[id] = offset
@@ -106,10 +106,7 @@ func (d *db) Write(data []uint8) (int, int, Error) {
 func (d *db) Delete(id int) (bool, Error) {
 	d.Lock()
 
-	var idData [2]uint16
-	var mapId uint16
-
-	idData, ok := d.IdLookupMap[id]
+	mapId, ok := d.IdLookupMap[id]
 
 	if !ok {
 		d.Unlock()
@@ -127,8 +124,6 @@ func (d *db) Delete(id int) (bool, Error) {
 			Message: fmt.Sprintf("Index integrity violation. Index for ID %d does not exist. Please, restart Rose and try again", id),
 		}
 	}
-
-	mapId = idData[1]
 
 	err := d.deleteFromFs(id, mapId, idx)
 
@@ -149,16 +144,13 @@ func (d *db) Delete(id int) (bool, Error) {
 func (d *db) Read(id int, data interface{}) (*dbReadResult, Error) {
 	d.Lock()
 
-	idData, ok := d.IdLookupMap[id]
+	mapId, ok := d.IdLookupMap[id]
 
 	if !ok {
 		d.Unlock()
 
 		return nil, nil
 	}
-
-	idx := idData[0]
-	mapId := idData[1]
 
 	index, _ := d.Index[id]
 
@@ -187,10 +179,40 @@ func (d *db) Read(id int, data interface{}) (*dbReadResult, Error) {
 	d.Unlock()
 
 	return &dbReadResult{
-		Idx:    idx,
 		ID:     id,
 		Result: data,
 	}, nil
+}
+
+/**
+    1. Delete the document with the specified ID
+    2. Write the new document into the same block
+    3. Replace the previous index with the new one
+ */
+func (d *db) Replace(id int, data []uint8) Error {
+	d.Lock()
+
+	mapId, ok := d.IdLookupMap[id]
+
+	if !ok {
+		d.Unlock()
+
+		return nil
+	}
+
+	if err := d.unlockedDelete(id); err != nil {
+		d.Unlock()
+
+		return err
+	}
+
+	if err := d.unlockedWrite(id, data, mapId); err != nil {
+		return err
+	}
+
+	d.Unlock()
+
+	return nil
 }
 
 // shutdown does not do anything for now until I decide what to do with multiple drivers
@@ -225,7 +247,7 @@ func (d *db) writeIndex(id int, mapIdx uint16, offset int64) Error {
 	}
 
 	// r operation, add COMPUTED index to the index map
-	d.IdLookupMap[id] = [2]uint16{uint16(d.AutoIncrementCounter % blockMark), mapIdx}
+	d.IdLookupMap[id] = mapIdx
 
 	d.Index[id] = offset
 
@@ -243,9 +265,48 @@ func (d *db) writeOnDefragmentation(id int, v []uint8, mapIdx uint16) Error {
 	}
 
 	// r operation, add COMPUTED index to the index map
-	d.IdLookupMap[id] = [2]uint16{uint16(d.AutoIncrementCounter % blockMark), mapIdx}
+	d.IdLookupMap[id] = mapIdx
 
 	_, _, err := d.WriteDriver.Save(prepareData(id, v), mapIdx)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (d *db) unlockedDelete(id int) Error {
+	mapId, ok := d.IdLookupMap[id]
+
+	if !ok {
+		return nil
+	}
+
+	idx, ok := d.Index[id]
+
+	if !ok {
+		return &dbIntegrityError{
+			Code:    DbIntegrityViolationCode,
+			Message: fmt.Sprintf("Index integrity violation. Index for ID %d does not exist. Please, restart Rose and try again", id),
+		}
+	}
+
+	err := d.deleteFromFs(id, mapId, idx)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (d *db) unlockedWrite(id int, data []uint8, mapId uint16) Error {
+	// r operation, add COMPUTED index to the index map
+	bytesWritten, size, err := d.saveOnFs(id, data, mapId)
+	offset := size - bytesWritten
+
+	d.Index[id] = offset
 
 	if err != nil {
 		return err
@@ -259,8 +320,8 @@ PRIVATE METHOD. DO NOT USE IN CLIENT CODE
 
 Save the data on the filesystem
 */
-func (d *db) saveOnFs(id int, v []uint8) (int64, int64, Error) {
-	return d.WriteDriver.Save(prepareData(id, v), d.CurrMapIdx)
+func (d *db) saveOnFs(id int, v []uint8, mapId uint16) (int64, int64, Error) {
+	return d.WriteDriver.Save(prepareData(id, v), mapId)
 }
 
 func (d *db) deleteFromFs(id int, mapIdx uint16, idx int64) Error {
@@ -277,7 +338,7 @@ func (d *db) init() {
 	d.AutoIncrementCounter = 0
 	d.BlockIdFactory = newBlockIdFactory()
 
-	d.IdLookupMap = make(map[int][2]uint16)
+	d.IdLookupMap = make(map[int]uint16)
 
 	d.CurrMapIdx = 0
 }
