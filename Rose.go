@@ -131,6 +131,10 @@ func (a *Rose) NewCollection(name string) Error {
 }
 
 func (a *Rose) Write(m WriteMetadata) (*AppResult, Error) {
+	if err := m.Validate(); err != nil {
+		return nil, err
+	}
+
 	if err := validateData(m.Data); err != nil {
 		return nil, err
 	}
@@ -159,6 +163,10 @@ func (a *Rose) Write(m WriteMetadata) (*AppResult, Error) {
 }
 
 func (a *Rose) Read(m ReadMetadata) (*AppResult, Error) {
+	if err := m.Validate(); err != nil {
+		return nil, err
+	}
+
 	db, ok := a.Databases[m.CollectionName]
 
 	if !ok {
@@ -190,6 +198,10 @@ func (a *Rose) Read(m ReadMetadata) (*AppResult, Error) {
 }
 
 func (a *Rose) Delete(m DeleteMetadata) (*AppResult, Error) {
+	if err := m.Validate(); err != nil {
+		return nil, err
+	}
+
 	db, ok := a.Databases[m.CollectionName]
 
 	if !ok {
@@ -218,6 +230,14 @@ func (a *Rose) Delete(m DeleteMetadata) (*AppResult, Error) {
 		Method: DeleteMethodType,
 		Status: DeletedResultStatus,
 	}, nil
+}
+
+func (a *Rose) Replace(m ReplaceMetadata) Error {
+	if err := m.Validate(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (a *Rose) Size() (uint64, Error) {

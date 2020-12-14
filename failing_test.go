@@ -53,7 +53,7 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 			res, err := a.Read(ReadMetadata{
 				CollectionName: "not_exists",
 				ID:             0,
-				Data:           nil,
+				Data:           []uint8("ksdljfčlasjdfklsadfj"),
 			})
 
 			gomega.Expect(err).To(gomega.Not(gomega.BeNil()))

@@ -69,5 +69,31 @@ var _ = GinkgoDescribe("Metadata tests", func() {
 		gomega.Expect(err.Type()).To(gomega.Equal(validationErrorType))
 		gomega.Expect(err.Error()).To(gomega.Equal("Code: 6, Message: Validation error. Invalid collection name. Collection name cannot be an empty string"))
 	})
+
+	GinkgoIt("Should validate ReplaceMetadata", func() {
+		m := ReplaceMetadata{
+			CollectionName: "",
+		}
+
+		err := m.Validate()
+
+		gomega.Expect(err).To(gomega.Not(gomega.BeNil()))
+		gomega.Expect(err.GetCode()).To(gomega.Equal(ValidationErrorCode))
+		gomega.Expect(err.Type()).To(gomega.Equal(validationErrorType))
+		gomega.Expect(err.Error()).To(gomega.Equal("Code: 6, Message: Validation error. Invalid collection name. Collection name cannot be an empty string"))
+
+		m = ReplaceMetadata{
+			CollectionName: "coll_name",
+			ID: 0,
+			Data: []uint8{},
+		}
+
+		err = m.Validate()
+
+		gomega.Expect(err).To(gomega.Not(gomega.BeNil()))
+		gomega.Expect(err.GetCode()).To(gomega.Equal(ValidationErrorCode))
+		gomega.Expect(err.Type()).To(gomega.Equal(validationErrorType))
+		gomega.Expect(err.Error()).To(gomega.Equal("Code: 6, Message: Validation error. Invalid replace method data. Data is empty. Data must be a non empty byte array"))
+	})
 })
 

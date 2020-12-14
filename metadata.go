@@ -20,6 +20,12 @@ type DeleteMetadata struct {
 	ID int
 }
 
+type ReplaceMetadata struct {
+	CollectionName string
+	ID int
+	Data []uint8
+}
+
 func (m WriteMetadata) Validate() Error {
 	if m.CollectionName == "" {
 		return &validationError{
@@ -39,6 +45,31 @@ func (m WriteMetadata) Validate() Error {
 		return &validationError{
 			Code:    ValidationErrorCode,
 			Message: "Validation error. Invalid write method data. Data is empty. Data must be a non empty byte array",
+		}
+	}
+
+	return nil
+}
+
+func (m ReplaceMetadata) Validate() Error {
+	if m.CollectionName == "" {
+		return &validationError{
+			Code:    ValidationErrorCode,
+			Message: "Validation error. Invalid collection name. Collection name cannot be an empty string",
+		}
+	}
+
+	if m.Data == nil {
+		return &validationError{
+			Code:    ValidationErrorCode,
+			Message: "Validation error. Invalid replace method data. Data is empty. Data must be a non empty byte array",
+		}
+	}
+
+	if len(m.Data) == 0 {
+		return &validationError{
+			Code:    ValidationErrorCode,
+			Message: "Validation error. Invalid replace method data. Data is empty. Data must be a non empty byte array",
 		}
 	}
 
