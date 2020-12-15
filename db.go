@@ -33,7 +33,6 @@ type db struct {
 	Index                map[int]int64
 	AutoIncrementCounter int
 	CurrMapIdx           uint16
-	BlockIdFactory       *blockIdFactory
 	sync.RWMutex
 
 	WriteDriver *fsDriver
@@ -90,9 +89,7 @@ func (d *db) Write(data []uint8) (int, int, Error) {
 		return 0, 0, err
 	}
 
-	blockIdx := d.BlockIdFactory.Next()
-
-	if blockIdx == blockMark {
+	if id != 0 && id % blockMark == 0 {
 		d.CurrMapIdx++
 	}
 
@@ -336,7 +333,6 @@ func (d *db) init() {
 	d.InternalDb[0] = &[3000]*[]uint8{}
 	d.Index = make(map[int]int64)
 	d.AutoIncrementCounter = 0
-	d.BlockIdFactory = newBlockIdFactory()
 
 	d.IdLookupMap = make(map[int]uint16)
 
