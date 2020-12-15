@@ -571,4 +571,77 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 		testRemoveFileSystemDb(roseDir())
 	})
+
+	GinkgoIt("Should replace documents concurrently", func() {
+		a := testCreateRose(false)
+		collName := testCreateCollection(a, "coll_one")
+		n := 3000
+
+		oneIds := [3000]int{}
+		insert := func(ids *[3000]int, collName string) {
+			for i := 0; i < n; i++ {
+				go func(ids *[3000]int, collName string, i int) {
+					defer ginkgo.GinkgoRecover()
+					value := fmt.Sprintf("value-%d", i)
+					s := testAsJson(value)
+
+					res, err := a.Write(WriteMetadata{Data: s, CollectionName: collName})
+
+					gomega.Expect(err).To(gomega.BeNil())
+
+					ids[i] = res.ID
+				}(ids, collName, i)
+			}
+		}
+
+		updated := [1500]int{}
+		replace := func(updated *[1500]int, collName string) {
+			for i := 0; i < 1500; i++ {
+				go func(updated *[1500]int, collName string, i int) {
+					defer ginkgo.GinkgoRecover()
+					value := "value-updated"
+					s := testAsJson(value)
+
+					res, err := a.Replace(ReplaceMetadata{Data: s, CollectionName: collName, ID: i})
+
+					gomega.Expect(err).To(gomega.BeNil())
+					gomega.Expect(res.Method).To(gomega.Equal(ReplaceMethodType))
+					gomega.Expect(res.Status).To(gomega.Equal(ReplacedResultStatus))
+
+					updated[i] = res.ID
+				}(updated, collName, i)
+			}
+		}
+
+		insert(&oneIds, collName)
+
+		time.Sleep(2 * time.Second)
+
+		replace(&updated, collName)
+
+		time.Sleep(5 * time.Second)
+
+		for i := 0; i < 1500; i++ {
+			s := ""
+			res := testSingleRead(ReadMetadata{
+				CollectionName: collName,
+				ID:             i,
+				Data:           &s,
+			}, a)
+
+			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
+			gomega.Expect(s).To(gomega.Equal("value-updated"))
+		}
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
 })

@@ -26,7 +26,7 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		dirs, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", roseDbDir(), collName))
 
 		gomega.Expect(err).To(gomega.BeNil())
-		gomega.Expect(len(dirs)).To(gomega.Equal(n / 3000 + 1))
+		gomega.Expect(len(dirs)).To(gomega.Equal(n / blockMark + 1))
 
 		testRemoveFileSystemDb(roseDir())
 	})
@@ -152,7 +152,7 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		n = 50000
 		testMultipleConcurrentInsert(n, testAsJson("sdlčfjasdfjksaldf"), r, collName)
 
-		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(20)))
+		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(18)))
 		gomega.Expect(m.AutoIncrementCounter).To(gomega.Equal(60000))
 
 		if err := r.Shutdown(); err != nil {

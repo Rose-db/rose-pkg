@@ -24,7 +24,7 @@ var _ = GinkgoDescribe("Misc tests", func() {
 
 			condition := false
 
-			if id > 2999 {
+			if id > blockMark {
 				condition = false
 			} else {
 				condition = true
@@ -37,7 +37,7 @@ var _ = GinkgoDescribe("Misc tests", func() {
 
 			iterations++
 
-			if currId > 2999 {
+			if currId > blockMark {
 				currId = 0
 			}
 		}
