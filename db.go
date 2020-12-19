@@ -32,7 +32,6 @@ type db struct {
 	IdLookupMap          map[int]uint16
 	Index                map[int]int64
 	AutoIncrementCounter int
-	CurrMapIdx           uint16
 	sync.RWMutex
 
 	WriteDriver *fsDriver
@@ -75,10 +74,12 @@ func (d *db) Write(data []uint8) (int, int, Error) {
 		}
 	}
 
-	// r operation, add COMPUTED index to the index map
-	d.IdLookupMap[id] = d.CurrMapIdx
+	mapId := uint16(id / blockMark)
 
-	bytesWritten, size, err := d.saveOnFs(id, data, d.CurrMapIdx)
+	// r operation, add COMPUTED index to the index map
+	d.IdLookupMap[id] = mapId
+
+	bytesWritten, size, err := d.saveOnFs(id, data, mapId)
 	offset := size - bytesWritten
 
 	d.Index[id] = offset
@@ -87,10 +88,6 @@ func (d *db) Write(data []uint8) (int, int, Error) {
 		d.Unlock()
 
 		return 0, 0, err
-	}
-
-	if id != 0 && id % blockMark == 0 {
-		d.CurrMapIdx++
 	}
 
 	d.AutoIncrementCounter += 1
@@ -335,6 +332,4 @@ func (d *db) init() {
 	d.AutoIncrementCounter = 0
 
 	d.IdLookupMap = make(map[int]uint16)
-
-	d.CurrMapIdx = 0
 }

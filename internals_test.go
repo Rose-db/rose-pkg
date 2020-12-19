@@ -42,8 +42,6 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 
 		testMultipleConcurrentInsert(n, []uint8{}, r, collName)
 
-		// since block index starts at 0, expected must be 3
-		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(3)))
 		assertIndexIntegrity(m, n)
 
 		if err := r.Shutdown(); err != nil {
@@ -66,7 +64,6 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		ids := testMultipleConcurrentInsert(n, testAsJson("sdlčfjasdfjksaldf"), r, collName)
 
 		// since block index starts at 0, expected must be 3
-		gomega.Expect(r.Databases[collName].CurrMapIdx).To(gomega.Equal(uint16(3)))
 		assertIndexIntegrity(r.Databases[collName], n)
 
 		zerosDeleted := 0
@@ -98,7 +95,6 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 
 		wg.Wait()
 
-		gomega.Expect(r.Databases[collName].CurrMapIdx).To(gomega.Equal(uint16(3)))
 		assertIndexIntegrity(r.Databases[collName], 0)
 
 		if err := r.Shutdown(); err != nil {
@@ -120,9 +116,6 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		m := r.Databases[collName]
 
 		ids := testMultipleConcurrentInsert(n, testAsJson("sdlčfjasdfjksaldf"), r, collName)
-
-		// since block index starts at 0, expected must be 3
-		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(3)))
 
 		assertIndexIntegrity(m, n)
 
@@ -146,13 +139,11 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		wg.Wait()
 
 		gomega.Expect(m.AutoIncrementCounter).To(gomega.Equal(n))
-		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(3)))
 		assertIndexIntegrity(m, 0)
 
 		n = 50000
 		testMultipleConcurrentInsert(n, testAsJson("sdlčfjasdfjksaldf"), r, collName)
 
-		gomega.Expect(m.CurrMapIdx).To(gomega.Equal(uint16(18)))
 		gomega.Expect(m.AutoIncrementCounter).To(gomega.Equal(60000))
 
 		if err := r.Shutdown(); err != nil {

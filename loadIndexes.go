@@ -67,8 +67,6 @@ func loadIndexes(dbs map[string]*db) Error {
 				return &dbIntegrityError{Code: DbIntegrityViolationCode, Message: err.Error()}
 			}
 		}
-
-		db.CurrMapIdx = uint16(len(files)) - 1
 	}
 
 	return nil
