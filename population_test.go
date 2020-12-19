@@ -277,7 +277,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 		for _, id := range ids {
 			// skip one
-			if id == 0 {
+			if id == 1 {
 				continue
 			}
 

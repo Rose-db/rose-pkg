@@ -192,6 +192,7 @@ func (a *Rose) Read(m ReadMetadata) (*AppResult, Error) {
 	}
 
 	return &AppResult{
+		ID: m.ID,
 		Method: ReadMethodType,
 		Status: FoundResultStatus,
 	}, nil

@@ -78,6 +78,13 @@ func (fs *fsDb) Read(offset int64) (*[]uint8, Error) {
 		return nil, e
 	}
 
+	if data == nil {
+		return nil, &dbIntegrityError{
+			Code:    DbIntegrityViolationCode,
+			Message: "Document not found",
+		}
+	}
+
 	return &data.val, nil
 }
 

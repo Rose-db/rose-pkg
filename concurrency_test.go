@@ -337,7 +337,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 		for i := 0; i < n; i++ {
 			go func(i int) {
 				s := ""
-				res, err := a.Read(ReadMetadata{ID: i, CollectionName: collName, Data: &s})
+				res, err := a.Read(ReadMetadata{ID: i + 1, CollectionName: collName, Data: &s})
 
 				gomega.Expect(err).To(gomega.BeNil())
 				gomega.Expect(s).To(gomega.Equal(fmt.Sprintf("value-%d", i)))
@@ -385,7 +385,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 		appResults := [10000]*AppResult{}
 		for i := 0; i < n; i++ {
 			go func(i int) {
-				res, err := a.Delete(DeleteMetadata{ID: i, CollectionName: collName})
+				res, err := a.Delete(DeleteMetadata{ID: i + 1, CollectionName: collName})
 
 				gomega.Expect(err).To(gomega.BeNil())
 
@@ -582,6 +582,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			for i := 0; i < n; i++ {
 				go func(ids *[3000]int, collName string, i int) {
 					defer ginkgo.GinkgoRecover()
+
 					value := fmt.Sprintf("value-%d", i)
 					s := testAsJson(value)
 
@@ -599,10 +600,11 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			for i := 0; i < 1500; i++ {
 				go func(updated *[1500]int, collName string, i int) {
 					defer ginkgo.GinkgoRecover()
+
 					value := "value-updated"
 					s := testAsJson(value)
 
-					res, err := a.Replace(ReplaceMetadata{Data: s, CollectionName: collName, ID: i})
+					res, err := a.Replace(ReplaceMetadata{Data: s, CollectionName: collName, ID: i + 1})
 
 					gomega.Expect(err).To(gomega.BeNil())
 					gomega.Expect(res.Method).To(gomega.Equal(ReplaceMethodType))
@@ -625,7 +627,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			s := ""
 			res := testSingleRead(ReadMetadata{
 				CollectionName: collName,
-				ID:             i,
+				ID:             i + 1,
 				Data:           &s,
 			}, a)
 

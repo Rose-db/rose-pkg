@@ -138,13 +138,13 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 
 		wg.Wait()
 
-		gomega.Expect(m.AutoIncrementCounter).To(gomega.Equal(n))
+		gomega.Expect(m.AutoIncrementCounter).To(gomega.Equal(n + 1))
 		assertIndexIntegrity(m, 0)
 
 		n = 50000
 		testMultipleConcurrentInsert(n, testAsJson("sdlčfjasdfjksaldf"), r, collName)
 
-		gomega.Expect(m.AutoIncrementCounter).To(gomega.Equal(60000))
+		gomega.Expect(m.AutoIncrementCounter).To(gomega.Equal(60000 + 1))
 
 		if err := r.Shutdown(); err != nil {
 			testRemoveFileSystemDb(roseDir())
