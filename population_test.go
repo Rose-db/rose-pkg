@@ -5,6 +5,8 @@ import (
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
 	"io/ioutil"
+	"math/rand"
+	"time"
 )
 
 var _ = GinkgoDescribe("Population tests and integrity tests", func() {
@@ -414,6 +416,54 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 			gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
+		}
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
+
+	GinkgoIt("Should read all values with bytes disparity", func() {
+		a := testCreateRose(false)
+		collName := testCreateCollection(a, "coll")
+		n := 10000
+
+		max := 1000
+		min := 1
+
+		idValue := make(map[int]string)
+		for i := 0; i < n; i++ {
+			rand.Seed(time.Now().UnixNano())
+
+			r := rand.Intn(max - min) + min
+
+			val := ""
+			for i := 0; i < r; i++ {
+				val += fmt.Sprintf("%d", i)
+			}
+
+			res := testSingleConcurrentInsert(WriteMetadata{Data: testAsJson(val), CollectionName: collName}, a)
+
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
+
+			idValue[res.ID] = val
+		}
+
+		for id, value := range idValue {
+			t := ""
+			res := testSingleRead(ReadMetadata{ID: id, Data: &t, CollectionName: collName}, a)
+
+			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
+			
+			gomega.Expect(t).To(gomega.Equal(value))
 		}
 
 		if err := a.Shutdown(); err != nil {
