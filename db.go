@@ -63,6 +63,7 @@ func (d *db) Write(data []uint8) (int, int, Error) {
 	d.Lock()
 
 	id := d.AutoIncrementCounter
+	d.AutoIncrementCounter += 1
 
 	// check if the entry already exists
 	if _, ok := d.IdLookupMap[id]; ok {
@@ -84,15 +85,11 @@ func (d *db) Write(data []uint8) (int, int, Error) {
 
 	d.Index[id] = offset
 
-	if err != nil {
-		d.Unlock()
+	d.Unlock()
 
+	if err != nil {
 		return 0, 0, err
 	}
-
-	d.AutoIncrementCounter += 1
-
-	d.Unlock()
 
 	return NormalExecutionStatus, id, nil
 }
@@ -119,18 +116,16 @@ func (d *db) Delete(id int) (bool, Error) {
 		}
 	}
 
-	err := d.deleteFromFs(id, mapId, idx)
-
-	if err != nil {
-		d.Unlock()
-
-		return false, err
-	}
-
 	delete(d.IdLookupMap, id)
 	delete(d.Index, id)
 
+	err := d.deleteFromFs(id, mapId, idx)
+
 	d.Unlock()
+
+	if err != nil {
+		return false, err
+	}
 
 	return true, nil
 }
@@ -150,9 +145,9 @@ func (d *db) Read(id int, data interface{}) (*dbReadResult, Error) {
 
 	b, err := d.ReadDriver.Read(index, mapId)
 
-	if err != nil {
-		d.Unlock()
+	d.Unlock()
 
+	if err != nil {
 		return nil, &dbIntegrityError{
 			Code:    DbIntegrityViolationCode,
 			Message: fmt.Sprintf("An error occurred while trying to read driver: %s", err.Error()),
@@ -162,15 +157,11 @@ func (d *db) Read(id int, data interface{}) (*dbReadResult, Error) {
 	e := json.Unmarshal(*b, data)
 
 	if e != nil {
-		d.Unlock()
-
 		return nil, &systemError{
 			Code:    SystemErrorCode,
 			Message: fmt.Sprintf("Cannot unmarshal JSON string. This can be a bug with Rose or an invalid document. Try deleting and write the document again. The underlying error is: %s", e.Error()),
 		}
 	}
-
-	d.Unlock()
 
 	return &dbReadResult{
 		ID:     id,
