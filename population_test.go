@@ -462,7 +462,7 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
-			
+
 			gomega.Expect(t).To(gomega.Equal(value))
 		}
 
