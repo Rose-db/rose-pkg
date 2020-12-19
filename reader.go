@@ -43,7 +43,7 @@ func NewLineReader(r *os.File) *lineReader {
 	return &lineReader{
 		reader: r,
 		internalReader: a,
-		buf: make([]uint8, 1),
+		buf: make([]uint8, 0),
 	}
 }
 /**
@@ -71,7 +71,7 @@ func (s *lineReader) Read() (int64, *lineReaderData, bool, Error) {
 
 	//s.offset += int64(len(s.buf) + 1)
 
-	s.buf = make([]uint8, 1)
+	s.buf = make([]uint8, 0)
 
 	return offset, d, true, nil
 }
@@ -138,7 +138,7 @@ func (s *lineReader) populateBuffer() (int64, bool, Error) {
 		if len(d) == 9 && d == delMark {
 			skip = true
 			d = ""
-			s.buf = make([]uint8, 1)
+			s.buf = make([]uint8, 0)
 
 			continue
 		}
@@ -146,7 +146,7 @@ func (s *lineReader) populateBuffer() (int64, bool, Error) {
 		s.buf = appendByte(s.buf, b)
 	}
 
-	s.buf = s.buf[1:]
+	//s.buf = s.buf[1:]
 
 	return offset, true, nil
 }
