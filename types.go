@@ -40,7 +40,7 @@ const writeDriver driverType = 1
 const updateDriver driverType = 2
 
 // 16MB
-const maxValSize = 16000000
+const maxValSize = 5000000
 
 const timeoutIteration = 200
 const timeoutInterval = 50

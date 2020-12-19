@@ -45,7 +45,7 @@ func validateData(data []uint8) Error {
 	if l > maxValSize {
 		return &dataError{
 			Code:    DataErrorCode,
-			Message: fmt.Sprintf("Data cannot be larger than 16000000 bytes (16MB), %d bytes given", l),
+			Message: fmt.Sprintf("Data cannot be larger than %d bytes (16MB), %d bytes given", maxValSize, l),
 		}
 	}
 
