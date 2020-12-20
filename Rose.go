@@ -176,7 +176,7 @@ func (a *Rose) Read(m ReadMetadata) (*AppResult, Error) {
 		}
 	}
 
-	res, err := db.Read(m.ID, m.Data)
+	res, err := db.ReadStrategic(m.ID, m.Data)
 
 	if res == nil && err == nil {
 		return &AppResult{

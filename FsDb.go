@@ -59,7 +59,7 @@ func (fs *fsDb) Write(d []uint8) (int64, int64, Error) {
 	return int64(len(d)), fs.Size, nil
 }
 
-func (fs *fsDb) Read(offset int64) (*[]uint8, Error) {
+func (fs *fsDb) ReadStrategic(offset int64) (*[]uint8, Error) {
 	_, err := fs.File.Seek(offset, 0)
 
 	if err != nil {

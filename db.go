@@ -93,7 +93,7 @@ func (d *db) Delete(id int) (bool, Error) {
 	return true, nil
 }
 
-func (d *db) Read(id int, data interface{}) (*dbReadResult, Error) {
+func (d *db) ReadStrategic(id int, data interface{}) (*dbReadResult, Error) {
 	d.Lock()
 
 	index, ok := d.Index[id]
@@ -106,7 +106,7 @@ func (d *db) Read(id int, data interface{}) (*dbReadResult, Error) {
 
 	mapId := uint16(id / blockMark)
 
-	b, err := d.ReadDriver.Read(index, mapId)
+	b, err := d.ReadDriver.ReadStrategic(index, mapId)
 
 	d.Unlock()
 
