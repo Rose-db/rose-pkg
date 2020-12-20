@@ -95,9 +95,8 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 		for i := 0; i < n; i++ {
 			s := testAsJson(testString)
 
-			res, err := a.Write(WriteMetadata{Data: s, CollectionName: collName})
+			res := testSingleConcurrentInsert(WriteMetadata{Data: s, CollectionName: collName}, a)
 
-			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 
