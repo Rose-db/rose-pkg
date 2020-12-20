@@ -146,8 +146,6 @@ func (s *lineReader) populateBuffer() (int64, bool, Error) {
 		s.buf = appendByte(s.buf, b)
 	}
 
-	//s.buf = s.buf[1:]
-
 	return offset, true, nil
 }
 
