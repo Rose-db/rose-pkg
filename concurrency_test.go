@@ -574,12 +574,12 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 	GinkgoIt("Should replace documents concurrently", func() {
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll_one")
-		n := 3000
+		n := 12321
 
-		oneIds := [3000]int{}
-		insert := func(ids *[3000]int, collName string) {
+		oneIds := [12321]int{}
+		insert := func(ids *[12321]int, collName string) {
 			for i := 0; i < n; i++ {
-				go func(ids *[3000]int, collName string, i int) {
+				go func(ids *[12321]int, collName string, i int) {
 					defer ginkgo.GinkgoRecover()
 
 					value := fmt.Sprintf("value-%d", i)
@@ -594,10 +594,10 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			}
 		}
 
-		updated := [1500]int{}
-		replace := func(updated *[1500]int, collName string) {
-			for i := 0; i < 1500; i++ {
-				go func(updated *[1500]int, collName string, i int) {
+		updated := [12321]int{}
+		replace := func(updated *[12321]int, collName string) {
+			for i := 0; i < 12321; i++ {
+				go func(updated *[12321]int, collName string, i int) {
 					defer ginkgo.GinkgoRecover()
 
 					value := "value-updated"
@@ -622,7 +622,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 		time.Sleep(5 * time.Second)
 
-		for i := 0; i < 1500; i++ {
+		for i := 0; i < 12321; i++ {
 			s := ""
 			res := testSingleRead(ReadMetadata{
 				CollectionName: collName,

@@ -9,6 +9,151 @@ import (
 )
 
 var _ = GinkgoDescribe("Internal Memory DB tests", func() {
+	GinkgoIt("Should inspect block tracker in multiple collections", func() {
+		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
+		a := testCreateRose(false)
+		collOne := testCreateCollection(a, "coll_one")
+		collTwo := testCreateCollection(a, "coll_two")
+		collThree := testCreateCollection(a, "coll_three")
+
+		collections := []string{collOne, collTwo, collThree}
+
+		n := 10000
+
+		for _, collName := range collections {
+			for i := 0; i < n; i++ {
+				res := testSingleConcurrentInsert(WriteMetadata{Data: s, CollectionName: collName}, a)
+
+				gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+				gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
+			}
+
+			dirs, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", roseDbDir(), collName))
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(len(dirs)).To(gomega.Equal(n / blockMark + 1))
+
+			db := a.Databases[collOne]
+
+			gomega.Expect(len(db.BlockTracker)).To(gomega.Equal(4))
+
+			_, ok := db.BlockTracker[0]
+			gomega.Expect(ok).To(gomega.Equal(true))
+
+			_, ok = db.BlockTracker[1]
+			gomega.Expect(ok).To(gomega.Equal(true))
+
+			_, ok = db.BlockTracker[2]
+			gomega.Expect(ok).To(gomega.Equal(true))
+
+			_, ok = db.BlockTracker[3]
+			gomega.Expect(ok).To(gomega.Equal(true))
+		}
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
+
+	GinkgoIt("Should inspect block tracker deletes", func() {
+		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
+		a := testCreateRose(false)
+		collName := testCreateCollection(a, "coll")
+
+		n := 3000
+
+		ids := [blockMark]int{}
+		for i := 0; i < n; i++ {
+			res := testSingleConcurrentInsert(WriteMetadata{Data: s, CollectionName: collName}, a)
+
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
+
+			ids[i] = res.ID
+		}
+
+		for i := 0; i < 1500; i++ {
+			res := testSingleDelete(DeleteMetadata{
+				CollectionName: collName,
+				ID:             ids[i],
+			}, a)
+
+			gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
+		}
+
+		db := a.Databases[collName]
+
+		gomega.Expect(len(db.BlockTracker)).To(gomega.Equal(1))
+
+		track := db.BlockTracker[0]
+
+		gomega.Expect(track[1]).To(gomega.Equal(uint16(1500)))
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
+
+	GinkgoIt("Should inspect block tracker replace", func() {
+		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
+		a := testCreateRose(false)
+		collName := testCreateCollection(a, "coll")
+
+		n := 3000
+
+		ids := [blockMark]int{}
+		for i := 0; i < n; i++ {
+			res := testSingleConcurrentInsert(WriteMetadata{Data: s, CollectionName: collName}, a)
+
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
+
+			ids[i] = res.ID
+		}
+
+		for i := 0; i < 1500; i++ {
+			res := testSingleReplace(ReplaceMetadata{
+				CollectionName: collName,
+				ID:             ids[i],
+				Data: testAsJson("update"),
+			}, a)
+
+			gomega.Expect(res.Status).To(gomega.Equal(ReplacedResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(ReplaceMethodType))
+		}
+
+		db := a.Databases[collName]
+
+		gomega.Expect(len(db.BlockTracker)).To(gomega.Equal(1))
+
+		track := db.BlockTracker[0]
+
+		gomega.Expect(track[1]).To(gomega.Equal(uint16(177)))
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
+
 	GinkgoIt("Should assert block number based on different write numbers", func() {
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 		a := testCreateRose(false)
@@ -27,6 +172,14 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(len(dirs)).To(gomega.Equal(n / blockMark + 1))
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
 
 		testRemoveFileSystemDb(roseDir())
 	})

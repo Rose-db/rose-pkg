@@ -36,7 +36,7 @@ var createDatabases = func() (map[string]*db, Error) {
 		collName := d.Name()
 		driverDir := fmt.Sprintf("%s/%s", roseDbDir(), collName)
 
-		m := newDb(newFsDriver(driverDir, writeDriver), newFsDriver(driverDir, updateDriver), newFsDriver(driverDir, updateDriver))
+		m := newDb(newFsDriver(driverDir, writeDriver), newFsDriver(driverDir, updateDriver), newFsDriver(driverDir, updateDriver), collName)
 
 		collections[collName] = m
 	}
@@ -125,7 +125,7 @@ func (a *Rose) NewCollection(name string) Error {
 		return e
 	}
 
-	a.Databases[name] = newDb(newFsDriver(collDir, writeDriver), newFsDriver(collDir, updateDriver), newFsDriver(collDir, updateDriver))
+	a.Databases[name] = newDb(newFsDriver(collDir, writeDriver), newFsDriver(collDir, updateDriver), newFsDriver(collDir, updateDriver), name)
 
 	return nil
 }

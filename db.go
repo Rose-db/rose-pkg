@@ -16,6 +16,9 @@ type dbReadResult struct {
 type db struct {
 	Index                map[int]int64
 	AutoIncrementCounter int
+	BlockTracker map[uint16][2]uint16
+	Name string
+	InDefragmentation bool
 	sync.RWMutex
 
 	WriteDriver *fsDriver
@@ -23,11 +26,12 @@ type db struct {
 	DeleteDriver *fsDriver
 }
 
-func newDb(write *fsDriver, read *fsDriver, delete *fsDriver) *db {
+func newDb(write *fsDriver, read *fsDriver, delete *fsDriver, name string) *db {
 	d := &db{
 		WriteDriver: write,
 		ReadDriver: read,
 		DeleteDriver: delete,
+		Name: name,
 	}
 
 	d.init()
@@ -51,18 +55,31 @@ func (d *db) Write(data []uint8) (int, int, Error) {
 		}
 	}
 
-	mapId := uint16(id / blockMark)
+	mapId := d.getBlockId(id)
 
 	bytesWritten, size, err := d.saveOnFs(id, data, mapId)
-	offset := size - bytesWritten
-
-	d.Index[id] = offset
-
-	d.Unlock()
 
 	if err != nil {
 		return 0, 0, err
 	}
+
+	offset := size - bytesWritten
+
+	d.Index[id] = offset
+
+	track, ok := d.BlockTracker[mapId]
+
+	if !ok {
+		t := [2]uint16{}
+
+		track = t
+	}
+
+	track[0] += 1
+
+	d.BlockTracker[mapId] = track
+
+	d.Unlock()
 
 	return NormalExecutionStatus, id, nil
 }
@@ -70,7 +87,7 @@ func (d *db) Write(data []uint8) (int, int, Error) {
 func (d *db) Delete(id int) (bool, Error) {
 	d.Lock()
 
-	mapId := uint16(id / blockMark)
+	blockId := d.getBlockId(id)
 
 	idx, ok := d.Index[id]
 
@@ -82,13 +99,36 @@ func (d *db) Delete(id int) (bool, Error) {
 
 	delete(d.Index, id)
 
-	err := d.deleteFromFs(id, mapId, idx)
+	err := d.deleteFromFs(id, blockId, idx)
 
-	d.Unlock()
+	track, _ := d.BlockTracker[blockId]
+
+	track[1] += 1
+
+	d.BlockTracker[blockId] = track
+
+	if track[1] == defragmentMark {
+		indexes, err := d.tryDefragmentation(blockId)
+
+		if err != nil {
+			return false, err
+		}
+
+		var size int64 = 0
+		for i, index := range indexes {
+			size += index
+
+			d.Index[i] = index
+		}
+	}
 
 	if err != nil {
+		d.Unlock()
+
 		return false, err
 	}
+
+	d.Unlock()
 
 	return true, nil
 }
@@ -104,7 +144,7 @@ func (d *db) ReadStrategic(id int, data interface{}) (*dbReadResult, Error) {
 		return nil, nil
 	}
 
-	mapId := uint16(id / blockMark)
+	mapId := d.getBlockId(id)
 
 	b, err := d.ReadDriver.ReadStrategic(index, mapId)
 
@@ -140,6 +180,14 @@ func (d *db) ReadStrategic(id int, data interface{}) (*dbReadResult, Error) {
 func (d *db) Replace(id int, data []uint8) Error {
 	d.Lock()
 
+	if d.InDefragmentation {
+		for {
+			if !d.InDefragmentation {
+				break
+			}
+		}
+	}
+
 	_, ok := d.Index[id]
 
 	if !ok {
@@ -148,17 +196,68 @@ func (d *db) Replace(id int, data []uint8) Error {
 		return nil
 	}
 
-	mapId := uint16(id / blockMark)
+	blockId := d.getBlockId(id)
 
-	if err := d.unlockedDelete(id, mapId); err != nil {
+	if err := d.unlockedDelete(id, blockId); err != nil {
 		d.Unlock()
 
 		return err
 	}
 
-	if err := d.unlockedWrite(id, data, mapId); err != nil {
+	if err := d.unlockedWrite(id, data, blockId); err != nil {
+		d.Unlock()
+
 		return err
 	}
+
+	track, _ := d.BlockTracker[blockId]
+
+	track[1] += 1
+
+	d.BlockTracker[blockId] = track
+
+	if track[1] == defragmentMark {
+		d.InDefragmentation = true
+
+		indexes, err := d.tryDefragmentation(blockId)
+
+		if err != nil {
+			d.InDefragmentation = false
+
+			d.Unlock()
+
+			return err
+		}
+
+		for i, index := range indexes {
+			d.Index[i] = index
+		}
+
+		if err := d.WriteDriver.reload(); err != nil {
+			d.Unlock()
+
+			return err
+		}
+
+		if err := d.ReadDriver.reload(); err != nil {
+			d.Unlock()
+
+			return err
+		}
+
+		if err := d.DeleteDriver.reload(); err != nil {
+			d.Unlock()
+
+			return err
+		}
+
+		track, _ := d.BlockTracker[blockId]
+		track[1] = 0
+
+		d.BlockTracker[blockId] = track
+	}
+
+	d.InDefragmentation = false
 
 	d.Unlock()
 
@@ -266,7 +365,23 @@ func (d *db) deleteFromFs(id int, mapIdx uint16, idx int64) Error {
 	return d.DeleteDriver.MarkStrategicDeleted(idByte, []uint8(delMark), mapIdx, idx)
 }
 
+func (d *db) getBlockId(id int) uint16 {
+	return uint16(id / blockMark)
+}
+
+func (d *db) tryDefragmentation(blockId uint16) (map[int]int64, Error) {
+	indexes, err := defragmentBlock(blockId, d.Name)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return indexes, nil
+}
+
 func (d *db) init() {
 	d.Index = make(map[int]int64)
 	d.AutoIncrementCounter = 1
+	d.BlockTracker = make(map[uint16][2]uint16)
+	d.InDefragmentation = false
 }

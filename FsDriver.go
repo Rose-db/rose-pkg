@@ -97,3 +97,15 @@ func (d *fsDriver) loadHandler(mapIdx uint16) Error {
 
 	return nil
 }
+
+func (d *fsDriver) reload() Error {
+	if err := d.Shutdown(); err != nil {
+		return err
+	}
+
+	if err := d.loadHandler(d.HandlerIdx); err != nil {
+		return err
+	}
+
+	return nil
+}

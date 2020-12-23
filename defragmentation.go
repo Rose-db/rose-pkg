@@ -3,6 +3,7 @@ package rose
 import (
 	"fmt"
 	"github.com/cheggaaa/pb/v3"
+	"github.com/juju/fslock"
 	"io"
 	"io/ioutil"
 	"os"
@@ -10,6 +11,135 @@ import (
 	"strings"
 	"time"
 )
+
+func defragmentBlock(blockId uint16, collName string) (map[int]int64, Error) {
+	collDir := fmt.Sprintf("%s/%s", roseDbDir(), collName)
+	origFileName := roseBlockFile(blockId, collDir)
+
+	l := fslock.New(origFileName)
+
+	e := l.TryLock()
+	if e != nil {
+		return nil, &systemError{
+			Code:    SystemErrorCode,
+			Message: fmt.Sprintf("Unable to lock file %s with underlying message: %s", origFileName, e.Error()),
+		}
+	}
+
+	origFile, err := createFile(origFileName, os.O_RDWR)
+
+	if err != nil {
+		return nil, err
+	}
+
+	reader := NewLineReader(origFile)
+
+	dataToWrite := ""
+	indexes := make(map[int]int64)
+	var index int64 = 0
+	for {
+		_, val, ok, err := reader.Read()
+
+		if err != nil {
+			e = l.Unlock()
+			if e != nil {
+				return nil, &systemError{
+					Code:    SystemErrorCode,
+					Message: fmt.Sprintf("Unable to lock file %s with underlying message: %s", origFileName, e.Error()),
+				}
+			}
+
+			fsErr := closeFile(origFile)
+
+			if fsErr != nil {
+				return nil, fsErr
+			}
+
+			return nil, &dbIntegrityError{
+				Code:    DbIntegrityViolationCode,
+				Message: fmt.Sprintf("Database integrity violation while defragmenting with underlying message: %s", err.Error()),
+			}
+		}
+
+		if !ok {
+			break
+		}
+
+		if val == nil {
+			e = l.Unlock()
+			if e != nil {
+				return nil, &systemError{
+					Code:    SystemErrorCode,
+					Message: fmt.Sprintf("Unable to lock file %s with underlying message: %s", origFileName, e.Error()),
+				}
+			}
+
+			fsErr := closeFile(origFile)
+
+			if fsErr != nil {
+				return nil, fsErr
+			}
+
+			return nil, &dbIntegrityError{
+				Code:    DbIntegrityViolationCode,
+				Message: "Database integrity violation while defragmenting. Invalid row encountered.",
+			}
+		}
+
+		id, e := strconv.Atoi(string(val.id))
+
+		if e != nil {
+			return nil, &systemError{
+				Code:    SystemErrorCode,
+				Message: fmt.Sprintf("Could not convert string to int during defragmentation with underlying message: %s", e.Error()),
+			}
+		}
+
+		d := string(prepareData(id, val.val))
+		dataToWrite += d
+		indexes[id] = index
+		index += int64(len(d))
+	}
+
+	e = ioutil.WriteFile(origFileName, []uint8(dataToWrite), 0666)
+
+	if e != nil {
+		e = l.Unlock()
+		if e != nil {
+			return nil, &systemError{
+				Code:    SystemErrorCode,
+				Message: fmt.Sprintf("Unable to lock file %s with underlying message: %s", origFileName, e.Error()),
+			}
+		}
+
+		return nil, &systemError{
+			Code:    SystemErrorCode,
+			Message: fmt.Sprintf("Could not convert string to int during defragmentation with underlying message: %s", e.Error()),
+		}
+	}
+
+	if err := closeFile(origFile); err != nil {
+		e = l.Unlock()
+		if e != nil {
+			return nil, &systemError{
+				Code:    SystemErrorCode,
+				Message: fmt.Sprintf("Unable to lock file %s with underlying message: %s", origFileName, e.Error()),
+			}
+		}
+
+		return nil, err
+	}
+
+	e = l.Unlock()
+	if e != nil {
+		return nil, &systemError{
+			Code:    SystemErrorCode,
+			Message: fmt.Sprintf("Unable to lock file %s with underlying message: %s", origFileName, e.Error()),
+		}
+	}
+
+	return indexes, nil
+}
 
 func createBackupDirectory() Error {
 	backupDir := fmt.Sprintf("%s/backup", roseDbDir())
@@ -135,7 +265,7 @@ func writeBackupToDb(log bool) Error {
 	backupDir := fmt.Sprintf("%s/backup", roseDbDir())
 
 	dbDir := roseDbDir()
-	m := newDb(newFsDriver(dbDir, writeDriver), newFsDriver(dbDir, updateDriver), newFsDriver(dbDir, updateDriver))
+	m := newDb(newFsDriver(dbDir, writeDriver), newFsDriver(dbDir, updateDriver), newFsDriver(dbDir, updateDriver), "skldfjasčlkdfj")
 
 	files, fsErr := ioutil.ReadDir(backupDir)
 
