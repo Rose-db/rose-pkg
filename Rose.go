@@ -264,6 +264,11 @@ func (a *Rose) Replace(m ReplaceMetadata) (*AppResult, Error) {
 	}, nil
 }
 
+func (a *Rose) Query(q *Query) Error {
+
+	return nil
+}
+
 func (a *Rose) Size() (uint64, Error) {
 	var size uint64
 	colls, err := ioutil.ReadDir(roseDbDir())
