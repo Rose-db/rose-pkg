@@ -18,7 +18,6 @@ type db struct {
 	AutoIncrementCounter int
 	BlockTracker map[uint16][2]uint16
 	Name string
-	InDefragmentation bool
 	sync.RWMutex
 
 	WriteDriver *fsDriver
@@ -101,13 +100,9 @@ func (d *db) Delete(id int) (bool, Error) {
 
 	err := d.deleteFromFs(id, blockId, idx)
 
-	track, _ := d.BlockTracker[blockId]
+	track := d.increaseBlockTracker(blockId)
 
-	track[1] += 1
-
-	d.BlockTracker[blockId] = track
-
-	if track[1] == defragmentMark {
+	if track == defragmentMark {
 		indexes, err := d.tryDefragmentation(blockId)
 
 		if err != nil {
@@ -179,15 +174,6 @@ func (d *db) ReadStrategic(id int, data interface{}) (*dbReadResult, Error) {
  */
 func (d *db) Replace(id int, data []uint8) Error {
 	d.Lock()
-
-	if d.InDefragmentation {
-		for {
-			if !d.InDefragmentation {
-				break
-			}
-		}
-	}
-
 	_, ok := d.Index[id]
 
 	if !ok {
@@ -210,20 +196,12 @@ func (d *db) Replace(id int, data []uint8) Error {
 		return err
 	}
 
-	track, _ := d.BlockTracker[blockId]
+	track := d.increaseBlockTracker(blockId)
 
-	track[1] += 1
-
-	d.BlockTracker[blockId] = track
-
-	if track[1] == defragmentMark {
-		d.InDefragmentation = true
-
+	if track == defragmentMark {
 		indexes, err := d.tryDefragmentation(blockId)
 
 		if err != nil {
-			d.InDefragmentation = false
-
 			d.Unlock()
 
 			return err
@@ -256,8 +234,6 @@ func (d *db) Replace(id int, data []uint8) Error {
 
 		d.BlockTracker[blockId] = track
 	}
-
-	d.InDefragmentation = false
 
 	d.Unlock()
 
@@ -379,9 +355,18 @@ func (d *db) tryDefragmentation(blockId uint16) (map[int]int64, Error) {
 	return indexes, nil
 }
 
+func (d *db) increaseBlockTracker(blockId uint16) uint16 {
+	track, _ := d.BlockTracker[blockId]
+
+	track[1] += 1
+
+	d.BlockTracker[blockId] = track
+
+	return track[1]
+}
+
 func (d *db) init() {
 	d.Index = make(map[int]int64)
 	d.AutoIncrementCounter = 1
 	d.BlockTracker = make(map[uint16][2]uint16)
-	d.InDefragmentation = false
 }
