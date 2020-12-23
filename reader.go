@@ -143,7 +143,7 @@ func (s *lineReader) populateBuffer() (int64, bool, Error) {
 			continue
 		}
 
-		s.buf = appendByte(s.buf, b)
+		s.buf = append(s.buf, b)
 	}
 
 	return offset, true, nil
@@ -209,7 +209,7 @@ func (r *offsetReader) populateBuffer() (bool, Error) {
 				continue
 			}
 
-			r.buf = appendByte(r.buf, b)
+			r.buf = append(r.buf, b)
 
 			break
 		}
@@ -225,7 +225,7 @@ func (r *offsetReader) populateBuffer() (bool, Error) {
 			continue
 		}
 
-		r.buf = appendByte(r.buf, b)
+		r.buf = append(r.buf, b)
 	}
 
 	r.buf = r.buf[1:]

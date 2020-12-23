@@ -19,20 +19,6 @@ func isJSON(s []uint8) bool {
 	return json.Unmarshal(s, &js) == nil
 }
 
-func appendByte(slice []uint8, data ...uint8) []uint8 {
-	m := len(slice)
-	n := m + len(data)
-	if n > cap(slice) {
-		newSlice := make([]uint8, (n+1)*2)
-		copy(newSlice, slice)
-		slice = newSlice
-	}
-
-	slice = slice[0:n]
-	copy(slice[m:n], data)
-	return slice
-}
-
 func validateData(data []uint8) Error {
 	if !isJSON(data) {
 		return &dataError{
@@ -211,4 +197,13 @@ func getFsError(err error, op string) Error {
 		Code:    DbIntegrityViolationCode,
 		Message: fmt.Sprintf("Database integrity violation. Cannot do %s file operation with underlying message: %s", op, msg),
 	}
+}
+
+func getIndexKeys(index map[int]int64) []int {
+	keys := make([]int, 0, len(index))
+	for k := range index {
+		keys = append(keys, k)
+	}
+
+	return keys
 }
