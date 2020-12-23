@@ -645,4 +645,96 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 		testRemoveFileSystemDb(roseDir())
 	})
+
+	GinkgoIt("Should replace and delete documents concurrently", func() {
+		a := testCreateRose(false)
+		collName := testCreateCollection(a, "coll_one")
+		n := 12321
+
+		oneIds := [12321]int{}
+		insert := func(ids *[12321]int, collName string) {
+			for i := 0; i < n; i++ {
+				go func(ids *[12321]int, collName string, i int) {
+					defer ginkgo.GinkgoRecover()
+
+					value := fmt.Sprintf("value-%d", i)
+					s := testAsJson(value)
+
+					res, err := a.Write(WriteMetadata{Data: s, CollectionName: collName})
+
+					gomega.Expect(err).To(gomega.BeNil())
+
+					ids[i] = res.ID
+				}(ids, collName, i)
+			}
+		}
+
+		updated := [12321]int{}
+		replace := func(updated *[12321]int, collName string) {
+			for i := 0; i < 12321; i++ {
+				go func(updated *[12321]int, collName string, i int) {
+					defer ginkgo.GinkgoRecover()
+
+					value := "value-updated"
+					s := testAsJson(value)
+
+					res, err := a.Replace(ReplaceMetadata{Data: s, CollectionName: collName, ID: i + 1})
+
+					gomega.Expect(err).To(gomega.BeNil())
+					gomega.Expect(res.Method).To(gomega.Equal(ReplaceMethodType))
+					gomega.Expect(res.Status).To(gomega.Equal(ReplacedResultStatus))
+
+					updated[i] = res.ID
+				}(updated, collName, i)
+			}
+		}
+
+		deleted := [12321]int{}
+		del := func(deleted *[12321]int, collName string) {
+			for i := 0; i < 12321; i++ {
+				go func(deleted *[12321]int, collName string, i int) {
+					defer ginkgo.GinkgoRecover()
+
+					res, err := a.Delete(DeleteMetadata{CollectionName: collName, ID: i + 1})
+
+					gomega.Expect(err).To(gomega.BeNil())
+					gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
+					gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
+
+					deleted[i] = res.ID
+				}(deleted, collName, i)
+			}
+		}
+
+		insert(&oneIds, collName)
+
+		time.Sleep(2 * time.Second)
+
+		replace(&updated, collName)
+		del(&deleted, collName)
+
+		time.Sleep(10 * time.Second)
+
+		for i := 0; i < 12321; i++ {
+			s := ""
+			res := testSingleRead(ReadMetadata{
+				CollectionName: collName,
+				ID:             i + 1,
+				Data:           &s,
+			}, a)
+
+			gomega.Expect(res.Status).To(gomega.Equal(NotFoundResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
+		}
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
 })

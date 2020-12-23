@@ -120,6 +120,26 @@ func (d *db) Delete(id int) (bool, Error) {
 		for i, index := range indexes {
 			d.Index[i] = index
 		}
+
+		if err := d.WriteDriver.reload(); err != nil {
+			d.Unlock()
+
+			return false, err
+		}
+
+		if err := d.ReadDriver.reload(); err != nil {
+			d.Unlock()
+
+			return false, err
+		}
+
+		if err := d.DeleteDriver.reload(); err != nil {
+			d.Unlock()
+
+			return false, err
+		}
+
+		d.resetBlockTracker(blockId)
 	}
 
 	d.Unlock()
@@ -228,10 +248,7 @@ func (d *db) Replace(id int, data []uint8) Error {
 			return err
 		}
 
-		track, _ := d.BlockTracker[blockId]
-		track[1] = 0
-
-		d.BlockTracker[blockId] = track
+		d.resetBlockTracker(blockId)
 	}
 
 	d.Unlock()
@@ -362,6 +379,13 @@ func (d *db) increaseBlockTracker(blockId uint16) uint16 {
 	d.BlockTracker[blockId] = track
 
 	return track[1]
+}
+
+func (d *db) resetBlockTracker(blockId uint16) {
+	track, _ := d.BlockTracker[blockId]
+	track[1] = 0
+
+	d.BlockTracker[blockId] = track
 }
 
 func (d *db) init() {

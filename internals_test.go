@@ -94,7 +94,7 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 
 		track := db.BlockTracker[0]
 
-		gomega.Expect(track[1]).To(gomega.Equal(uint16(1500)))
+		gomega.Expect(track[1]).To(gomega.Equal(uint16(177)))
 
 		if err := a.Shutdown(); err != nil {
 			testRemoveFileSystemDb(roseDir())
