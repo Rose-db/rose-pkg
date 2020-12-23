@@ -100,27 +100,26 @@ func (d *db) Delete(id int) (bool, Error) {
 
 	err := d.deleteFromFs(id, blockId, idx)
 
+	if err != nil {
+		d.Unlock()
+
+		return false, err
+	}
+
 	track := d.increaseBlockTracker(blockId)
 
 	if track == defragmentMark {
 		indexes, err := d.tryDefragmentation(blockId)
 
 		if err != nil {
+			d.Unlock()
+
 			return false, err
 		}
 
-		var size int64 = 0
 		for i, index := range indexes {
-			size += index
-
 			d.Index[i] = index
 		}
-	}
-
-	if err != nil {
-		d.Unlock()
-
-		return false, err
 	}
 
 	d.Unlock()
