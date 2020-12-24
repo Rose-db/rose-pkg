@@ -72,7 +72,11 @@ func (fs *fsDb) ReadStrategic(offset int64) (*[]uint8, Error) {
 
 	r := NewLineReader(fs.File)
 
-	_, data, _, e := r.Read()
+	_, data, e := r.Read()
+
+	if e != nil && e.GetCode() == EOFErrorCode {
+		return nil, nil
+	}
 
 	if e != nil {
 		return nil, e

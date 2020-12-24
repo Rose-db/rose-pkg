@@ -41,6 +41,30 @@ type timeoutError struct {
 	Message string
 }
 
+type endOfFileError struct {
+	Code int
+	Message string
+}
+
+
+
+func (e *endOfFileError) Error() string {
+	return fmt.Sprintf("Code: %d, Message: %s", e.Code, e.Message)
+}
+
+func (e *endOfFileError) Type() string {
+	return endOfFileErrorType
+}
+
+func (e *endOfFileError) GetCode() int {
+	return EOFErrorCode
+}
+
+func (e *endOfFileError) JSON() map[string]interface{} {
+	return map[string]interface{}{}
+}
+
+
 
 
 func (e *timeoutError) Error() string {

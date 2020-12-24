@@ -38,7 +38,11 @@ func defragmentBlock(blockId uint16, collName string) (map[int]int64, Error) {
 	indexes := make(map[int]int64)
 	var index int64 = 0
 	for {
-		_, val, ok, err := reader.Read()
+		_, val, err := reader.Read()
+
+		if err != nil && err.GetCode() == EOFErrorCode {
+			break
+		}
 
 		if err != nil {
 			e = l.Unlock()
@@ -59,10 +63,6 @@ func defragmentBlock(blockId uint16, collName string) (map[int]int64, Error) {
 				Code:    DbIntegrityViolationCode,
 				Message: fmt.Sprintf("Database integrity violation while defragmenting with underlying message: %s", err.Error()),
 			}
-		}
-
-		if !ok {
-			break
 		}
 
 		if val == nil {
@@ -299,7 +299,11 @@ func writeBackupToDb(log bool) Error {
 		reader := NewLineReader(file)
 
 		for {
-			_, val, ok, err := reader.Read()
+			_, val, err := reader.Read()
+
+			if err != nil && err.GetCode() == EOFErrorCode {
+				break
+			}
 
 			if err != nil {
 				fsErr := closeFile(file)
@@ -312,10 +316,6 @@ func writeBackupToDb(log bool) Error {
 					Code:    DbIntegrityViolationCode,
 					Message: fmt.Sprintf("Database integrity violation while defragmenting. Cannot populate database with message: %s", err.Error()),
 				}
-			}
-
-			if !ok {
-				break
 			}
 
 			if val == nil {

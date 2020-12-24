@@ -7,6 +7,7 @@ const dbErrorType = "db_error"
 const dbIntegrityErrorType = "db_integrity_error"
 const validationErrorType = "validation_error"
 const timeoutErrorType = "timeout_error"
+const endOfFileErrorType = "end_of_file_error"
 
 // application error codes
 const DataErrorCode = 1
@@ -16,6 +17,7 @@ const DbErrorCode = 4
 const TooManyOpenFilesCode = 5
 const ValidationErrorCode = 6
 const TimeoutErrorCode = 7
+const EOFErrorCode = 8
 
 // result status
 const OkResultStatus = "ok"

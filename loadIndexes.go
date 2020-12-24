@@ -84,7 +84,11 @@ func loadSingleFile(f os.FileInfo, m *db, collName string) Error {
 	reader := NewLineReader(file)
 
 	for {
-		offset, val, ok, err := reader.Read()
+		offset, val, err := reader.Read()
+
+		if err != nil && err.GetCode() == EOFErrorCode {
+			break
+		}
 
 		if err != nil {
 			fsErr := closeFile(file)
@@ -94,10 +98,6 @@ func loadSingleFile(f os.FileInfo, m *db, collName string) Error {
 			}
 
 			return err
-		}
-
-		if !ok {
-			break
 		}
 
 		if val == nil {

@@ -11,8 +11,7 @@ import (
 
 type lineReader struct {
 	internalReader *bufio.Reader
-	reader io.ReadCloser
-	offset int64
+	off int64
 	buf []uint8
 }
 
@@ -41,39 +40,35 @@ type lineReaderData struct {
 func NewLineReader(r *os.File) *lineReader {
 	a := bufio.NewReader(r)
 	return &lineReader{
-		reader: r,
 		internalReader: a,
 		buf: make([]uint8, 0),
 	}
 }
 /**
-	Reads a single line in a file. Every call to Read() return a single
-	line in a file until io.EOF is reached
- */
-func (s *lineReader) Read() (int64, *lineReaderData, bool, Error) {
-	currOffset, ok, err := s.populateBuffer()
+Reads a single line in a file. Every call to Read() return a single
+line in a file until io.EOF is reached
+*/
+func (s *lineReader) Read() (int64, *lineReaderData, Error) {
+	for {
+		err := s.populateBuffer()
 
-	if !ok {
-		s.internalReader = nil
-		s.reader = nil
-		s.buf = nil
+		if err != nil {
+			return 0, nil, err
+		}
 
-		return 0, nil, false, nil
+		if string(s.buf[0:9]) == delMark {
+			s.off += int64(len(s.buf)) + 1
+
+			continue
+		}
+
+		break
 	}
 
-	if err != nil {
-		return 0, nil, true, err
-	}
+	off := s.off
+	s.off += int64(len(s.buf)) + 1
 
-	d := s.getData()
-
-	offset := s.offset - currOffset
-
-	//s.offset += int64(len(s.buf) + 1)
-
-	s.buf = make([]uint8, 0)
-
-	return offset, d, true, nil
+	return off, s.getData(), nil
 }
 
 func (s *lineReader) getData() *lineReaderData {
@@ -98,57 +93,27 @@ func (s *lineReader) getData() *lineReaderData {
 	}
 }
 
-func (s *lineReader) populateBuffer() (int64, bool, Error) {
-	d := ""
-	skip := false
-	var offset int64
-	for {
-		b, err := s.internalReader.ReadByte()
+func (s *lineReader) populateBuffer() Error {
+	b, err := s.internalReader.ReadBytes('\n')
 
-		if err == io.EOF {
-			return 0, false, nil
+	if err == io.EOF {
+		return &endOfFileError{
+			Code:    EOFErrorCode,
+			Message: "End of file",
 		}
-
-		if err != nil {
-			return 0, false, &dbIntegrityError{
-				Code:    DbIntegrityViolationCode,
-				Message: fmt.Sprintf("Unable to read filesystem database with message: %s", err.Error()),
-			}
-		}
-
-		s.offset++
-		offset++
-
-		if b == 10 {
-			if skip {
-				skip = false
-
-				continue
-			}
-
-			break
-		}
-
-		if skip {
-			continue
-		}
-
-		d += string(b)
-
-		if len(d) == 9 && d == delMark {
-			skip = true
-			d = ""
-			s.buf = make([]uint8, 0)
-
-			continue
-		}
-
-		s.buf = append(s.buf, b)
 	}
 
-	return offset, true, nil
-}
+	if err != nil {
+		return &systemError{
+			Code:    SystemErrorCode,
+			Message: fmt.Sprintf("Reading file failed with message: %s", err.Error()),
+		}
+	}
 
+	s.buf = b[:len(b) - 1]
+
+	return nil
+}
 func NewOffsetReader(f *os.File) *offsetReader {
 	a := bufio.NewReader(f)
 	return &offsetReader{
