@@ -3,6 +3,7 @@ module rose/rose
 go 1.15
 
 require (
+	github.com/bxcodec/faker v2.0.1+incompatible // indirect
 	github.com/cheggaaa/pb/v3 v3.0.5
 	github.com/fatih/color v1.10.0
 	github.com/google/uuid v1.1.2

@@ -237,7 +237,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			}(i)
 		}
 
-		time.Sleep(5 * time.Second)
+		time.Sleep(2 * time.Second)
 
 		for i, res := range results {
 			value := values[i]
@@ -296,7 +296,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			}(i, res)
 		}
 
-		time.Sleep(5 * time.Second)
+		time.Sleep(2 * time.Second)
 
 		for _, res := range delResults {
 			gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
@@ -345,7 +345,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			}(i)
 		}
 
-		time.Sleep(5 * time.Second)
+		time.Sleep(2 * time.Second)
 
 		for _, res := range appResults {
 			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
@@ -392,7 +392,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 			}(i)
 		}
 
-		time.Sleep(5 * time.Second)
+		time.Sleep(2 * time.Second)
 
 		for _, res := range appResults {
 			gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
@@ -440,7 +440,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 		insert(&twoIds, collTwo)
 		insert(&threeIds, collThree)
 
-		time.Sleep(5 * time.Second)
+		time.Sleep(2 * time.Second)
 
 		readOneResults := [10000]*AppResult{}
 		for i, id := range oneIds {
@@ -713,7 +713,7 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 		replace(&updated, collName)
 		del(&deleted, collName)
 
-		time.Sleep(10 * time.Second)
+		time.Sleep(5 * time.Second)
 
 		for i := 0; i < 12321; i++ {
 			s := ""
