@@ -287,7 +287,7 @@ func (a *Rose) Query(q *QueryBuilder) ([]*QueryResult, Error) {
 		Response: ch,
 	}
 
-	return a.balancer.Push(queryItem), nil
+	return a.balancer.Push(queryItem)
 }
 
 func (a *Rose) Size() (uint64, Error) {

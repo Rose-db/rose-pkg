@@ -46,6 +46,30 @@ type endOfFileError struct {
 	Message string
 }
 
+type queryError struct {
+	Code int
+	Message string
+}
+
+
+
+func (e *queryError) Error() string {
+	return fmt.Sprintf("Code: %d, Message: %s", e.Code, e.Message)
+}
+
+func (e *queryError) Type() string {
+	return queryErrorType
+}
+
+func (e *queryError) GetCode() int {
+	return QueryErrorCode
+}
+
+func (e *queryError) JSON() map[string]interface{} {
+	return map[string]interface{}{}
+}
+
+
 
 
 func (e *endOfFileError) Error() string {

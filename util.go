@@ -1,8 +1,10 @@
 package rose
 
 import (
+	"crypto/sha1"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"os"
 	"strings"
 	"time"
@@ -199,11 +201,32 @@ func getFsError(err error, op string) Error {
 	}
 }
 
-func getIndexKeys(index map[int]int64) []int {
-	keys := make([]int, 0, len(index))
-	for k := range index {
-		keys = append(keys, k)
+func newUniqueHash(n ...int) string {
+	noRandomCharacters := 32
+
+	if len(n) > 0 {
+		noRandomCharacters = n[0]
 	}
 
-	return keys
+	randString := randomString(noRandomCharacters)
+
+	hash := sha1.New()
+	hash.Write([]byte(randString))
+	bs := hash.Sum(nil)
+
+	return fmt.Sprintf("%x", bs)
+}
+
+// RandomString generates a random string of n length
+func randomString(n int) string {
+	rand.Seed(time.Now().UnixNano())
+
+	characterRunes := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = characterRunes[rand.Intn(len(characterRunes))]
+	}
+
+	return string(b)
 }

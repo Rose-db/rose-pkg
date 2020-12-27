@@ -33,13 +33,13 @@ type balancerRequest struct {
 }
 
 type queueItem struct {
+	UniqueId string
 	BlockId uint16
 	CollName string
 	Field string
 	Value interface{}
 	dataType dataType
 	Response chan interface{}
-	Processed chan bool
 }
 
 func newQueryQueue() *queryQueue {
@@ -65,18 +65,25 @@ func (qq *queryQueue) Close() {
 
 func (qq *queryQueue) spawn(c chan *queueItem) {
 	for item := range c {
+
 		blockPath := roseBlockFile(item.BlockId, fmt.Sprintf("%s/%s", roseDbDir(), item.CollName))
 
 		file, err := createFile(blockPath, os.O_RDONLY)
 
 		if err != nil {
-			panic(err)
+			item.Response<- &queryError{
+				Code:    QueryErrorCode,
+				Message: fmt.Sprintf("Query resulted in an error: %s", "some error"),
+			}
+
+			item.Response<- true
+
+			continue
 		}
 
 		reader := NewLineReader(file)
 		var p fastjson.Parser
 
-		lines := 0
 		for {
 			_, d, err := reader.Read()
 
@@ -85,13 +92,23 @@ func (qq *queryQueue) spawn(c chan *queueItem) {
 			}
 
 			if d == nil {
-				panic("invalid row, it must not be nil")
+				item.Response<- &queryError{
+					Code:    QueryErrorCode,
+					Message: "Unable to read a row during query search",
+				}
+
+				break
 			}
 
 			v, jErr := p.Parse(string(d.val))
 
 			if jErr != nil {
-				panic(jErr)
+				item.Response<- &queryError{
+					Code:    QueryErrorCode,
+					Message: fmt.Sprintf("Query resulted in an error: %s", jErr.Error()),
+				}
+
+				break
 			}
 
 			if v.Exists(item.Field) {
@@ -104,12 +121,13 @@ func (qq *queryQueue) spawn(c chan *queueItem) {
 					}
 				}
 			}
-
-			lines++
 		}
 
 		if err := closeFile(file); err != nil {
-			panic(err)
+			item.Response<- &queryError{
+				Code:    QueryErrorCode,
+				Message: fmt.Sprintf("Query resulted in an error: %s", err.Error()),
+			}
 		}
 
 		reader.Close()
@@ -132,8 +150,9 @@ func newBalancer() *balancer {
 	}
 }
 
-func (b *balancer) Push(item *balancerRequest) []*QueryResult {
+func (b *balancer) Push(item *balancerRequest) ([]*QueryResult, Error) {
 	queryResults := make([]*QueryResult, 0)
+	var err *queryError = nil
 
 	responses := make(chan interface{})
 
@@ -147,19 +166,24 @@ func (b *balancer) Push(item *balancerRequest) []*QueryResult {
 						ID:   v.ID,
 						Data: v.Body,
 					})
+			    case *queryError:
+					if err == nil {
+						err = v
+					}
 				case bool:
 					wg.Done()
 			}
-
 		}
 	}(wg)
 
 	var i uint16
+	uniqueId := newUniqueHash()
 	for i = 0; i < item.BlockNum; i++ {
 		comm := b.queryQueue.Comm[b.Next]
 
 		queueItem := &queueItem{
 			BlockId:  i,
+			UniqueId: uniqueId,
 			CollName: item.Item.CollName,
 			Field:    item.Item.Field,
 			Value:    item.Item.Value,
@@ -180,7 +204,11 @@ func (b *balancer) Push(item *balancerRequest) []*QueryResult {
 
 	close(responses)
 
-	return queryResults
+	if err != nil {
+		queryResults = make([]*QueryResult, 0)
+	}
+
+	return queryResults, err
 }
 
 func (b *balancer) Close() {
