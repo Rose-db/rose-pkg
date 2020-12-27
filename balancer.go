@@ -38,7 +38,7 @@ type queueItem struct {
 	Field string
 	Value interface{}
 	dataType dataType
-	Response chan *queueResponse
+	Response chan interface{}
 	Processed chan bool
 }
 
@@ -114,11 +114,7 @@ func (qq *queryQueue) spawn(c chan *queueItem) {
 
 		reader.Close()
 
-		item.Processed<- true
-
-		close(item.Processed)
-
-		fmt.Printf("Block %d has %d lines\n", item.BlockId, lines)
+		item.Response<- true
 	}
 }
 
@@ -139,31 +135,22 @@ func newBalancer() *balancer {
 func (b *balancer) Push(item *balancerRequest) []*QueryResult {
 	queryResults := make([]*QueryResult, 0)
 
-	responses := make(chan *queueResponse, 1)
-	processor := make([]chan bool, item.BlockNum)
-
-	for i := 0; i < int(item.BlockNum); i++ {
-		processor[i] = make(chan bool)
-	}
-
-	go func() {
-		for res := range responses {
-			queryResults = append(queryResults, &QueryResult{
-				ID:   res.ID,
-				Data: res.Body,
-			})
-		}
-	}()
+	responses := make(chan interface{})
 
 	wg := &sync.WaitGroup{}
 	wg.Add(int(item.BlockNum))
 	go func(wg *sync.WaitGroup) {
-		for i := 0; i < int(item.BlockNum); i++ {
-			p := processor[i]
+		for res := range responses {
+			switch v := res.(type) {
+				case *queueResponse:
+					queryResults = append(queryResults, &QueryResult{
+						ID:   v.ID,
+						Data: v.Body,
+					})
+				case bool:
+					wg.Done()
+			}
 
-			<-p
-
-			wg.Done()
 		}
 	}(wg)
 
@@ -178,7 +165,6 @@ func (b *balancer) Push(item *balancerRequest) []*QueryResult {
 			Value:    item.Item.Value,
 			dataType: item.Item.DataType,
 			Response: responses,
-			Processed: processor[i],
 		}
 
 		comm<- queueItem
@@ -191,8 +177,6 @@ func (b *balancer) Push(item *balancerRequest) []*QueryResult {
 	}
 
 	wg.Wait()
-
-	//time.Sleep(1 * time.Second)
 
 	close(responses)
 
