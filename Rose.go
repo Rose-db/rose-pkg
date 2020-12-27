@@ -65,7 +65,7 @@ func New(output bool) (*Rose, Error) {
 
 	r := &Rose{
 		Databases: dbs,
-		balancer: newBalancer(),
+		balancer: newBalancer(10),
 	}
 
 	if output {

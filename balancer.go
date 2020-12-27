@@ -13,7 +13,7 @@ type QueryResult struct {
 }
 
 type queryQueue struct {
-	Comm [10]chan *queueItem
+	Comm []chan *queueItem
 }
 
 type queueResponse struct {
@@ -42,14 +42,14 @@ type queueItem struct {
 	Response chan interface{}
 }
 
-func newQueryQueue() *queryQueue {
+func newQueryQueue(initialCount int) *queryQueue {
 	qq := &queryQueue{
-		Comm: [10]chan *queueItem{},
+		Comm: make([]chan *queueItem, 0),
 	}
 
-	for i := 0; i < 10; i++ {
+	for i := 0; i < initialCount; i++ {
 		c := make(chan *queueItem)
-		qq.Comm[i] = c
+		qq.Comm = append(qq.Comm, c)
 
 		go qq.spawn(c)
 	}
@@ -59,7 +59,9 @@ func newQueryQueue() *queryQueue {
 
 func (qq *queryQueue) Close() {
 	for _, c := range qq.Comm {
-		close(c)
+		if c != nil {
+			close(c)
+		}
 	}
 }
 
@@ -142,11 +144,11 @@ type balancer struct {
 	queryQueue *queryQueue
 }
 
-func newBalancer() *balancer {
+func newBalancer(queueCount int) *balancer {
 	return &balancer{
-		Count: 10,
+		Count: queueCount,
 		Next: 0,
-		queryQueue: newQueryQueue(),
+		queryQueue: newQueryQueue(queueCount),
 	}
 }
 
