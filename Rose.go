@@ -15,7 +15,7 @@ type AppResult struct {
 
 type Rose struct {
 	Databases map[string]*db
-	db *db
+	balancer *balancer
 }
 
 var createDatabases = func() (map[string]*db, Error) {
@@ -65,6 +65,7 @@ func New(output bool) (*Rose, Error) {
 
 	r := &Rose{
 		Databases: dbs,
+		balancer: newBalancer(),
 	}
 
 	if output {
@@ -264,9 +265,35 @@ func (a *Rose) Replace(m ReplaceMetadata) (*AppResult, Error) {
 	}, nil
 }
 
-func (a *Rose) Query(q *Query) Error {
+func (a *Rose) Query(q *QueryBuilder) ([]*QueryResult, Error) {
 
-	return nil
+	for _, t := range q.Ifs {
+		if t != nil {
+			db, _ := a.Databases[t.Equal.Collection]
+
+			ch := make(chan *queueResponse)
+
+			queryItem := &balancerRequest{
+				BlockNum: uint16(len(db.BlockTracker)),
+				Item: struct {
+					CollName string
+					Field    string
+					Value    interface{}
+					DataType dataType
+				}{
+					CollName: t.Equal.Collection,
+					Field: t.Equal.Field,
+					Value: t.Equal.Value,
+					DataType: t.Equal.DataType,
+				},
+				Response: ch,
+			}
+
+			return a.balancer.Push(queryItem), nil
+		}
+	}
+
+	return nil, nil
 }
 
 func (a *Rose) Size() (uint64, Error) {
@@ -318,6 +345,8 @@ func (a *Rose) Shutdown() Error {
 			}
 		}
 	}
+
+	a.balancer.Close()
 
 	return nil
 }

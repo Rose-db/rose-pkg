@@ -86,18 +86,9 @@ func defragmentBlock(blockId uint16, collName string) (map[int]int64, Error) {
 			}
 		}
 
-		id, e := strconv.Atoi(string(val.id))
-
-		if e != nil {
-			return nil, &systemError{
-				Code:    SystemErrorCode,
-				Message: fmt.Sprintf("Could not convert string to int during defragmentation with underlying message: %s", e.Error()),
-			}
-		}
-
-		d := string(prepareData(id, val.val))
+		d := string(prepareData(val.id, val.val))
 		dataToWrite += d
-		indexes[id] = index
+		indexes[val.id] = index
 		index += int64(len(d))
 	}
 
@@ -337,17 +328,7 @@ func writeBackupToDb(log bool) Error {
 			i, _ := strconv.Atoi(underscoreSplit[1])
 			mapIdx := uint16(i)
 
-			strId := string(val.id)
-			id, atoiErr := strconv.Atoi(strId)
-
-			if atoiErr != nil {
-				return &dbIntegrityError{
-					Code:    DbIntegrityViolationCode,
-					Message: fmt.Sprintf("Database integrity violation while defragmenting. Cannot populate database. Encountered an error while converting string to int with underlying message: %s", atoiErr.Error()),
-				}
-			}
-
-			err = m.writeOnDefragmentation(id, val.val, mapIdx)
+			err = m.writeOnDefragmentation(val.id, val.val, mapIdx)
 
 			if err != nil {
 				fsErr := closeFile(file)

@@ -11,6 +11,8 @@ import (
 
 var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 	GinkgoIt("Should assert that the memory database is populated correctly from an existing fs database", func() {
+		ginkgo.Skip("")
+
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 		a := testCreateRose(false)
 
@@ -32,7 +34,6 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 
 			firstIds[i] = res.ID
 		}
-
 
 		// Insert second collection
 		secondIds := [234789]int{}
@@ -132,6 +133,8 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 	})
 
 	GinkgoIt("Should assert correct blocks are opened while deleting", func() {
+		ginkgo.Skip("")
+
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll_name")
@@ -248,6 +251,8 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 	})
 
 	GinkgoIt("Should skip the deleted entries when booting a populated database", func() {
+		ginkgo.Skip("")
+
 		a := testCreateRose(false)
 
 		collName := testCreateCollection(a, "coll")
@@ -339,6 +344,8 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 	})
 
 	GinkgoIt("Should skip the deleted entries when booting a populated database and strategically removing entries in the database", func() {
+		ginkgo.Skip("")
+
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll")
 		n := 4000
@@ -430,6 +437,8 @@ var _ = GinkgoDescribe("Population tests and integrity tests", func() {
 	})
 
 	GinkgoIt("Should read all values with bytes disparity", func() {
+		ginkgo.Skip("")
+
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll")
 		n := 10000

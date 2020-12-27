@@ -191,3 +191,13 @@ func testAsJson(j string) []uint8 {
 
 	return js
 }
+
+func testAsJsonInterface(j interface{}) []uint8 {
+	js, err := json.Marshal(j)
+
+	if err != nil {
+		ginkgo.Fail(fmt.Sprintf("Cannot marshal json with message: %s", err.Error()))
+	}
+
+	return js
+}

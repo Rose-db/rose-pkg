@@ -119,17 +119,7 @@ func loadSingleFile(f os.FileInfo, m *db, collName string) Error {
 		i, _ := strconv.Atoi(underscoreSplit[1])
 		mapIdx := uint16(i)
 
-		strId := string(val.id)
-		intId, atoiErr := strconv.Atoi(strId)
-
-		if atoiErr != nil {
-			return &dbIntegrityError{
-				Code:    DbIntegrityViolationCode,
-				Message: "Database integrity violation. Cannot populate database. Could not convert ID to integer",
-			}
-		}
-
-		err = m.writeIndex(intId, mapIdx, offset)
+		err = m.writeIndex(val.id, mapIdx, offset)
 
 		if err != nil {
 			fsErr := closeFile(file)

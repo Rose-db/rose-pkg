@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -22,7 +23,7 @@ type offsetReader struct {
 }
 
 type lineReaderData struct {
-	id []uint8
+	id int
 	val []uint8
 }
 /**
@@ -68,29 +69,50 @@ func (s *lineReader) Read() (int64, *lineReaderData, Error) {
 	off := s.off
 	s.off += int64(len(s.buf)) + 1
 
-	return off, s.getData(), nil
+	lineReaderData, err := s.getData()
+
+	if err != nil {
+		return 0, nil, err
+	}
+
+	return off, lineReaderData, nil
 }
 
-func (s *lineReader) getData() *lineReaderData {
+func (s *lineReader) Close() {
+	s.internalReader = nil
+	s.buf = nil
+	s.off = 0
+}
+
+func (s *lineReader) getData() (*lineReaderData, Error) {
 	buf := string(s.buf)
 
 	if buf == "" {
-		return nil
+		return nil, nil
 	}
 
 	split := strings.Split(buf, delim)
 
 	if len(split) != 2 {
-		return nil
+		return nil, nil
 	}
 
 	a := split[0]
 	b := split[1]
 
-	return &lineReaderData{
-		id:  []uint8(a),
-		val: []uint8(b),
+	id, err := strconv.Atoi(a)
+
+	if err != nil {
+		return nil, &systemError{
+			Code:    SystemErrorCode,
+			Message: fmt.Sprintf("Unable to convert string to int32 with message: %s", err.Error()),
+		}
 	}
+
+	return &lineReaderData{
+		id:  id,
+		val: []uint8(b),
+	}, nil
 }
 
 func (s *lineReader) populateBuffer() Error {

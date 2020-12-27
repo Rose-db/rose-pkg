@@ -52,3 +52,9 @@ const delMark = "{[{del}]}"
 
 const blockMark = 3307
 const defragmentMark = 1323
+
+type dataType string
+
+const stringType dataType = "string"
+const intType dataType = "int"
+const floatType dataType = "float"

@@ -1,58 +1,70 @@
 package rose
-
-type OpType string
-
-const And OpType = "and"
-const Or OpType = "or"
-const Equal OpType = "equal"
-
-type Operator interface {
-	Type() OpType
-}
+import "C"
+import "fmt"
 
 type Query struct {
 	Collection string
 	Field string
-	Value string
+	Value interface{}
+	DataType dataType
 }
 
-type QueryOperator struct {
-	op OpType
+type And struct {
+	List []*Query
+}
+
+type Equal struct {
 	Query
 }
 
-func (q *QueryOperator) Type() OpType {
-	return And
+type If struct {
+	Equal *Equal
+	And *And
 }
 
 type QueryBuilder struct {
-	Collections []string
-	QueryOperators []*QueryOperator
+	Ifs []*If
 }
 
-func (qb *QueryBuilder) Use(coll string) *QueryBuilder {
-	qb.Collections = append(qb.Collections, coll)
+func NewQueryBuilder() *QueryBuilder {
+	return &QueryBuilder{
+		Ifs: make([]*If, 0),
+	}
+}
+
+func NewEqual(collName string, field string, value interface{}, dataType dataType) *Equal {
+	return &Equal{Query{
+		Collection: collName,
+		Field:      field,
+		Value:      value,
+		DataType: dataType,
+	}}
+}
+
+func (qb *QueryBuilder) If(op interface{}) *QueryBuilder {
+	switch v := op.(type) {
+	case *Equal:
+		t := &If{
+			Equal: op.(*Equal),
+			And:   nil,
+		}
+
+		qb.Ifs = append(qb.Ifs, t)
+	case *And:
+		fmt.Println(v)
+	}
 
 	return qb
 }
 
-func (qb *QueryBuilder) AddAnd(qo *QueryOperator) *QueryBuilder {
-	return qb.addOperator(qo, And)
-}
+func (qb *QueryBuilder) And(qo []*Query) *And {
+	and := &And{
+		List:          make([]*Query, 0),
+	}
 
-func (qb *QueryBuilder) AddOr(qo *QueryOperator) *QueryBuilder {
-	return qb.addOperator(qo, Or)
-}
+	and.List = append(and.List, qo...)
 
-func (qb *QueryBuilder) Equal(qo *QueryOperator) *QueryBuilder {
-	return qb.addOperator(qo, Equal)
-}
-
-func (qb *QueryBuilder) addOperator(qo *QueryOperator, t OpType) *QueryBuilder {
-	qo.op = t
-	qb.QueryOperators = append(qb.QueryOperators, qo)
-
-	return qb
+	return and
 }
 
 
