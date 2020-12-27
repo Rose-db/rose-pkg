@@ -23,13 +23,11 @@ type If struct {
 }
 
 type QueryBuilder struct {
-	Ifs []*If
+	IfStmt *If
 }
 
 func NewQueryBuilder() *QueryBuilder {
-	return &QueryBuilder{
-		Ifs: make([]*If, 0),
-	}
+	return &QueryBuilder{}
 }
 
 func NewEqual(collName string, field string, value interface{}, dataType dataType) *Equal {
@@ -49,7 +47,7 @@ func (qb *QueryBuilder) If(op interface{}) *QueryBuilder {
 			And:   nil,
 		}
 
-		qb.Ifs = append(qb.Ifs, t)
+		qb.IfStmt = t
 	case *And:
 		fmt.Println(v)
 	}

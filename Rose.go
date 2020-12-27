@@ -266,34 +266,28 @@ func (a *Rose) Replace(m ReplaceMetadata) (*AppResult, Error) {
 }
 
 func (a *Rose) Query(q *QueryBuilder) ([]*QueryResult, Error) {
+	stmt := q.IfStmt
+	db, _ := a.Databases[stmt.Equal.Collection]
 
-	for _, t := range q.Ifs {
-		if t != nil {
-			db, _ := a.Databases[t.Equal.Collection]
+	ch := make(chan *queueResponse)
 
-			ch := make(chan *queueResponse)
-
-			queryItem := &balancerRequest{
-				BlockNum: uint16(len(db.BlockTracker)),
-				Item: struct {
-					CollName string
-					Field    string
-					Value    interface{}
-					DataType dataType
-				}{
-					CollName: t.Equal.Collection,
-					Field: t.Equal.Field,
-					Value: t.Equal.Value,
-					DataType: t.Equal.DataType,
-				},
-				Response: ch,
-			}
-
-			return a.balancer.Push(queryItem), nil
-		}
+	queryItem := &balancerRequest{
+		BlockNum: uint16(len(db.BlockTracker)),
+		Item: struct {
+			CollName string
+			Field    string
+			Value    interface{}
+			DataType dataType
+		}{
+			CollName: stmt.Equal.Collection,
+			Field: stmt.Equal.Field,
+			Value: stmt.Equal.Value,
+			DataType: stmt.Equal.DataType,
+		},
+		Response: ch,
 	}
 
-	return nil, nil
+	return a.balancer.Push(queryItem), nil
 }
 
 func (a *Rose) Size() (uint64, Error) {
