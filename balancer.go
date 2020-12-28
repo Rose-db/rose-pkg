@@ -33,7 +33,6 @@ type balancerRequest struct {
 }
 
 type queueItem struct {
-	UniqueId string
 	BlockId uint16
 	CollName string
 	Field string
@@ -179,13 +178,11 @@ func (b *balancer) Push(item *balancerRequest) ([]*QueryResult, Error) {
 	}(wg)
 
 	var i uint16
-	uniqueId := newUniqueHash()
 	for i = 0; i < item.BlockNum; i++ {
 		comm := b.queryQueue.Comm[b.Next]
 
 		queueItem := &queueItem{
 			BlockId:  i,
-			UniqueId: uniqueId,
 			CollName: item.Item.CollName,
 			Field:    item.Item.Field,
 			Value:    item.Item.Value,
