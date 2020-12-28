@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/valyala/fastjson"
 	"os"
+	"strings"
 	"sync"
 )
 
@@ -58,14 +59,6 @@ func newQueryQueue(workerNum uint16) *queryQueue {
 	return qq
 }
 
-func (qq *queryQueue) Close() {
-	for _, c := range qq.Comm {
-		if c != nil {
-			close(c)
-		}
-	}
-}
-
 func (qq *queryQueue) spawn(workerNum uint16) {
 	var i uint16
 	for i = 0; i < workerNum; i++ {
@@ -76,16 +69,37 @@ func (qq *queryQueue) spawn(workerNum uint16) {
 	}
 }
 
+func (qq *queryQueue) Close() {
+	for _, c := range qq.Comm {
+		if c != nil {
+			close(c)
+		}
+	}
+}
+
 func (qq *queryQueue) runWorker(c chan *queueItem) {
 	for item := range c {
 		blockPath := roseBlockFile(item.BlockId, fmt.Sprintf("%s/%s", roseDbDir(), item.CollName))
 
 		file, err := createFile(blockPath, os.O_RDONLY)
 
+		if err != nil && strings.Contains(err.Error(), "too many open") {
+			file, err = secureBlockingCreateFile(blockPath, os.O_RDONLY)
+
+			if err != nil {
+				item.Response<- &queryError{
+					Code:    QueryErrorCode,
+					Message: fmt.Sprintf("Query resulted in an error: %s", err.Error()),
+				}
+
+				item.Response<- true
+			}
+		}
+
 		if err != nil {
 			item.Response<- &queryError{
 				Code:    QueryErrorCode,
-				Message: fmt.Sprintf("Query resulted in an error: %s", "some error"),
+				Message: fmt.Sprintf("Query resulted in an error: %s", err.Error()),
 			}
 
 			item.Response<- true
@@ -161,8 +175,20 @@ func newBalancer(currentBlockCount uint16) *balancer {
 	return b
 }
 
+func (b *balancer) reSpawnIfNeeded(blockNum uint16) {
+	workerNum := b.calcWorkerNum(blockNum)
+
+	b.Lock()
+	if workerNum != 0 {
+		b.Count += workerNum
+
+		b.queryQueue.spawn(workerNum)
+	}
+	b.Unlock()
+}
+
 func (b *balancer) calcWorkerNum(blockNum uint16) uint16 {
-	next := (blockNum / 50 + 1) * 10
+	next := (blockNum / 100 + 1) * 10
 
 	if next > b.Count {
 		return 10

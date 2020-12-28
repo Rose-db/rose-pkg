@@ -81,7 +81,7 @@ func (d *db) Write(data []uint8) (int, int, Error) {
 
 	d.BlockTracker[mapId] = track
 
-	
+	d.Balancer.reSpawnIfNeeded(uint16(len(d.BlockTracker)))
 
 	d.Unlock()
 
@@ -289,6 +289,8 @@ func (d *db) Query(q *QueryBuilder) ([]*QueryResult, Error) {
 func (d *db) Shutdown() [3]Error {
 	d.init()
 
+	d.Balancer.Close()
+
 	errors := [3]Error{}
 
 	if err := d.WriteDriver.Shutdown(); err != nil {
@@ -303,12 +305,10 @@ func (d *db) Shutdown() [3]Error {
 		errors[2] = err
 	}
 
-	d.Balancer.Close()
-
 	return errors
 }
 
-func (d *db) writeIndex(id int, mapIdx uint16, offset int64) Error {
+func (d *db) writeIndex(id int, offset int64) Error {
 	d.Lock()
 
 	// check if the entry already exists

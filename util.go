@@ -70,13 +70,13 @@ func createFileInfoBatch(files []os.FileInfo, size int) map[int][]os.FileInfo {
 	return m
 }
 
-func secureBlockingCreateFile(a string) (*os.File, Error) {
+func secureBlockingCreateFile(a string, flag int) (*os.File, Error) {
 	it := 0
 	var file *os.File
 	var err Error
 
 	for {
-		file, err = createFile(a, os.O_RDWR|os.O_CREATE)
+		file, err = createFile(a, flag)
 
 		if err != nil {
 			err = getFsError(err, "create")

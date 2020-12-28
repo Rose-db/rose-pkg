@@ -6,8 +6,6 @@ import (
 	"golang.org/x/sync/errgroup"
 	"io/ioutil"
 	"os"
-	"strconv"
-	"strings"
 )
 
 /**
@@ -112,14 +110,8 @@ func loadSingleFile(f os.FileInfo, m *db, collName string) Error {
 				Message: "Database integrity violation. Cannot populate database. Invalid row encountered.",
 			}
 		}
-
-		fileName := f.Name()
-		dotSplit := strings.Split(fileName, ".")
-		underscoreSplit := strings.Split(dotSplit[0], "_")
-		i, _ := strconv.Atoi(underscoreSplit[1])
-		mapIdx := uint16(i)
-
-		err = m.writeIndex(val.id, mapIdx, offset)
+		
+		err = m.writeIndex(val.id, offset)
 
 		if err != nil {
 			fsErr := closeFile(file)

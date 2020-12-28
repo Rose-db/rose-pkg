@@ -165,23 +165,6 @@ func assertIndexIntegrity(m *db, expectedLen int) {
 	gomega.Expect(len(index)).To(gomega.Equal(expectedLen))
 }
 
-func benchmarkRemoveFileSystemDb() {
-	dir := roseDbDir()
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		panic(err)
-	}
-
-	files, err := ioutil.ReadDir(dir)
-
-	gomega.Expect(err).To(gomega.BeNil())
-
-	for _, f := range files {
-		err = os.Remove(fmt.Sprintf("%s/%s", dir, f.Name()))
-
-		gomega.Expect(err).To(gomega.BeNil())
-	}
-}
-
 func testAsJson(j string) []uint8 {
 	js, err := json.Marshal(j)
 
