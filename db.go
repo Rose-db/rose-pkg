@@ -18,6 +18,7 @@ type db struct {
 	AutoIncrementCounter int
 	BlockTracker map[uint16][2]uint16
 	Name string
+	Balancer *balancer
 	sync.RWMutex
 
 	WriteDriver *fsDriver
@@ -256,6 +257,30 @@ func (d *db) Replace(id int, data []uint8) Error {
 	return nil
 }
 
+func (d *db) Query(q *QueryBuilder) ([]*QueryResult, Error) {
+	stmt := q.IfStmt
+
+	ch := make(chan *queueResponse)
+
+	queryItem := &balancerRequest{
+		BlockNum: uint16(len(d.BlockTracker)),
+		Item: struct {
+			CollName string
+			Field    string
+			Value    interface{}
+			DataType dataType
+		}{
+			CollName: stmt.Equal.Collection,
+			Field: stmt.Equal.Field,
+			Value: stmt.Equal.Value,
+			DataType: stmt.Equal.DataType,
+		},
+		Response: ch,
+	}
+
+	return d.Balancer.Push(queryItem)
+}
+
 // shutdown does not do anything for now until I decide what to do with multiple drivers
 func (d *db) Shutdown() [3]Error {
 	d.init()
@@ -273,6 +298,8 @@ func (d *db) Shutdown() [3]Error {
 	if err := d.DeleteDriver.Shutdown(); err != nil {
 		errors[2] = err
 	}
+
+	d.Balancer.Close()
 
 	return errors
 }
@@ -392,4 +419,6 @@ func (d *db) init() {
 	d.Index = make(map[int]int64)
 	d.AutoIncrementCounter = 1
 	d.BlockTracker = make(map[uint16][2]uint16)
+
+	d.Balancer = newBalancer(10)
 }

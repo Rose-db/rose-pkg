@@ -15,7 +15,6 @@ type AppResult struct {
 
 type Rose struct {
 	Databases map[string]*db
-	balancer *balancer
 }
 
 var createDatabases = func() (map[string]*db, Error) {
@@ -65,7 +64,6 @@ func New(output bool) (*Rose, Error) {
 
 	r := &Rose{
 		Databases: dbs,
-		balancer: newBalancer(10),
 	}
 
 	if output {
@@ -267,27 +265,18 @@ func (a *Rose) Replace(m ReplaceMetadata) (*AppResult, Error) {
 
 func (a *Rose) Query(q *QueryBuilder) ([]*QueryResult, Error) {
 	stmt := q.IfStmt
-	db, _ := a.Databases[stmt.Equal.Collection]
+	collName := stmt.Equal.Collection
 
-	ch := make(chan *queueResponse)
+	db, ok := a.Databases[collName]
 
-	queryItem := &balancerRequest{
-		BlockNum: uint16(len(db.BlockTracker)),
-		Item: struct {
-			CollName string
-			Field    string
-			Value    interface{}
-			DataType dataType
-		}{
-			CollName: stmt.Equal.Collection,
-			Field: stmt.Equal.Field,
-			Value: stmt.Equal.Value,
-			DataType: stmt.Equal.DataType,
-		},
-		Response: ch,
+	if !ok {
+		return nil, &dbIntegrityError{
+			Code:    DbIntegrityViolationCode,
+			Message: fmt.Sprintf("Invalid read request. Collection %s does not exist", collName),
+		}
 	}
 
-	return a.balancer.Push(queryItem)
+	return db.Query(q)
 }
 
 func (a *Rose) Size() (uint64, Error) {
@@ -339,8 +328,6 @@ func (a *Rose) Shutdown() Error {
 			}
 		}
 	}
-
-	a.balancer.Close()
 
 	return nil
 }

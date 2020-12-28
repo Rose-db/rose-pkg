@@ -220,4 +220,112 @@ var _ = GinkgoDescribe("Query tests", func() {
 
 		testRemoveFileSystemDb(roseDir())
 	})
+
+	GinkgoIt("Should query the data from multiple collections concurrently", func() {
+		testEmails := []string{
+			"mario@gmail.com",
+			"joanne@gmail.com",
+			"kristina@gmail.com",
+			"florentina@gmail.com",
+			"mistifina@gmail.com",
+			"julianne@gmail.com",
+			"hanssina@gmail.com",
+			"planetina@gmail.com",
+			"crazyina@gmai.com",
+			"collenne@gmail.com",
+		}
+
+		a := testCreateRose(false)
+
+		collOne := testCreateCollection(a, "coll_one")
+		collTwo := testCreateCollection(a, "coll_two")
+
+		colls := [2]string{collOne, collTwo}
+
+		for _, collName := range colls {
+			randomEmails := [10]int{}
+			for i := 0; i < 100000; i++ {
+				rand.Seed(time.Now().UnixNano())
+
+				r := rand.Intn((len(testEmails) - 1) - 0) + 0
+
+				user := TestUser{}
+				err := faker.FakeData(&user)
+
+				gomega.Expect(err).To(gomega.BeNil())
+
+				user.Email = testEmails[r]
+
+				res := testSingleConcurrentInsert(WriteMetadata{
+					CollectionName: collName,
+					Data:           testAsJsonInterface(user),
+				}, a)
+
+				gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+				gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
+
+				randomEmails[r]++
+			}
+
+			foundEmails := [10]int{}
+			for i := 1; i < 100001; i++ {
+				user := TestUser{}
+				res := testSingleRead(ReadMetadata{
+					CollectionName: collName,
+					ID:             i,
+					Data:           &user,
+				}, a)
+
+				gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
+				gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
+
+				email := user.Email
+
+				for j := 0; j < len(testEmails); j++ {
+					if testEmails[j] == email {
+						foundEmails[j]++
+
+						break
+					}
+				}
+			}
+
+			for i := 0; i < len(testEmails); i++ {
+				r := randomEmails[i]
+				f := foundEmails[i]
+
+				gomega.Expect(r).To(gomega.Equal(f))
+			}
+
+			wg := &sync.WaitGroup{}
+			for i := 0; i < len(testEmails); i++ {
+				wg.Add(1)
+
+				go func(wg *sync.WaitGroup, index int, total int) {
+					qb := NewQueryBuilder()
+					qb.If(NewEqual(collName, "email", testEmails[index], stringType))
+
+					queryResult, err := a.Query(qb)
+
+					gomega.Expect(err).To(gomega.BeNil())
+
+					gomega.Expect(len(queryResult)).To(gomega.Equal(total))
+
+					wg.Done()
+				}(wg, i, randomEmails[i])
+			}
+
+			wg.Wait()
+		}
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
 })
