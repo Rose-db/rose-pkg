@@ -757,4 +757,78 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 
 		testRemoveFileSystemDb(roseDir())
 	})
+
+	GinkgoIt("Should concurrently write to multiple collections", func() {
+		a := testCreateRose(false)
+		collOne := testCreateCollection(a, "coll_one")
+		collTwo := testCreateCollection(a, "coll_one")
+		collThree := testCreateCollection(a, "coll_one")
+
+		n := 100000
+
+		wg := &sync.WaitGroup{}
+		wg.Add(3)
+		go func() {
+			for i := 0; i < n; i++ {
+				someData := "slkdjfasjdfklsajdflsadf"
+				res, err := a.Write(WriteMetadata{
+					CollectionName: collOne,
+					Data:           testAsJson(someData),
+				})
+
+				gomega.Expect(err).To(gomega.BeNil())
+
+				gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+				gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
+			}
+
+			wg.Done()
+		}()
+
+		go func() {
+			for i := 0; i < n; i++ {
+				someData := "slkdjfasjdfklsajdflsadf"
+				res, err := a.Write(WriteMetadata{
+					CollectionName: collTwo,
+					Data:           testAsJson(someData),
+				})
+
+				gomega.Expect(err).To(gomega.BeNil())
+
+				gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+				gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
+			}
+
+			wg.Done()
+		}()
+
+		go func() {
+			for i := 0; i < n; i++ {
+				someData := "slkdjfasjdfklsajdflsadf"
+				res, err := a.Write(WriteMetadata{
+					CollectionName: collThree,
+					Data:           testAsJson(someData),
+				})
+
+				gomega.Expect(err).To(gomega.BeNil())
+
+				gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+				gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
+			}
+
+			wg.Done()
+		}()
+
+		wg.Wait()
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Shutdown failed with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
 })
