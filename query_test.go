@@ -35,10 +35,10 @@ var _ = GinkgoDescribe("Query tests", func() {
 
 		collName := testCreateCollection(a, "test_coll")
 
+		rand.Seed(time.Now().UnixNano())
+
 		randomEmails := [10]int{}
 		for i := 0; i < 100000; i++ {
-			rand.Seed(time.Now().UnixNano())
-
 			r := rand.Intn((len(testEmails) - 1) - 0) + 0
 
 			user := TestUser{}
@@ -138,10 +138,10 @@ var _ = GinkgoDescribe("Query tests", func() {
 
 		collName := testCreateCollection(a, "test_coll")
 
+		rand.Seed(time.Now().UnixNano())
+
 		randomEmails := [10]int{}
 		for i := 0; i < 100000; i++ {
-			rand.Seed(time.Now().UnixNano())
-
 			r := rand.Intn((len(testEmails) - 1) - 0) + 0
 
 			user := TestUser{}
@@ -240,13 +240,13 @@ var _ = GinkgoDescribe("Query tests", func() {
 		collOne := testCreateCollection(a, "coll_one")
 		collTwo := testCreateCollection(a, "coll_two")
 
+		rand.Seed(time.Now().UnixNano())
+
 		colls := [2]string{collOne, collTwo}
 
 		for _, collName := range colls {
 			randomEmails := [10]int{}
 			for i := 0; i < 100000; i++ {
-				rand.Seed(time.Now().UnixNano())
-
 				r := rand.Intn((len(testEmails) - 1) - 0) + 0
 
 				user := TestUser{}
@@ -317,6 +317,81 @@ var _ = GinkgoDescribe("Query tests", func() {
 
 			wg.Wait()
 		}
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
+
+	GinkgoIt("Should perform queries with producer/consumer pattern", func() {
+		testEmails := []string{
+			"mario@gmail.com",
+			"joanne@gmail.com",
+			"kristina@gmail.com",
+			"florentina@gmail.com",
+			"mistifina@gmail.com",
+			"julianne@gmail.com",
+			"hanssina@gmail.com",
+			"planetina@gmail.com",
+			"crazyina@gmai.com",
+			"collenne@gmail.com",
+		}
+
+		a := testCreateRose(false)
+
+		collOne := testCreateCollection(a, "coll_one")
+
+		ch := make(chan string)
+
+		wg := &sync.WaitGroup{}
+		wg.Add(1)
+		go func() {
+			for c := range ch {
+				qb := NewQueryBuilder()
+				qb.If(NewEqual(collOne, "email", c, stringType))
+
+				queryResult, err := a.Query(qb)
+
+				gomega.Expect(err).To(gomega.BeNil())
+
+				gomega.Expect(len(queryResult)).To(gomega.Not(gomega.Equal(0)))
+			}
+
+			wg.Done()
+		}()
+
+		go func(ch chan string) {
+			for i := 0; i < 3000; i++ {
+				r := rand.Intn((len(testEmails) - 1) - 0) + 0
+
+				user := TestUser{}
+				err := faker.FakeData(&user)
+
+				gomega.Expect(err).To(gomega.BeNil())
+
+				user.Email = testEmails[r]
+
+				res := testSingleConcurrentInsert(WriteMetadata{
+					CollectionName: collOne,
+					Data:           testAsJsonInterface(user),
+				}, a)
+
+				gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+				gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
+
+				ch<- user.Email
+			}
+
+			close(ch)
+		}(ch)
+
+		wg.Wait()
 
 		if err := a.Shutdown(); err != nil {
 			testRemoveFileSystemDb(roseDir())
