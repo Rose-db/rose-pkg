@@ -38,7 +38,7 @@ var _ = GinkgoDescribe("Query tests", func() {
 		rand.Seed(time.Now().UnixNano())
 
 		randomEmails := [10]int{}
-		for i := 0; i < 100000; i++ {
+		for i := 0; i < 200000; i++ {
 			r := rand.Intn((len(testEmails) - 1) - 0) + 0
 
 			user := TestUser{}
@@ -60,7 +60,7 @@ var _ = GinkgoDescribe("Query tests", func() {
 		}
 
 		foundEmails := [10]int{}
-		for i := 1; i < 100001; i++ {
+		for i := 1; i < 200001; i++ {
 			user := TestUser{}
 			res := testSingleRead(ReadMetadata{
 				CollectionName: collName,
@@ -141,7 +141,7 @@ var _ = GinkgoDescribe("Query tests", func() {
 		rand.Seed(time.Now().UnixNano())
 
 		randomEmails := [10]int{}
-		for i := 0; i < 100000; i++ {
+		for i := 0; i < 200000; i++ {
 			r := rand.Intn((len(testEmails) - 1) - 0) + 0
 
 			user := TestUser{}
@@ -163,7 +163,7 @@ var _ = GinkgoDescribe("Query tests", func() {
 		}
 
 		foundEmails := [10]int{}
-		for i := 1; i < 100001; i++ {
+		for i := 1; i < 200001; i++ {
 			user := TestUser{}
 			res := testSingleRead(ReadMetadata{
 				CollectionName: collName,
@@ -246,7 +246,7 @@ var _ = GinkgoDescribe("Query tests", func() {
 
 		for _, collName := range colls {
 			randomEmails := [10]int{}
-			for i := 0; i < 100000; i++ {
+			for i := 0; i < 200000; i++ {
 				r := rand.Intn((len(testEmails) - 1) - 0) + 0
 
 				user := TestUser{}
@@ -268,7 +268,7 @@ var _ = GinkgoDescribe("Query tests", func() {
 			}
 
 			foundEmails := [10]int{}
-			for i := 1; i < 100001; i++ {
+			for i := 1; i < 200001; i++ {
 				user := TestUser{}
 				res := testSingleRead(ReadMetadata{
 					CollectionName: collName,

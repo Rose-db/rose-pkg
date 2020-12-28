@@ -26,7 +26,7 @@ type db struct {
 	DeleteDriver *fsDriver
 }
 
-func newDb(write *fsDriver, read *fsDriver, delete *fsDriver, name string) *db {
+func newDb(write *fsDriver, read *fsDriver, delete *fsDriver, name string, blockNum uint16) *db {
 	d := &db{
 		WriteDriver: write,
 		ReadDriver: read,
@@ -35,6 +35,8 @@ func newDb(write *fsDriver, read *fsDriver, delete *fsDriver, name string) *db {
 	}
 
 	d.init()
+
+	d.Balancer = newBalancer(blockNum)
 
 	return d
 }
@@ -78,6 +80,8 @@ func (d *db) Write(data []uint8) (int, int, Error) {
 	track[0] += 1
 
 	d.BlockTracker[mapId] = track
+
+	
 
 	d.Unlock()
 
@@ -419,6 +423,4 @@ func (d *db) init() {
 	d.Index = make(map[int]int64)
 	d.AutoIncrementCounter = 1
 	d.BlockTracker = make(map[uint16][2]uint16)
-
-	d.Balancer = newBalancer(10)
 }

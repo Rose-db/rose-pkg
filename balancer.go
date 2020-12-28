@@ -16,6 +16,13 @@ type queryQueue struct {
 	Comm []chan *queueItem
 }
 
+type balancer struct {
+	Count uint16
+	Next uint16
+	queryQueue *queryQueue
+	sync.RWMutex
+}
+
 type queueResponse struct {
 	ID int
 	Body []uint8
@@ -41,17 +48,12 @@ type queueItem struct {
 	Response chan interface{}
 }
 
-func newQueryQueue(initialCount int) *queryQueue {
+func newQueryQueue(workerNum uint16) *queryQueue {
 	qq := &queryQueue{
 		Comm: make([]chan *queueItem, 0),
 	}
 
-	for i := 0; i < initialCount; i++ {
-		c := make(chan *queueItem)
-		qq.Comm = append(qq.Comm, c)
-
-		go qq.spawn(c)
-	}
+	qq.spawn(workerNum)
 
 	return qq
 }
@@ -64,9 +66,18 @@ func (qq *queryQueue) Close() {
 	}
 }
 
-func (qq *queryQueue) spawn(c chan *queueItem) {
-	for item := range c {
+func (qq *queryQueue) spawn(workerNum uint16) {
+	var i uint16
+	for i = 0; i < workerNum; i++ {
+		c := make(chan *queueItem)
+		qq.Comm = append(qq.Comm, c)
 
+		go qq.runWorker(c)
+	}
+}
+
+func (qq *queryQueue) runWorker(c chan *queueItem) {
+	for item := range c {
 		blockPath := roseBlockFile(item.BlockId, fmt.Sprintf("%s/%s", roseDbDir(), item.CollName))
 
 		file, err := createFile(blockPath, os.O_RDONLY)
@@ -137,18 +148,27 @@ func (qq *queryQueue) spawn(c chan *queueItem) {
 	}
 }
 
-type balancer struct {
-	Count int
-	Next int
-	queryQueue *queryQueue
+func newBalancer(currentBlockCount uint16) *balancer {
+	b := &balancer{
+		Next: 0,
+	}
+
+	workerNum := b.calcWorkerNum(currentBlockCount)
+
+	b.Count = workerNum
+	b.queryQueue = newQueryQueue(workerNum)
+
+	return b
 }
 
-func newBalancer(queueCount int) *balancer {
-	return &balancer{
-		Count: queueCount,
-		Next: 0,
-		queryQueue: newQueryQueue(queueCount),
+func (b *balancer) calcWorkerNum(blockNum uint16) uint16 {
+	next := (blockNum / 50 + 1) * 10
+
+	if next > b.Count {
+		return 10
 	}
+
+	return 0
 }
 
 func (b *balancer) Push(item *balancerRequest) ([]*QueryResult, Error) {

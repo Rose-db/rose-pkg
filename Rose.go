@@ -35,7 +35,29 @@ var createDatabases = func() (map[string]*db, Error) {
 		collName := d.Name()
 		driverDir := fmt.Sprintf("%s/%s", roseDbDir(), collName)
 
-		m := newDb(newFsDriver(driverDir, writeDriver), newFsDriver(driverDir, updateDriver), newFsDriver(driverDir, updateDriver), collName)
+		files, err := ioutil.ReadDir(driverDir)
+
+		if err != nil {
+			return nil, &dbIntegrityError{
+				Code:    DbIntegrityViolationCode,
+				Message: fmt.Sprintf("Unable to read collection directory: %s", err.Error()),
+			}
+		}
+
+		var blocksNum uint16
+		for _, f := range files {
+			if !f.IsDir() {
+				blocksNum++
+			}
+		}
+
+		m := newDb(
+			newFsDriver(driverDir, writeDriver),
+			newFsDriver(driverDir, updateDriver),
+			newFsDriver(driverDir, updateDriver),
+			collName,
+			blocksNum,
+		)
 
 		collections[collName] = m
 	}
@@ -124,7 +146,7 @@ func (a *Rose) NewCollection(name string) Error {
 		return e
 	}
 
-	a.Databases[name] = newDb(newFsDriver(collDir, writeDriver), newFsDriver(collDir, updateDriver), newFsDriver(collDir, updateDriver), name)
+	a.Databases[name] = newDb(newFsDriver(collDir, writeDriver), newFsDriver(collDir, updateDriver), newFsDriver(collDir, updateDriver), name, 1)
 
 	return nil
 }
