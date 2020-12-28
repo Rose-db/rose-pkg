@@ -39,10 +39,10 @@ var _ = GinkgoAfterSuite(func() {
 	}
 })
 
-func testCreateRose(doDefragmentation bool) *Rose {
+func testCreateRose(output bool) *Rose {
 	var a *Rose
 
-	a, err := New(false)
+	a, err := New(output)
 
 	gomega.Expect(err).To(gomega.BeNil())
 
