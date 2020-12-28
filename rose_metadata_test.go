@@ -1,14 +1,11 @@
 package rose
 
 import (
-	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
 )
 
 var _ = GinkgoDescribe("Metadata tests", func() {
 	GinkgoIt("Should validate WriteMetadata", func() {
-		ginkgo.Skip("")
-
 		m := WriteMetadata{
 			CollectionName: "",
 			Data:           nil,
@@ -35,8 +32,6 @@ var _ = GinkgoDescribe("Metadata tests", func() {
 	})
 
 	GinkgoIt("Should validate ReadMetadata", func() {
-		ginkgo.Skip("")
-
 		m := ReadMetadata{
 			CollectionName: "",
 			Data:           nil,
@@ -63,8 +58,6 @@ var _ = GinkgoDescribe("Metadata tests", func() {
 	})
 
 	GinkgoIt("Should validate DeleteMetadata", func() {
-		ginkgo.Skip("")
-
 		m := DeleteMetadata{
 			CollectionName: "",
 		}
@@ -78,8 +71,6 @@ var _ = GinkgoDescribe("Metadata tests", func() {
 	})
 
 	GinkgoIt("Should validate ReplaceMetadata", func() {
-		ginkgo.Skip("")
-
 		m := ReplaceMetadata{
 			CollectionName: "",
 		}
