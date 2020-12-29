@@ -95,7 +95,9 @@ var _ = GinkgoDescribe("Query tests", func() {
 
 			go func(wg *sync.WaitGroup, index int, total int) {
 				qb := NewQueryBuilder()
-				qb.If(NewEqual(collName, "email", testEmails[index], stringType))
+				qb, err := qb.If(NewEqual(collName, "email", testEmails[index], stringType))
+
+				gomega.Expect(err).To(gomega.BeNil())
 
 				queryResult, err := a.Query(qb)
 
@@ -196,7 +198,9 @@ var _ = GinkgoDescribe("Query tests", func() {
 		for i := 0; i < len(testEmails); i++ {
 			go func(ch chan bool, index int, total int) {
 				qb := NewQueryBuilder()
-				qb.If(NewEqual(collName, "email", testEmails[index], stringType))
+				qb, err := qb.If(NewEqual(collName, "email", testEmails[index], stringType))
+
+				gomega.Expect(err).To(gomega.BeNil())
 
 				queryResult, err := a.Query(qb)
 
@@ -303,7 +307,9 @@ var _ = GinkgoDescribe("Query tests", func() {
 
 				go func(wg *sync.WaitGroup, index int, total int) {
 					qb := NewQueryBuilder()
-					qb.If(NewEqual(collName, "email", testEmails[index], stringType))
+					qb, err := qb.If(NewEqual(collName, "email", testEmails[index], stringType))
+
+					gomega.Expect(err).To(gomega.BeNil())
 
 					queryResult, err := a.Query(qb)
 
@@ -354,7 +360,9 @@ var _ = GinkgoDescribe("Query tests", func() {
 		go func() {
 			for c := range ch {
 				qb := NewQueryBuilder()
-				qb.If(NewEqual(collOne, "email", c, stringType))
+				qb, err := qb.If(NewEqual(collOne, "email", c, stringType))
+
+				gomega.Expect(err).To(gomega.BeNil())
 
 				queryResult, err := a.Query(qb)
 

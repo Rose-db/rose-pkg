@@ -225,5 +225,38 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 
 		testRemoveFileSystemDb(roseDir())
 	})
+
+	GinkgoIt("Should successfully fail query builder creation", func() {
+		a := testCreateRose(false)
+
+		qb := NewQueryBuilder()
+
+		res, err := a.Query(qb)
+
+		gomega.Expect(err).To(gomega.Not(gomega.BeNil()))
+		gomega.Expect(len(res)).To(gomega.Equal(0))
+		gomega.Expect(err.Error()).To(gomega.Equal("Code: 6, Message: Invalid query. There is no 'If' statement to execute. 'If' statement must exist"))
+
+		qb = NewQueryBuilder()
+
+		qb, err = qb.If(struct {
+			Something string
+		}{
+			Something: "string",
+		})
+
+		gomega.Expect(err).To(gomega.Not(gomega.BeNil()))
+		gomega.Expect(res).To(gomega.BeNil())
+		gomega.Expect(err.Error()).To(gomega.Equal("Code: 6, Message: Invalid query. Invalid operator given. Expected Equal, And or Or operator"))
+
+		qb = NewQueryBuilder()
+
+		qb, err = qb.If(NewEqual("some", "sdklfjs", "", "string"))
+		qb, err = qb.If(NewEqual("some", "sdklfjs", "", "string"))
+
+		gomega.Expect(err).To(gomega.Not(gomega.BeNil()))
+		gomega.Expect(res).To(gomega.BeNil())
+		gomega.Expect(err.Error()).To(gomega.Equal("Code: 6, Message: Invalid query. If operator has already been initialized"))
+	})
 })
 

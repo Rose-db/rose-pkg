@@ -1,5 +1,5 @@
 package rose
-import "C"
+
 import "fmt"
 
 type Query struct {
@@ -9,29 +9,35 @@ type Query struct {
 	DataType dataType
 }
 
-type And struct {
+type and struct {
 	List []*Query
 }
 
-type Equal struct {
+type or struct {
+	List []*Query
+}
+
+type equal struct {
 	Query
 }
 
-type If struct {
-	Equal *Equal
-	And *And
+type ifStmt struct {
+	Equal *equal
+	And *and
+	Or *or
 }
 
 type QueryBuilder struct {
-	IfStmt *If
+	ifStmt *ifStmt
+	initialized bool
 }
 
 func NewQueryBuilder() *QueryBuilder {
 	return &QueryBuilder{}
 }
 
-func NewEqual(collName string, field string, value interface{}, dataType dataType) *Equal {
-	return &Equal{Query{
+func NewEqual(collName string, field string, value interface{}, dataType dataType) *equal {
+	return &equal{Query{
 		Collection: collName,
 		Field:      field,
 		Value:      value,
@@ -39,30 +45,55 @@ func NewEqual(collName string, field string, value interface{}, dataType dataTyp
 	}}
 }
 
-func (qb *QueryBuilder) If(op interface{}) *QueryBuilder {
-	switch v := op.(type) {
-	case *Equal:
-		t := &If{
-			Equal: op.(*Equal),
-			And:   nil,
+func (qb *QueryBuilder) If(op interface{}) (*QueryBuilder, Error) {
+	if qb.initialized {
+		return qb, &validationError{
+			Code:    ValidationErrorCode,
+			Message: "Invalid query. If operator has already been initialized",
 		}
-
-		qb.IfStmt = t
-	case *And:
-		fmt.Println(v)
 	}
 
-	return qb
+	switch v := op.(type) {
+		case *equal:
+			t := &ifStmt{
+				Equal: op.(*equal),
+				And:   nil,
+				Or: nil,
+			}
+
+			qb.ifStmt = t
+		case *and:
+			fmt.Println(v)
+	    case *or:
+	    	fmt.Println(v)
+		default:
+			return qb, &validationError{
+				Code:    ValidationErrorCode,
+				Message: "Invalid query. Invalid operator given. Expected Equal, And or Or operator",
+			}
+	}
+
+	qb.initialized = true
+
+	return qb, nil
 }
 
-func (qb *QueryBuilder) And(qo []*Query) *And {
-	and := &And{
+func (qb *QueryBuilder) And(qo []*Query) *and {
+	and := &and{
 		List:          make([]*Query, 0),
 	}
 
 	and.List = append(and.List, qo...)
 
 	return and
+}
+
+func (qb *QueryBuilder) validate() string {
+	if qb.ifStmt == nil {
+		return "There is no 'If' statement to execute. 'If' statement must exist"
+	}
+
+	return ""
 }
 
 

@@ -110,7 +110,7 @@ func loadSingleFile(f os.FileInfo, m *db, collName string) Error {
 				Message: "Database integrity violation. Cannot populate database. Invalid row encountered.",
 			}
 		}
-		
+
 		err = m.writeIndex(val.id, offset)
 
 		if err != nil {

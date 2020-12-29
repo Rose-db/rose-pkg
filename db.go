@@ -262,7 +262,7 @@ func (d *db) Replace(id int, data []uint8) Error {
 }
 
 func (d *db) Query(q *QueryBuilder) ([]*QueryResult, Error) {
-	stmt := q.IfStmt
+	stmt := q.ifStmt
 
 	ch := make(chan *queueResponse)
 

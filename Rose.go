@@ -146,7 +146,13 @@ func (a *Rose) NewCollection(name string) Error {
 		return e
 	}
 
-	a.Databases[name] = newDb(newFsDriver(collDir, writeDriver), newFsDriver(collDir, updateDriver), newFsDriver(collDir, updateDriver), name, 1)
+	a.Databases[name] = newDb(
+		newFsDriver(collDir, writeDriver),
+		newFsDriver(collDir, updateDriver),
+		newFsDriver(collDir, updateDriver),
+		name,
+		1,
+	)
 
 	return nil
 }
@@ -286,7 +292,14 @@ func (a *Rose) Replace(m ReplaceMetadata) (*AppResult, Error) {
 }
 
 func (a *Rose) Query(q *QueryBuilder) ([]*QueryResult, Error) {
-	stmt := q.IfStmt
+	if errString := q.validate(); errString != "" {
+		return nil, &validationError{
+			Code:    ValidationErrorCode,
+			Message: fmt.Sprintf("Invalid query. %s", errString),
+		}
+	}
+
+	stmt := q.ifStmt
 	collName := stmt.Equal.Collection
 
 	db, ok := a.Databases[collName]
