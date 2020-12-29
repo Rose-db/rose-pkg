@@ -62,6 +62,20 @@ func (b *balancer) calcWorkerNum(blockNum uint16) uint16 {
 	return 0
 }
 
+func (b *balancer) safeIncrement() {
+	for {
+		b.Next++
+
+		if b.Next == b.Count {
+			b.Next = 0
+		}
+
+		if b.queryQueue.hasIdx(b.Next) {
+			return
+		}
+	}
+}
+
 func (b *balancer) Push(item *balancerRequest) ([]*QueryResult, Error) {
 	queryResults := make([]*QueryResult, 0)
 	var err *queryError = nil
@@ -103,11 +117,7 @@ func (b *balancer) Push(item *balancerRequest) ([]*QueryResult, Error) {
 
 		comm<- queueItem
 
-		b.Next++
-
-		if b.Next == b.Count {
-			b.Next = 0
-		}
+		b.safeIncrement()
 	}
 
 	wg.Wait()

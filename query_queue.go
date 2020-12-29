@@ -53,6 +53,21 @@ func (qq *queryQueue) spawn(workerNum uint16) {
 	}
 }
 
+func (qq *queryQueue) len() uint16 {
+	var l uint16
+	for _, c := range qq.Comm {
+		if c != nil {
+			l++
+		}
+	}
+
+	return l
+}
+
+func (qq *queryQueue) hasIdx(idx uint16) bool {
+	return idx <= qq.len()
+}
+
 func (qq *queryQueue) runWorker(c chan *queueItem) {
 	for item := range c {
 		blockPath := roseBlockFile(item.BlockId, fmt.Sprintf("%s/%s", roseDbDir(), item.CollName))
