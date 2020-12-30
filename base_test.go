@@ -146,11 +146,6 @@ func testSingleRead(w ReadMetadata, r *Rose) *AppResult {
 	resChan := make(chan *AppResult)
 	go func() {
 		res, err := r.Read(w)
-
-		if err != nil {
-			fmt.Println(err)
-		}
-
 		gomega.Expect(err).To(gomega.BeNil())
 
 		resChan<- res

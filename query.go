@@ -2,7 +2,7 @@ package rose
 
 import "fmt"
 
-type Query struct {
+type query struct {
 	Collection string
 	Field string
 	Value interface{}
@@ -10,15 +10,15 @@ type Query struct {
 }
 
 type and struct {
-	List []*Query
+	List []*query
 }
 
 type or struct {
-	List []*Query
+	List []*query
 }
 
 type equal struct {
-	Query
+	query
 }
 
 type ifStmt struct {
@@ -36,8 +36,21 @@ func NewQueryBuilder() *QueryBuilder {
 	return &QueryBuilder{}
 }
 
+func NewAnd(params ...*query) *and {
+	return &and{List: params}
+}
+
+func NewQuery(collName string, field string, value interface{}, dataType dataType) *query {
+	return &query{
+		Collection: collName,
+		Field:      field,
+		Value:      value,
+		DataType:   dataType,
+	}
+}
+
 func NewEqual(collName string, field string, value interface{}, dataType dataType) *equal {
-	return &equal{Query{
+	return &equal{query{
 		Collection: collName,
 		Field:      field,
 		Value:      value,
@@ -63,7 +76,13 @@ func (qb *QueryBuilder) If(op interface{}) (*QueryBuilder, Error) {
 
 			qb.ifStmt = t
 		case *and:
-			fmt.Println(v)
+			t := &ifStmt{
+				Equal: nil,
+				And:   op.(*and),
+				Or: nil,
+			}
+
+			qb.ifStmt = t
 	    case *or:
 	    	fmt.Println(v)
 		default:
@@ -76,16 +95,6 @@ func (qb *QueryBuilder) If(op interface{}) (*QueryBuilder, Error) {
 	qb.initialized = true
 
 	return qb, nil
-}
-
-func (qb *QueryBuilder) And(qo []*Query) *and {
-	and := &and{
-		List:          make([]*Query, 0),
-	}
-
-	and.List = append(and.List, qo...)
-
-	return and
 }
 
 func (qb *QueryBuilder) validate() string {

@@ -300,18 +300,27 @@ func (a *Rose) Query(q *QueryBuilder) ([]*QueryResult, Error) {
 	}
 
 	stmt := q.ifStmt
-	collName := stmt.Equal.Collection
 
-	db, ok := a.Databases[collName]
+	if stmt.Equal != nil {
+		collName := stmt.Equal.Collection
 
-	if !ok {
-		return nil, &dbIntegrityError{
-			Code:    DbIntegrityViolationCode,
-			Message: fmt.Sprintf("Invalid read request. Collection %s does not exist", collName),
+		db, ok := a.Databases[collName]
+
+		if !ok {
+			return nil, &dbIntegrityError{
+				Code:    DbIntegrityViolationCode,
+				Message: fmt.Sprintf("Invalid read request. Collection %s does not exist", collName),
+			}
 		}
+
+		return db.Query(q)
 	}
 
-	return db.Query(q)
+	if stmt.And != nil {
+
+	}
+
+	return nil, nil
 }
 
 func (a *Rose) Size() (uint64, Error) {

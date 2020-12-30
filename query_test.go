@@ -411,4 +411,16 @@ var _ = GinkgoDescribe("Query tests", func() {
 
 		testRemoveFileSystemDb(roseDir())
 	})
+
+	GinkgoIt("Should query values with AND statement from the same collection", func() {
+		a := testCreateRose(false)
+
+		collOne := testCreateCollection(a, "coll_one")
+
+		qb := NewQueryBuilder()
+
+		qb, err := qb.If(NewAnd(NewQuery(collOne, "field", "value", "string")))
+
+		gomega.Expect(err).To(gomega.BeNil())
+	})
 })
