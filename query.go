@@ -7,6 +7,7 @@ type query struct {
 	Field string
 	Value interface{}
 	DataType dataType
+	AsField string
 }
 
 type and struct {
@@ -17,12 +18,8 @@ type or struct {
 	List []*query
 }
 
-type equal struct {
-	query
-}
-
 type ifStmt struct {
-	Equal *equal
+	Equal *query
 	And *and
 	Or *or
 }
@@ -40,22 +37,14 @@ func NewAnd(params ...*query) *and {
 	return &and{List: params}
 }
 
-func NewQuery(collName string, field string, value interface{}, dataType dataType) *query {
+func NewQuery(collName string, field string, value interface{}, dataType dataType, asField string) *query {
 	return &query{
 		Collection: collName,
 		Field:      field,
 		Value:      value,
 		DataType:   dataType,
+		AsField: asField,
 	}
-}
-
-func NewEqual(collName string, field string, value interface{}, dataType dataType) *equal {
-	return &equal{query{
-		Collection: collName,
-		Field:      field,
-		Value:      value,
-		DataType: dataType,
-	}}
 }
 
 func (qb *QueryBuilder) If(op interface{}) (*QueryBuilder, Error) {
@@ -67,11 +56,20 @@ func (qb *QueryBuilder) If(op interface{}) (*QueryBuilder, Error) {
 	}
 
 	switch v := op.(type) {
-		case *equal:
+		case *query:
 			t := &ifStmt{
-				Equal: op.(*equal),
+				Equal: op.(*query),
 				And:   nil,
 				Or: nil,
+			}
+
+			errString := t.validate()
+
+			if errString != "" {
+				return nil, &validationError{
+					Code:    ValidationErrorCode,
+					Message: fmt.Sprintf("Invalid query. %s", errString),
+				}
 			}
 
 			qb.ifStmt = t
@@ -80,6 +78,15 @@ func (qb *QueryBuilder) If(op interface{}) (*QueryBuilder, Error) {
 				Equal: nil,
 				And:   op.(*and),
 				Or: nil,
+			}
+
+			errString := t.validate()
+
+			if errString != "" {
+				return nil, &validationError{
+					Code:    ValidationErrorCode,
+					Message: fmt.Sprintf("Invalid query. %s", errString),
+				}
 			}
 
 			qb.ifStmt = t
@@ -100,6 +107,50 @@ func (qb *QueryBuilder) If(op interface{}) (*QueryBuilder, Error) {
 func (qb *QueryBuilder) validate() string {
 	if qb.ifStmt == nil {
 		return "There is no 'If' statement to execute. 'If' statement must exist"
+	}
+
+	return ""
+}
+
+func (i *ifStmt) validate() string {
+	if i.Equal != nil {
+		if i.Equal.Collection == "" {
+			return "Collection name must be a non empty string"
+		}
+
+		if i.Equal.Field == "" {
+			return "Field name must be a non empty string"
+		}
+
+		if i.Equal.Value == nil {
+			return "Value name must be a non nil type"
+		}
+
+		if !i.Equal.DataType.isValid() {
+			return "Invalid data type. Data type can only be 'string', 'int', or 'float'"
+		}
+	}
+
+	if i.And != nil {
+		list := i.And.List
+
+		for _, l := range list {
+			if l.Collection == "" {
+				return "Collection name must be a non empty string"
+			}
+
+			if l.Field == "" {
+				return "Field name must be a non empty string"
+			}
+
+			if l.Value == nil {
+				return "Value name must be a non nil type"
+			}
+
+			if !l.DataType.isValid() {
+				return "Invalid data type. Data type can only be 'string', 'int', or 'float'"
+			}
+		}
 	}
 
 	return ""

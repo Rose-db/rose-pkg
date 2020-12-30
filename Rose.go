@@ -3,7 +3,9 @@ package rose
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
+	"sync"
 )
 
 type AppResult struct {
@@ -291,15 +293,15 @@ func (a *Rose) Replace(m ReplaceMetadata) (*AppResult, Error) {
 	}, nil
 }
 
-func (a *Rose) Query(q *QueryBuilder) ([]*QueryResult, Error) {
-	if errString := q.validate(); errString != "" {
+func (a *Rose) Query(qb *QueryBuilder) ([]*QueryResult, Error) {
+	if errString := qb.validate(); errString != "" {
 		return nil, &validationError{
 			Code:    ValidationErrorCode,
 			Message: fmt.Sprintf("Invalid query. %s", errString),
 		}
 	}
 
-	stmt := q.ifStmt
+	stmt := qb.ifStmt
 
 	if stmt.Equal != nil {
 		collName := stmt.Equal.Collection
@@ -313,11 +315,44 @@ func (a *Rose) Query(q *QueryBuilder) ([]*QueryResult, Error) {
 			}
 		}
 
-		return db.Query(q)
+		return db.Query(stmt.Equal)
 	}
 
 	if stmt.And != nil {
+		wg := &sync.WaitGroup{}
+		and := qb.ifStmt.And
 
+		results := make([]*QueryResult, 0)
+
+		for _, q := range and.List {
+			wg.Add(1)
+
+			go func(wg *sync.WaitGroup, q *query) {
+				collName := q.Collection
+
+				db, ok := a.Databases[collName]
+
+				if !ok {
+					panic("Collection not found")
+				}
+
+				queryResults, err := db.Query(q)
+
+				if err != (*queryError)(nil) {
+					fmt.Printf("Error: %v", err)
+					return
+				}
+
+				results = append(results, queryResults...)
+
+				wg.Done()
+			}(wg, q)
+		}
+
+		wg.Wait()
+
+		fmt.Println(results)
+		log.Fatal("")
 	}
 
 	return nil, nil

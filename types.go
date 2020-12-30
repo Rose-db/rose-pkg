@@ -60,3 +60,7 @@ type dataType string
 const stringType dataType = "string"
 const intType dataType = "int"
 const floatType dataType = "float"
+
+func (d dataType) isValid() bool {
+	return !(d != stringType && d != intType && d != floatType)
+}

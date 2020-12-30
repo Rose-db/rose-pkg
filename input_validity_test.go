@@ -8,6 +8,8 @@ import (
 
 var _ = GinkgoDescribe("Input validity tests", func() {
 	GinkgoIt("Should successfully save and read data that is similar to the delimiter", func() {
+		ginkgo.Skip("")
+
 		a := testCreateRose(false)
 
 		collName := testCreateCollection(a, "coll")
@@ -49,6 +51,8 @@ var _ = GinkgoDescribe("Input validity tests", func() {
 	})
 
 	GinkgoIt("Should successfully skip newlines in data values and not treat them as document delimiters", func() {
+		ginkgo.Skip("")
+
 		a := testCreateRose(false)
 
 		collName := testCreateCollection(a, "coll")

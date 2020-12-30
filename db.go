@@ -261,9 +261,7 @@ func (d *db) Replace(id int, data []uint8) Error {
 	return nil
 }
 
-func (d *db) Query(q *QueryBuilder) ([]*QueryResult, Error) {
-	stmt := q.ifStmt
-
+func (d *db) Query(q *query) ([]*QueryResult, Error) {
 	ch := make(chan *queueResponse)
 
 	queryItem := &balancerRequest{
@@ -274,10 +272,10 @@ func (d *db) Query(q *QueryBuilder) ([]*QueryResult, Error) {
 			Value    interface{}
 			DataType dataType
 		}{
-			CollName: stmt.Equal.Collection,
-			Field: stmt.Equal.Field,
-			Value: stmt.Equal.Value,
-			DataType: stmt.Equal.DataType,
+			CollName: q.Collection,
+			Field: q.Field,
+			Value: q.Value,
+			DataType: q.DataType,
 		},
 		Response: ch,
 	}

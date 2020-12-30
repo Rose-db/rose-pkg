@@ -18,6 +18,8 @@ type TestUser struct {
 
 var _ = GinkgoDescribe("Query tests", func() {
 	GinkgoIt("Should query the data un mass simultaneously", func() {
+		ginkgo.Skip("")
+
 		testEmails := []string{
 			"mario@gmail.com",
 			"joanne@gmail.com",
@@ -95,7 +97,7 @@ var _ = GinkgoDescribe("Query tests", func() {
 
 			go func(wg *sync.WaitGroup, index int, total int) {
 				qb := NewQueryBuilder()
-				qb, err := qb.If(NewEqual(collName, "email", testEmails[index], stringType))
+				qb, err := qb.If(NewQuery(collName, "email", testEmails[index], stringType, ""))
 
 				gomega.Expect(err).To(gomega.BeNil())
 
@@ -123,6 +125,8 @@ var _ = GinkgoDescribe("Query tests", func() {
 	})
 
 	GinkgoIt("Should query the data un mass synchronously", func() {
+		ginkgo.Skip("")
+
 		testEmails := []string{
 			"mario@gmail.com",
 			"joanne@gmail.com",
@@ -198,7 +202,7 @@ var _ = GinkgoDescribe("Query tests", func() {
 		for i := 0; i < len(testEmails); i++ {
 			go func(ch chan bool, index int, total int) {
 				qb := NewQueryBuilder()
-				qb, err := qb.If(NewEqual(collName, "email", testEmails[index], stringType))
+				qb, err := qb.If(NewQuery(collName, "email", testEmails[index], stringType, ""))
 
 				gomega.Expect(err).To(gomega.BeNil())
 
@@ -226,6 +230,8 @@ var _ = GinkgoDescribe("Query tests", func() {
 	})
 
 	GinkgoIt("Should query the data from multiple collections concurrently", func() {
+		ginkgo.Skip("")
+
 		testEmails := []string{
 			"mario@gmail.com",
 			"joanne@gmail.com",
@@ -307,7 +313,7 @@ var _ = GinkgoDescribe("Query tests", func() {
 
 				go func(wg *sync.WaitGroup, index int, total int) {
 					qb := NewQueryBuilder()
-					qb, err := qb.If(NewEqual(collName, "email", testEmails[index], stringType))
+					qb, err := qb.If(NewQuery(collName, "email", testEmails[index], stringType, ""))
 
 					gomega.Expect(err).To(gomega.BeNil())
 
@@ -336,6 +342,8 @@ var _ = GinkgoDescribe("Query tests", func() {
 	})
 
 	GinkgoIt("Should perform queries with producer/consumer pattern", func() {
+		ginkgo.Skip("")
+
 		testEmails := []string{
 			"mario@gmail.com",
 			"joanne@gmail.com",
@@ -360,7 +368,7 @@ var _ = GinkgoDescribe("Query tests", func() {
 		go func() {
 			for c := range ch {
 				qb := NewQueryBuilder()
-				qb, err := qb.If(NewEqual(collOne, "email", c, stringType))
+				qb, err := qb.If(NewQuery(collOne, "email", c, stringType, ""))
 
 				gomega.Expect(err).To(gomega.BeNil())
 
@@ -413,14 +421,88 @@ var _ = GinkgoDescribe("Query tests", func() {
 	})
 
 	GinkgoIt("Should query values with AND statement from the same collection", func() {
+		ginkgo.Skip("")
+
+		testEmails := []string{
+			"mario@gmail.com",
+			"joanne@gmail.com",
+			"kristina@gmail.com",
+			"florentina@gmail.com",
+			"mistifina@gmail.com",
+			"julianne@gmail.com",
+			"hanssina@gmail.com",
+			"planetina@gmail.com",
+			"crazyina@gmai.com",
+			"collenne@gmail.com",
+		}
+
 		a := testCreateRose(false)
 
-		collOne := testCreateCollection(a, "coll_one")
+		collName := testCreateCollection(a, "test_coll")
+
+		rand.Seed(time.Now().UnixNano())
+
+		randomEmails := [10]int{}
+		for i := 0; i < 200000; i++ {
+			r := rand.Intn((len(testEmails) - 1) - 0) + 0
+
+			user := TestUser{}
+			err := faker.FakeData(&user)
+
+			gomega.Expect(err).To(gomega.BeNil())
+
+			user.Email = testEmails[r]
+
+			res := testSingleConcurrentInsert(WriteMetadata{
+				CollectionName: collName,
+				Data:           testAsJsonInterface(user),
+			}, a)
+
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
+
+			randomEmails[r]++
+		}
+
+		foundEmails := [10]int{}
+		for i := 1; i < 200001; i++ {
+			user := TestUser{}
+			res := testSingleRead(ReadMetadata{
+				CollectionName: collName,
+				ID:             i,
+				Data:           &user,
+			}, a)
+
+			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
+
+			email := user.Email
+
+			for j := 0; j < len(testEmails); j++ {
+				if testEmails[j] == email {
+					foundEmails[j]++
+
+					break
+				}
+			}
+		}
+
+		for i := 0; i < len(testEmails); i++ {
+			r := randomEmails[i]
+			f := foundEmails[i]
+
+			gomega.Expect(r).To(gomega.Equal(f))
+		}
 
 		qb := NewQueryBuilder()
 
-		qb, err := qb.If(NewAnd(NewQuery(collOne, "field", "value", "string")))
+		qb, err := qb.If(NewAnd(
+			NewQuery(collName, "email", "collenne@gmail.com", "string", ""),
+			NewQuery(collName, "email", "mistifina@gmail.com", "string", ""),
+		))
 
 		gomega.Expect(err).To(gomega.BeNil())
+
+		a.Query(qb)
 	})
 })
