@@ -8,8 +8,6 @@ import (
 
 var _ = GinkgoDescribe("Insertion tests", func() {
 	GinkgoIt("Should insert a single piece of data", func() {
-		ginkgo.Skip("")
-
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 
 		a := testCreateRose(false)
@@ -33,8 +31,6 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 	})
 
 	GinkgoIt("Should insert a single piece of data in multiple collection", func() {
-		ginkgo.Skip("")
-
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 
 		a := testCreateRose(false)
@@ -70,8 +66,6 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 	})
 
 	GinkgoIt("Should insert multiple values", func() {
-		ginkgo.Skip("")
-
 		var currId uint64
 
 		a := testCreateRose(false)
@@ -103,8 +97,6 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 
 var _ = GinkgoDescribe("Read tests", func() {
 	GinkgoIt("Should read a single result", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 
 		collName := testCreateCollection(a, "test_coll")
@@ -132,8 +124,6 @@ var _ = GinkgoDescribe("Read tests", func() {
 	})
 
 	GinkgoIt("Should perform multiple reads", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 
 		collName := testCreateCollection(a, "test_coll")
@@ -170,8 +160,6 @@ var _ = GinkgoDescribe("Read tests", func() {
 	})
 
 	GinkgoIt("Should delete a single document", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 
 		collName := testCreateCollection(a, "test_coll")
@@ -208,8 +196,6 @@ var _ = GinkgoDescribe("Read tests", func() {
 	})
 
 	GinkgoIt("Should replace a single document", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 
 		collName := testCreateCollection(a, "test_coll")

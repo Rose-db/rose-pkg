@@ -3,7 +3,6 @@ package rose
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"sync"
 )
@@ -327,32 +326,30 @@ func (a *Rose) Query(qb *QueryBuilder) ([]*QueryResult, Error) {
 		for _, q := range and.List {
 			wg.Add(1)
 
-			go func(wg *sync.WaitGroup, q *query) {
-				collName := q.Collection
+			collName := q.Collection
 
-				db, ok := a.Databases[collName]
+			d, ok := a.Databases[collName]
 
-				if !ok {
-					panic("Collection not found")
-				}
+			if !ok {
+				panic("Collection not found")
+			}
 
-				queryResults, err := db.Query(q)
+			go func(wg *sync.WaitGroup, q *query, d *db) {
+				queryResults, err := d.Query(q)
 
 				if err != (*queryError)(nil) {
-					fmt.Printf("Error: %v", err)
-					return
+					panic(err)
 				}
 
 				results = append(results, queryResults...)
 
 				wg.Done()
-			}(wg, q)
+			}(wg, q, d)
 		}
 
 		wg.Wait()
 
-		fmt.Println(results)
-		log.Fatal("")
+		return results, nil
 	}
 
 	return nil, nil

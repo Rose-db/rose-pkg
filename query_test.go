@@ -18,8 +18,6 @@ type TestUser struct {
 
 var _ = GinkgoDescribe("Query tests", func() {
 	GinkgoIt("Should query the data un mass simultaneously", func() {
-		ginkgo.Skip("")
-
 		testEmails := []string{
 			"mario@gmail.com",
 			"joanne@gmail.com",
@@ -125,8 +123,6 @@ var _ = GinkgoDescribe("Query tests", func() {
 	})
 
 	GinkgoIt("Should query the data un mass synchronously", func() {
-		ginkgo.Skip("")
-
 		testEmails := []string{
 			"mario@gmail.com",
 			"joanne@gmail.com",
@@ -168,36 +164,6 @@ var _ = GinkgoDescribe("Query tests", func() {
 			randomEmails[r]++
 		}
 
-		foundEmails := [10]int{}
-		for i := 1; i < 200001; i++ {
-			user := TestUser{}
-			res := testSingleRead(ReadMetadata{
-				CollectionName: collName,
-				ID:             i,
-				Data:           &user,
-			}, a)
-
-			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
-			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
-
-			email := user.Email
-
-			for j := 0; j < len(testEmails); j++ {
-				if testEmails[j] == email {
-					foundEmails[j]++
-
-					break
-				}
-			}
-		}
-
-		for i := 0; i < len(testEmails); i++ {
-			r := randomEmails[i]
-			f := foundEmails[i]
-
-			gomega.Expect(r).To(gomega.Equal(f))
-		}
-
 		ch := make(chan bool)
 		for i := 0; i < len(testEmails); i++ {
 			go func(ch chan bool, index int, total int) {
@@ -230,8 +196,6 @@ var _ = GinkgoDescribe("Query tests", func() {
 	})
 
 	GinkgoIt("Should query the data from multiple collections concurrently", func() {
-		ginkgo.Skip("")
-
 		testEmails := []string{
 			"mario@gmail.com",
 			"joanne@gmail.com",
@@ -277,36 +241,6 @@ var _ = GinkgoDescribe("Query tests", func() {
 				randomEmails[r]++
 			}
 
-			foundEmails := [10]int{}
-			for i := 1; i < 200001; i++ {
-				user := TestUser{}
-				res := testSingleRead(ReadMetadata{
-					CollectionName: collName,
-					ID:             i,
-					Data:           &user,
-				}, a)
-
-				gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
-				gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
-
-				email := user.Email
-
-				for j := 0; j < len(testEmails); j++ {
-					if testEmails[j] == email {
-						foundEmails[j]++
-
-						break
-					}
-				}
-			}
-
-			for i := 0; i < len(testEmails); i++ {
-				r := randomEmails[i]
-				f := foundEmails[i]
-
-				gomega.Expect(r).To(gomega.Equal(f))
-			}
-
 			wg := &sync.WaitGroup{}
 			for i := 0; i < len(testEmails); i++ {
 				wg.Add(1)
@@ -342,8 +276,6 @@ var _ = GinkgoDescribe("Query tests", func() {
 	})
 
 	GinkgoIt("Should perform queries with producer/consumer pattern", func() {
-		ginkgo.Skip("")
-
 		testEmails := []string{
 			"mario@gmail.com",
 			"joanne@gmail.com",
@@ -421,8 +353,6 @@ var _ = GinkgoDescribe("Query tests", func() {
 	})
 
 	GinkgoIt("Should query values with AND statement from the same collection", func() {
-		ginkgo.Skip("")
-
 		testEmails := []string{
 			"mario@gmail.com",
 			"joanne@gmail.com",
@@ -464,36 +394,6 @@ var _ = GinkgoDescribe("Query tests", func() {
 			randomEmails[r]++
 		}
 
-		foundEmails := [10]int{}
-		for i := 1; i < 200001; i++ {
-			user := TestUser{}
-			res := testSingleRead(ReadMetadata{
-				CollectionName: collName,
-				ID:             i,
-				Data:           &user,
-			}, a)
-
-			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
-			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
-
-			email := user.Email
-
-			for j := 0; j < len(testEmails); j++ {
-				if testEmails[j] == email {
-					foundEmails[j]++
-
-					break
-				}
-			}
-		}
-
-		for i := 0; i < len(testEmails); i++ {
-			r := randomEmails[i]
-			f := foundEmails[i]
-
-			gomega.Expect(r).To(gomega.Equal(f))
-		}
-
 		qb := NewQueryBuilder()
 
 		qb, err := qb.If(NewAnd(
@@ -503,6 +403,22 @@ var _ = GinkgoDescribe("Query tests", func() {
 
 		gomega.Expect(err).To(gomega.BeNil())
 
-		a.Query(qb)
+		queryResults, err := a.Query(qb)
+
+		gomega.Expect(err).To(gomega.BeNil())
+
+		total := randomEmails[9] + randomEmails[4]
+
+		gomega.Expect(total).To(gomega.Equal(len(queryResults)))
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
 	})
 })
