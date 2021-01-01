@@ -225,7 +225,7 @@ func (d *db) Replace(id int, data []uint8) Error {
 	return nil
 }
 
-func (d *db) Query(q *query) ([]*QueryResult, Error) {
+func (d *db) Query() ([]*QueryResult, Error) {
 	ch := make(chan *queueResponse)
 
 	queryItem := &balancerRequest{
@@ -236,10 +236,10 @@ func (d *db) Query(q *query) ([]*QueryResult, Error) {
 			Value    interface{}
 			DataType dataType
 		}{
-			CollName: q.Collection,
-			Field: q.Field,
-			Value: q.Value,
-			DataType: q.DataType,
+			CollName: "temp",
+			Field: "temp",
+			Value: "temp",
+			DataType: "temp",
 		},
 		Response: ch,
 	}

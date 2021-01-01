@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"sync"
 )
 
 type AppResult struct {
@@ -292,67 +291,7 @@ func (a *Rose) Replace(m ReplaceMetadata) (*AppResult, Error) {
 	}, nil
 }
 
-func (a *Rose) Query(qb *QueryBuilder) ([]*QueryResult, Error) {
-	if errString := qb.validate(); errString != "" {
-		return nil, &validationError{
-			Code:    ValidationErrorCode,
-			Message: fmt.Sprintf("Invalid query. %s", errString),
-		}
-	}
-
-	stmt := qb.ifStmt
-
-	if stmt.Equal != nil {
-		collName := stmt.Equal.Collection
-
-		db, ok := a.Databases[collName]
-
-		if !ok {
-			return nil, &dbIntegrityError{
-				Code:    DbIntegrityViolationCode,
-				Message: fmt.Sprintf("Invalid read request. Collection %s does not exist", collName),
-			}
-		}
-
-		return db.Query(stmt.Equal)
-	}
-
-	if stmt.And != nil {
-		wg := &sync.WaitGroup{}
-		and := qb.ifStmt.And
-
-		results := make([]*QueryResult, 0)
-
-		for _, q := range and.List {
-			wg.Add(1)
-
-			collName := q.Collection
-
-			d, ok := a.Databases[collName]
-
-			if !ok {
-				panic("Collection not found")
-			}
-
-			go func(wg *sync.WaitGroup, q *query, d *db) {
-				queryResults, err := d.Query(q)
-
-				if err != (*queryError)(nil) {
-					panic(err)
-				}
-
-				results = append(results, queryResults...)
-
-				wg.Done()
-			}(wg, q, d)
-		}
-
-		wg.Wait()
-
-		return results, nil
-	}
-
-	return nil, nil
+func (a *Rose) Query() {
 }
 
 func (a *Rose) Size() (uint64, Error) {
