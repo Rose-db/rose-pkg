@@ -111,42 +111,6 @@ func (d *db) Delete(id int) (bool, Error) {
 		return false, err
 	}
 
-	track := d.increaseBlockTracker(blockId)
-
-	if track == defragmentMark {
-		indexes, err := d.tryDefragmentation(blockId)
-
-		if err != nil {
-			d.Unlock()
-
-			return false, err
-		}
-
-		for i, index := range indexes {
-			d.Index[i] = index
-		}
-
-		if err := d.WriteDriver.reload(); err != nil {
-			d.Unlock()
-
-			return false, err
-		}
-
-		if err := d.ReadDriver.reload(); err != nil {
-			d.Unlock()
-
-			return false, err
-		}
-
-		if err := d.DeleteDriver.reload(); err != nil {
-			d.Unlock()
-
-			return false, err
-		}
-
-		d.resetBlockTracker(blockId)
-	}
-
 	d.Unlock()
 
 	return true, nil

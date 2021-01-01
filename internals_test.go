@@ -61,52 +61,6 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		testRemoveFileSystemDb(roseDir())
 	})
 
-	GinkgoIt("Should inspect block tracker deletes", func() {
-		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
-		a := testCreateRose(false)
-		collName := testCreateCollection(a, "coll")
-
-		n := 3000
-
-		ids := [blockMark]int{}
-		for i := 0; i < n; i++ {
-			res := testSingleConcurrentInsert(WriteMetadata{Data: s, CollectionName: collName}, a)
-
-			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
-			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
-
-			ids[i] = res.ID
-		}
-
-		for i := 0; i < 1500; i++ {
-			res := testSingleDelete(DeleteMetadata{
-				CollectionName: collName,
-				ID:             ids[i],
-			}, a)
-
-			gomega.Expect(res.Status).To(gomega.Equal(DeletedResultStatus))
-			gomega.Expect(res.Method).To(gomega.Equal(DeleteMethodType))
-		}
-
-		db := a.Databases[collName]
-
-		gomega.Expect(len(db.BlockTracker)).To(gomega.Equal(1))
-
-		track := db.BlockTracker[0]
-
-		gomega.Expect(track[1]).To(gomega.Equal(uint16(177)))
-
-		if err := a.Shutdown(); err != nil {
-			testRemoveFileSystemDb(roseDir())
-
-			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
-
-			return
-		}
-
-		testRemoveFileSystemDb(roseDir())
-	})
-
 	GinkgoIt("Should inspect block tracker replace", func() {
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 		a := testCreateRose(false)
