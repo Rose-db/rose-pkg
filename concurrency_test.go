@@ -10,6 +10,7 @@ import (
 
 var _ = GinkgoDescribe("Concurrency tests", func() {
 	GinkgoIt("Should write values to the database with the concurrent method", func() {
+		ginkgo.Skip("")
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll_name")
 		n := 10000
@@ -87,6 +88,8 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 	})
 
 	GinkgoIt("Should delete document from the database with write done synchronously", func() {
+		ginkgo.Skip("")
+
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll")
 		n := 10000
@@ -158,6 +161,8 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 	})
 
 	GinkgoIt("Should write/delete with sender/receiver pattern", func() {
+		ginkgo.Skip("")
+
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll")
 		n := 10000
@@ -215,6 +220,8 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 	})
 
 	GinkgoIt("Should write data without waiting for a goroutine to finish and read the results after a timeout", func() {
+		ginkgo.Skip("")
+
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll_name")
 		n := 10000
@@ -266,6 +273,8 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 	})
 
 	GinkgoIt("Should delete data without waiting for a goroutine to finish and read the results after a timeout", func() {
+		ginkgo.Skip("")
+
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll")
 		n := 10000
@@ -315,6 +324,8 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 	})
 
 	GinkgoIt("Should read all values in spawned goroutines", func() {
+		ginkgo.Skip("")
+
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll")
 		n := 10000
@@ -364,6 +375,8 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 	})
 
 	GinkgoIt("Should delete all values in spawned goroutines", func() {
+		ginkgo.Skip("")
+
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll")
 		n := 10000
@@ -411,6 +424,8 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 	})
 
 	GinkgoIt("Should read and delete all documents spawned in multiple collections", func() {
+		ginkgo.Skip("")
+
 		a := testCreateRose(false)
 		collOne := testCreateCollection(a, "coll_one")
 		collTwo := testCreateCollection(a, "coll_two")
@@ -572,6 +587,8 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 	})
 
 	GinkgoIt("Should replace documents concurrently", func() {
+		ginkgo.Skip("")
+
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll_one")
 		n := 12321
@@ -647,6 +664,8 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 	})
 
 	GinkgoIt("Should replace and delete documents concurrently", func() {
+		ginkgo.Skip("")
+
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll_one")
 		n := 12321
@@ -739,6 +758,8 @@ var _ = GinkgoDescribe("Concurrency tests", func() {
 	})
 
 	GinkgoIt("Should concurrently write to multiple collections", func() {
+		ginkgo.Skip("")
+
 		a := testCreateRose(false)
 		collOne := testCreateCollection(a, "coll_one")
 		collTwo := testCreateCollection(a, "coll_one")

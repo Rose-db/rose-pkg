@@ -15,6 +15,7 @@ type queueItem struct {
 	BlockId uint16
 	CollName string
 	Field string
+	EqChecker func (v *fastjson.Value, item *queueItem, found *lineReaderData)
 	Value interface{}
 	dataType dataType
 	Response chan interface{}
@@ -128,16 +129,7 @@ func (qq *queryQueue) runWorker(c chan *queueItem) {
 				break
 			}
 
-			if v.Exists(item.Field) {
-				res := v.GetStringBytes(item.Field)
-
-				if string(res) == item.Value.(string) {
-					item.Response<- &queueResponse{
-						ID:   d.id,
-						Body: d.val,
-					}
-				}
-			}
+			item.EqChecker(v, item, d)
 		}
 
 		if err := closeFile(file); err != nil {

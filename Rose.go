@@ -291,7 +291,21 @@ func (a *Rose) Replace(m ReplaceMetadata) (*AppResult, Error) {
 	}, nil
 }
 
-func (a *Rose) Query() {
+func (a *Rose) Query(qb *queryBuilder) ([]*QueryResult, Error) {
+	if qb.strictEquality != nil {
+		db, ok := a.Databases[qb.strictEquality.collName]
+
+		if !ok {
+			return nil, &dbIntegrityError{
+				Code:    DbIntegrityViolationCode,
+				Message: fmt.Sprintf("Invalid read request. Collection %s does not exist", qb.strictEquality.collName),
+			}
+		}
+
+		return db.Query(qb.strictEquality)
+	}
+
+	return nil, nil
 }
 
 func (a *Rose) Size() (uint64, Error) {

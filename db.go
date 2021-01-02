@@ -225,26 +225,20 @@ func (d *db) Replace(id int, data []uint8) Error {
 	return nil
 }
 
-func (d *db) Query() ([]*QueryResult, Error) {
+func (d *db) Query(query interface{}) ([]*QueryResult, Error) {
 	ch := make(chan *queueResponse)
+	var t queryType
 
-	queryItem := &balancerRequest{
-		BlockNum: uint16(len(d.BlockTracker)),
-		Item: struct {
-			CollName string
-			Field    string
-			Value    interface{}
-			DataType dataType
-		}{
-			CollName: "temp",
-			Field: "temp",
-			Value: "temp",
-			DataType: "temp",
-		},
-		Response: ch,
+	switch query.(type) {
+	case *strictEquality:
+		t = equality
 	}
 
-	return d.Balancer.Push(queryItem)
+	return d.Balancer.Push(&balancerRequest{
+		BlockNum: uint16(len(d.BlockTracker)),
+		Operator: query,
+		Response: ch,
+	}, t)
 }
 
 // shutdown does not do anything for now until I decide what to do with multiple drivers
