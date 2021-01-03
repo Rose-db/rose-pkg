@@ -18,17 +18,29 @@ func NewQueryBuilder() *queryBuilder {
 	return &queryBuilder{}
 }
 
-func (qb *queryBuilder) Do(collName string, query string, tp dataType) {
+func (qb *queryBuilder) If(collName string, query string, params map[string]interface{}) {
 	s := strings.Split(query, "==")
 
 	field := strings.TrimSpace(s[0])
-	value := strings.TrimSpace(s[1])
+	placeholder := strings.TrimSpace(s[1])
+
+	val := params[placeholder]
+	var dt dataType
+
+	switch val.(type) {
+	case string:
+		dt = stringType
+	case int:
+		dt = intType
+	case float32:
+		dt = floatType
+	}
 
 	eq := &strictEquality{
 		collName: collName,
 		field:    field,
-		value:    value,
-		dataType: tp,
+		value:    val,
+		dataType: dt,
 	}
 
 	qb.strictEquality = eq

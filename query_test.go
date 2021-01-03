@@ -2,6 +2,7 @@ package rose
 
 import (
 	"fmt"
+	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
 	"math/rand"
 	"time"
@@ -14,9 +15,9 @@ type TestUser struct {
 
 var _ = GinkgoDescribe("Query tests", func() {
 	GinkgoIt("Should make an equality query", func() {
-		a := testCreateRose(false)
-		collName := testCreateCollection(a, "coll_name")
-		n := 100000
+		r := testCreateRose(false)
+		collName := testCreateCollection(r, "coll_name")
+		n := 10000
 
 		emailList := []string{
 			"mario@gmail.com",
@@ -30,7 +31,7 @@ var _ = GinkgoDescribe("Query tests", func() {
 
 		writtenEmails := [5]int{}
 		for i := 0; i < n; i++ {
-			r := rand.Intn(len(emailList) - 1)
+			rnd := rand.Intn(len(emailList))
 
 			t := "company"
 			if i % 2 == 0 {
@@ -39,26 +40,28 @@ var _ = GinkgoDescribe("Query tests", func() {
 
 			user := &TestUser{
 				Type:  t,
-				Email: emailList[r],
+				Email: emailList[rnd],
 			}
 
 			res := testSingleConcurrentInsert(WriteMetadata{
 				CollectionName: collName,
 				Data:           testAsJsonInterface(user),
-			}, a)
+			}, r)
 
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 
-			writtenEmails[r]++
+			writtenEmails[rnd]++
 		}
 
 		for i, email := range emailList {
 			qb := NewQueryBuilder()
 
-			qb.Do(collName, fmt.Sprintf("email == %s", email), "string")
+			qb.If(collName, "email == :email", map[string]interface{}{
+				":email": email,
+			})
 
-			queryResults, err := a.Query(qb)
+			queryResults, err := r.Query(qb)
 
 			if err != (*queryError)(nil) {
 				panic(err)
@@ -67,5 +70,14 @@ var _ = GinkgoDescribe("Query tests", func() {
 			gomega.Expect(len(queryResults)).To(gomega.Equal(writtenEmails[i]))
 		}
 
+		if err := r.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
 	})
 })

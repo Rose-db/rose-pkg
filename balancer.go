@@ -73,32 +73,32 @@ func (b *balancer) safeIncrement() {
 }
 
 func (b *balancer) Push(item *balancerRequest, t queryType) ([]*QueryResult, Error) {
-	if v, ok := item.Operator.(*strictEquality); ok {
-		queryResults := make([]*QueryResult, 0)
-		var err *queryError = nil
+	queryResults := make([]*QueryResult, 0)
+	var err *queryError = nil
 
-		responses := make(chan interface{})
+	responses := make(chan interface{})
 
-		wg := &sync.WaitGroup{}
-		wg.Add(int(item.BlockNum))
-		go func(wg *sync.WaitGroup) {
-			for res := range responses {
-				switch v := res.(type) {
-				case *queueResponse:
-					queryResults = append(queryResults, &QueryResult{
-						ID:   v.ID,
-						Data: v.Body,
-					})
-				case *queryError:
-					if err == nil {
-						err = v
-					}
-				case bool:
-					wg.Done()
+	wg := &sync.WaitGroup{}
+	wg.Add(int(item.BlockNum))
+	go func(wg *sync.WaitGroup) {
+		for res := range responses {
+			switch v := res.(type) {
+			case *queueResponse:
+				queryResults = append(queryResults, &QueryResult{
+					ID:   v.ID,
+					Data: v.Body,
+				})
+			case *queryError:
+				if err == nil {
+					err = v
 				}
+			case bool:
+				wg.Done()
 			}
-		}(wg)
+		}
+	}(wg)
 
+	if v, ok := item.Operator.(*strictEquality); ok {
 		var i uint16
 		for i = 0; i < item.BlockNum; i++ {
 			comm := b.queryQueue.Comm[b.Next]
@@ -132,15 +132,13 @@ func (b *balancer) Push(item *balancerRequest, t queryType) ([]*QueryResult, Err
 		wg.Wait()
 
 		close(responses)
-
-		if err != nil {
-			queryResults = make([]*QueryResult, 0)
-		}
-
-		return queryResults, err
 	}
 
-	return nil, nil
+	if err != nil {
+		queryResults = make([]*QueryResult, 0)
+	}
+
+	return queryResults[0:], err
 }
 
 func (b *balancer) Close() {
