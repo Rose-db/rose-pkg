@@ -4,7 +4,7 @@ import (
 	"strings"
 )
 
-type strictCondition struct {
+type singleCondition struct {
 	collName string
 	field string
 	value interface{}
@@ -12,9 +12,18 @@ type strictCondition struct {
 	cond queryType
 }
 
+type singleCond struct {
+
+}
+
+type multipleCondition struct {
+	collName string
+}
+
 type queryBuilder struct {
 	built bool
-	strictCondition *strictCondition
+	singleCondition *singleCondition
+	multipleCondition *multipleCondition
 }
 
 func NewQueryBuilder() *queryBuilder {
@@ -22,19 +31,21 @@ func NewQueryBuilder() *queryBuilder {
 }
 
 func (qb *queryBuilder) If(collName string, query string, params map[string]interface{}) {
-	field, value, cond := qb.resolveCondition(query, params)
-	dt := qb.resolveDataType(value)
+	if qb.getQueryType(query) == "single" {
+		field, value, cond := qb.resolveCondition(query, params)
+		dt := qb.resolveDataType(value)
 
-	eq := &strictCondition{
-		collName: collName,
-		field:    field,
-		value:    value,
-		dataType: dt,
-		cond: cond,
+		c := &singleCondition{
+			collName: collName,
+			field:    field,
+			value:    value,
+			dataType: dt,
+			cond: cond,
+		}
+
+		qb.singleCondition = c
+		qb.built = true
 	}
-
-	qb.strictCondition = eq
-	qb.built = true
 }
 
 func (qb *queryBuilder) resolveCondition(query string, params map[string]interface{}) (string, interface{}, queryType) {
@@ -81,5 +92,13 @@ func (qb *queryBuilder) resolveDataType(val interface{}) dataType {
 	}
 
 	return dt
+}
+
+func (qb *queryBuilder) getQueryType(query string) string {
+	if strings.Contains(query, "&&") || strings.Contains(query, "||") {
+		return "multiple"
+	}
+
+	return "single"
 }
 

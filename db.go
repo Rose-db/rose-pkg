@@ -230,7 +230,7 @@ func (d *db) Query(query interface{}) ([]*QueryResult, Error) {
 	var t queryType
 
 	switch query.(type) {
-	case *strictCondition:
+	case *singleCondition:
 		t = equality
 	}
 
