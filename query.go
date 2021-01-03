@@ -19,22 +19,9 @@ func NewQueryBuilder() *queryBuilder {
 }
 
 func (qb *queryBuilder) If(collName string, query string, params map[string]interface{}) {
-	s := strings.Split(query, "==")
-
-	field := strings.TrimSpace(s[0])
-	placeholder := strings.TrimSpace(s[1])
-
+	field, placeholder := qb.resolveCondition(query)
 	val := params[placeholder]
-	var dt dataType
-
-	switch val.(type) {
-	case string:
-		dt = stringType
-	case int:
-		dt = intType
-	case float32:
-		dt = floatType
-	}
+	dt := qb.resolveDataType(val)
 
 	eq := &strictEquality{
 		collName: collName,
@@ -46,3 +33,39 @@ func (qb *queryBuilder) If(collName string, query string, params map[string]inte
 	qb.strictEquality = eq
 	qb.built = true
 }
+
+func (qb *queryBuilder) resolveCondition(query string) (string, string) {
+	conds := []string{
+		"==",
+		"!=",
+	}
+
+	for _, c := range conds {
+		s := strings.Split(query, c)
+
+		if len(s) != 0 {
+			field := strings.TrimSpace(s[0])
+			placeholder := strings.TrimSpace(s[1])
+
+			return field, placeholder
+		}
+	}
+
+	return "", ""
+}
+
+func (qb *queryBuilder) resolveDataType(val interface{}) dataType {
+	var dt dataType
+
+	switch val.(type) {
+	case string:
+		dt = stringType
+	case int:
+		dt = intType
+	case float32:
+		dt = floatType
+	}
+
+	return dt
+}
+
