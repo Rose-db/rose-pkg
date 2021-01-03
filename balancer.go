@@ -98,7 +98,7 @@ func (b *balancer) Push(item *balancerRequest, t queryType) ([]*QueryResult, Err
 		}
 	}(wg)
 
-	if v, ok := item.Operator.(*strictEquality); ok {
+	if v, ok := item.Operator.(*strictCondition); ok {
 		var checker func (v *fastjson.Value, item *queueItem, found *lineReaderData)
 
 		if v.cond == equality {

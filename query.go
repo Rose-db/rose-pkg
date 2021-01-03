@@ -4,7 +4,7 @@ import (
 	"strings"
 )
 
-type strictEquality struct {
+type strictCondition struct {
 	collName string
 	field string
 	value interface{}
@@ -14,7 +14,7 @@ type strictEquality struct {
 
 type queryBuilder struct {
 	built bool
-	strictEquality *strictEquality
+	strictCondition *strictCondition
 }
 
 func NewQueryBuilder() *queryBuilder {
@@ -22,23 +22,22 @@ func NewQueryBuilder() *queryBuilder {
 }
 
 func (qb *queryBuilder) If(collName string, query string, params map[string]interface{}) {
-	field, placeholder, cond := qb.resolveCondition(query)
-	val := params[placeholder]
-	dt := qb.resolveDataType(val)
+	field, value, cond := qb.resolveCondition(query, params)
+	dt := qb.resolveDataType(value)
 
-	eq := &strictEquality{
+	eq := &strictCondition{
 		collName: collName,
 		field:    field,
-		value:    val,
+		value:    value,
 		dataType: dt,
 		cond: cond,
 	}
 
-	qb.strictEquality = eq
+	qb.strictCondition = eq
 	qb.built = true
 }
 
-func (qb *queryBuilder) resolveCondition(query string) (string, string, queryType) {
+func (qb *queryBuilder) resolveCondition(query string, params map[string]interface{}) (string, interface{}, queryType) {
 	conds := []string{
 		"==",
 		"!=",
@@ -49,12 +48,19 @@ func (qb *queryBuilder) resolveCondition(query string) (string, string, queryTyp
 
 		if len(s) == 2 {
 			field := strings.TrimSpace(s[0])
-			placeholder := strings.TrimSpace(s[1])
+			p := strings.TrimSpace(s[1])
+			var value interface{}
+
+			if strings.Contains(p, ":") {
+				value = params[p]
+			} else {
+				value = p
+			}
 
 			if c == "==" {
-				return field, placeholder, equality
+				return field, value, equality
 			} else if c == "!=" {
-				return field, placeholder, inequality
+				return field, value, inequality
 			}
 		}
 	}
