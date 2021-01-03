@@ -99,6 +99,14 @@ func (b *balancer) Push(item *balancerRequest, t queryType) ([]*QueryResult, Err
 	}(wg)
 
 	if v, ok := item.Operator.(*strictEquality); ok {
+		var checker func (v *fastjson.Value, item *queueItem, found *lineReaderData)
+
+		if v.cond == equality {
+			checker = queryEqChecker
+		} else if v.cond == inequality {
+			checker = queryNeqChecker
+		}
+
 		var i uint16
 		for i = 0; i < item.BlockNum; i++ {
 			comm := b.queryQueue.Comm[b.Next]
@@ -109,18 +117,7 @@ func (b *balancer) Push(item *balancerRequest, t queryType) ([]*QueryResult, Err
 				Field:    v.field,
 				Value:    v.value,
 				dataType: v.dataType,
-				EqChecker: func(v *fastjson.Value, item *queueItem, found *lineReaderData) {
-					if v.Exists(item.Field) {
-						res := v.GetStringBytes(item.Field)
-
-						if string(res) == item.Value.(string) {
-							item.Response<- &queueResponse{
-								ID:   found.id,
-								Body: found.val,
-							}
-						}
-					}
-				},
+				EqChecker: checker,
 				Response: responses,
 			}
 
@@ -143,6 +140,32 @@ func (b *balancer) Push(item *balancerRequest, t queryType) ([]*QueryResult, Err
 
 func (b *balancer) Close() {
 	b.queryQueue.Close()
+}
+
+func queryEqChecker(v *fastjson.Value, item *queueItem, found *lineReaderData) {
+	if v.Exists(item.Field) {
+		res := v.GetStringBytes(item.Field)
+
+		if string(res) == item.Value.(string) {
+			item.Response<- &queueResponse{
+				ID:   found.id,
+				Body: found.val,
+			}
+		}
+	}
+}
+
+func queryNeqChecker(v *fastjson.Value, item *queueItem, found *lineReaderData) {
+	if v.Exists(item.Field) {
+		res := v.GetStringBytes(item.Field)
+
+		if string(res) != item.Value.(string) {
+			item.Response<- &queueResponse{
+				ID:   found.id,
+				Body: found.val,
+			}
+		}
+	}
 }
 
 

@@ -80,7 +80,6 @@ var _ = GinkgoDescribe("Query tests", func() {
 	})
 
 	GinkgoIt("Should make an inequality query", func() {
-		ginkgo.Skip("")
 		r := testCreateRose(false)
 		collName := testCreateCollection(r, "coll_name")
 		n := 10000
@@ -131,7 +130,14 @@ var _ = GinkgoDescribe("Query tests", func() {
 
 			gomega.Expect(err).To(gomega.BeNil())
 
-			gomega.Expect(len(queryResults)).To(gomega.Equal(writtenEmails[i]))
+			res := 0
+			for j, num := range writtenEmails {
+				if j != i {
+					res += num
+				}
+			}
+
+			gomega.Expect(len(queryResults)).To(gomega.Equal(res))
 		}
 
 		if err := r.Shutdown(); err != nil {

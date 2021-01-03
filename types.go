@@ -67,4 +67,5 @@ func (d dataType) isValid() bool {
 
 type queryType string
 
-const equality queryType = "strictEquality"
+const equality queryType = "eq"
+const inequality queryType = "neq"

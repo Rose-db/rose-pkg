@@ -1,12 +1,15 @@
 package rose
 
-import "strings"
+import (
+	"strings"
+)
 
 type strictEquality struct {
 	collName string
 	field string
 	value interface{}
 	dataType dataType
+	cond queryType
 }
 
 type queryBuilder struct {
@@ -19,7 +22,7 @@ func NewQueryBuilder() *queryBuilder {
 }
 
 func (qb *queryBuilder) If(collName string, query string, params map[string]interface{}) {
-	field, placeholder := qb.resolveCondition(query)
+	field, placeholder, cond := qb.resolveCondition(query)
 	val := params[placeholder]
 	dt := qb.resolveDataType(val)
 
@@ -28,13 +31,14 @@ func (qb *queryBuilder) If(collName string, query string, params map[string]inte
 		field:    field,
 		value:    val,
 		dataType: dt,
+		cond: cond,
 	}
 
 	qb.strictEquality = eq
 	qb.built = true
 }
 
-func (qb *queryBuilder) resolveCondition(query string) (string, string) {
+func (qb *queryBuilder) resolveCondition(query string) (string, string, queryType) {
 	conds := []string{
 		"==",
 		"!=",
@@ -43,15 +47,19 @@ func (qb *queryBuilder) resolveCondition(query string) (string, string) {
 	for _, c := range conds {
 		s := strings.Split(query, c)
 
-		if len(s) != 0 {
+		if len(s) == 2 {
 			field := strings.TrimSpace(s[0])
 			placeholder := strings.TrimSpace(s[1])
 
-			return field, placeholder
+			if c == "==" {
+				return field, placeholder, equality
+			} else if c == "!=" {
+				return field, placeholder, inequality
+			}
 		}
 	}
 
-	return "", ""
+	return "", "", ""
 }
 
 func (qb *queryBuilder) resolveDataType(val interface{}) dataType {
