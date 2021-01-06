@@ -10,8 +10,6 @@ import (
 
 var _ = GinkgoDescribe("Successfully failing tests", func() {
 	GinkgoIt("Should fail to write if the collection does not exist", func() {
-		ginkgo.Skip("")
-
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 
 		a := testCreateRose(false)
@@ -47,8 +45,6 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail to read if the collection does not exist", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 
 		wg := &sync.WaitGroup{}
@@ -86,8 +82,6 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail write() if data is not a json byte array", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll")
 
@@ -116,8 +110,6 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail replace() if data is not a json byte array", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll")
 
@@ -146,8 +138,6 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail because data too large > 16MB", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll")
 
@@ -194,8 +184,6 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail to read a document if not exists", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 
 		collName := testCreateCollection(a, "coll")
@@ -217,8 +205,6 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail to delete a document if not exist", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 
 		collName := testCreateCollection(a, "coll")
