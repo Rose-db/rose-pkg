@@ -286,7 +286,6 @@ var _ = GinkgoDescribe("Query tests", func() {
 
 	GinkgoIt("Should make an equality query with AND operator", func() {
 		ginkgo.Skip("")
-
 		r := testCreateRose(false)
 		collName := testCreateCollection(r, "coll_name")
 		n := 10000
@@ -329,7 +328,7 @@ var _ = GinkgoDescribe("Query tests", func() {
 		for _, email := range emailList {
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "email == :email && type == company", map[string]interface{}{
+			qb.If(collName, "email == :email && type == company || type == user", map[string]interface{}{
 				":email": email,
 			})
 

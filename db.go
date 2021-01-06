@@ -225,20 +225,14 @@ func (d *db) Replace(id int, data []uint8) Error {
 	return nil
 }
 
-func (d *db) Query(query interface{}) ([]*QueryResult, Error) {
+func (d *db) Query(node *opNode) ([]*QueryResult, Error) {
 	ch := make(chan *queueResponse)
-	var t queryType
-
-	switch query.(type) {
-	case *singleCondition:
-		t = equality
-	}
 
 	return d.Balancer.Push(&balancerRequest{
 		BlockNum: uint16(len(d.BlockTracker)),
-		Operator: query,
+		Operator: node,
 		Response: ch,
-	}, t)
+	})
 }
 
 // shutdown does not do anything for now until I decide what to do with multiple drivers

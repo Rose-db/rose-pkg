@@ -14,10 +14,8 @@ type queryQueue struct {
 type queueItem struct {
 	BlockId uint16
 	CollName string
-	Field string
 	EqChecker func (v *fastjson.Value, item *queueItem, found *lineReaderData)
-	Value interface{}
-	dataType dataType
+	Operator *opNode
 	Response chan interface{}
 }
 

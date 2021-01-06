@@ -19,7 +19,7 @@ type balancer struct {
 
 type balancerRequest struct {
 	BlockNum uint16
-	Operator interface{}
+	Operator *opNode
 	Response chan *queueResponse
 }
 
@@ -72,7 +72,7 @@ func (b *balancer) safeIncrement() {
 	}
 }
 
-func (b *balancer) Push(item *balancerRequest, t queryType) ([]*QueryResult, Error) {
+func (b *balancer) Push(item *balancerRequest) ([]*QueryResult, Error) {
 	queryResults := make([]*QueryResult, 0)
 	var err *queryError = nil
 
@@ -98,38 +98,26 @@ func (b *balancer) Push(item *balancerRequest, t queryType) ([]*QueryResult, Err
 		}
 	}(wg)
 
-	if v, ok := item.Operator.(*singleCondition); ok {
-		var checker func (v *fastjson.Value, item *queueItem, found *lineReaderData)
+	var i uint16
+	for i = 0; i < item.BlockNum; i++ {
+		comm := b.queryQueue.Comm[b.Next]
 
-		if v.cond == equality {
-			checker = queryEqChecker
-		} else if v.cond == inequality {
-			checker = queryNeqChecker
+		queueItem := &queueItem{
+			BlockId:  i,
+			CollName: item.Operator.cond.collName,
+			Operator: item.Operator,
+			EqChecker: singleCollectionQueryChecker,
+			Response: responses,
 		}
 
-		var i uint16
-		for i = 0; i < item.BlockNum; i++ {
-			comm := b.queryQueue.Comm[b.Next]
+		comm<- queueItem
 
-			queueItem := &queueItem{
-				BlockId:  i,
-				CollName: v.collName,
-				Field:    v.field,
-				Value:    v.value,
-				dataType: v.dataType,
-				EqChecker: checker,
-				Response: responses,
-			}
-
-			comm<- queueItem
-
-			b.safeIncrement()
-		}
-
-		wg.Wait()
-
-		close(responses)
+		b.safeIncrement()
 	}
+
+	wg.Wait()
+
+	close(responses)
 
 	if err != nil {
 		queryResults = make([]*QueryResult, 0)
@@ -142,29 +130,44 @@ func (b *balancer) Close() {
 	b.queryQueue.Close()
 }
 
-func queryEqChecker(v *fastjson.Value, item *queueItem, found *lineReaderData) {
-	if v.Exists(item.Field) {
-		res := v.GetStringBytes(item.Field)
+func singleCollectionQueryChecker(v *fastjson.Value, item *queueItem, found *lineReaderData) {
+	queueResponse := &queueResponse{
+		ID:   0,
+		Body: nil,
+	}
 
-		if string(res) == item.Value.(string) {
-			item.Response<- &queueResponse{
-				ID:   found.id,
-				Body: found.val,
+	didFind := false
+	for {
+		j := item.Operator
+		cond := j.cond
+
+		if v.Exists(cond.field) {
+			res := v.GetStringBytes(cond.field)
+
+			if cond.queryType == equality {
+				if string(res) == cond.value.(string) {
+					queueResponse.ID = found.id
+					queueResponse.Body = found.val
+
+					didFind = true
+				}
+			} else if cond.queryType == inequality {
+				if string(res) != cond.value.(string) {
+					queueResponse.ID = found.id
+					queueResponse.Body = found.val
+
+					didFind = true
+				}
 			}
+		}
+
+		if j.next == nil {
+			break
 		}
 	}
-}
 
-func queryNeqChecker(v *fastjson.Value, item *queueItem, found *lineReaderData) {
-	if v.Exists(item.Field) {
-		res := v.GetStringBytes(item.Field)
-
-		if string(res) != item.Value.(string) {
-			item.Response<- &queueResponse{
-				ID:   found.id,
-				Body: found.val,
-			}
-		}
+	if didFind {
+		item.Response<- queueResponse
 	}
 }
 

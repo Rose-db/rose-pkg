@@ -292,17 +292,17 @@ func (a *Rose) Replace(m ReplaceMetadata) (*AppResult, Error) {
 }
 
 func (a *Rose) Query(qb *queryBuilder) ([]*QueryResult, Error) {
-	if qb.singleCondition != nil {
-		db, ok := a.Databases[qb.singleCondition.collName]
+	if qb.opNode != nil {
+		db, ok := a.Databases[qb.collName]
 
 		if !ok {
 			return nil, &dbIntegrityError{
 				Code:    DbIntegrityViolationCode,
-				Message: fmt.Sprintf("Invalid read request. Collection %s does not exist", qb.singleCondition.collName),
+				Message: fmt.Sprintf("Invalid read request. Collection %s does not exist", qb.collName),
 			}
 		}
 
-		return db.Query(qb.singleCondition)
+		return db.Query(qb.opNode)
 	}
 
 	return nil, nil
