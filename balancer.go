@@ -131,44 +131,103 @@ func (b *balancer) Close() {
 }
 
 func singleCollectionQueryChecker(v *fastjson.Value, item *queueItem, found *lineReaderData) {
-	queueResponse := &queueResponse{
-		ID:   0,
-		Body: nil,
+	stages := make(map[int]*struct{
+		Nodes []*opNode
+		Op string
+	})
+
+	currentStage := 0
+	r := item.Operator
+	currentOp := r.nextOp
+
+	for {
+		if currentOp != r.nextOp {
+			currentOp = r.nextOp
+		}
+
+		if stages[currentStage] == nil {
+			stages[currentStage] = &struct{
+				Nodes []*opNode
+				Op string
+			}{
+				Nodes: make([]*opNode, 0),
+				Op: currentOp,
+			}
+		}
+
+		stages[currentStage].Nodes = append(stages[currentStage].Nodes, r)
+
+		if r.next == nil {
+			break
+		}
+
+		r = r.next
 	}
 
-	didFind := false
-	for {
-		j := item.Operator
-		cond := j.cond
+	queueResponse := &queueResponse{
+		ID:   found.id,
+		Body: found.val,
+	}
 
-		if v.Exists(cond.field) {
-			res := v.GetStringBytes(cond.field)
+	oneOperatorOnly := false
+/*	oneStageOnly := false
+	if len(stages) == 0 {
+		oneStageOnly = true
+	}*/
 
-			if cond.queryType == equality {
-				if string(res) == cond.value.(string) {
-					queueResponse.ID = found.id
-					queueResponse.Body = found.val
+	if len(stages) == 1 && len(stages[0].Nodes) == 1 {
+		oneOperatorOnly = true
+	}
 
-					didFind = true
-				}
-			} else if cond.queryType == inequality {
-				if string(res) != cond.value.(string) {
-					queueResponse.ID = found.id
-					queueResponse.Body = found.val
+	fullResults := make(map[int]bool)
 
-					didFind = true
+	for i, stage := range stages {
+		stageResults := 0
+
+		for _, node := range stage.Nodes {
+			cond := node.cond
+
+			if v.Exists(cond.field) {
+				res := v.GetStringBytes(cond.field)
+
+				if cond.queryType == equality {
+					if string(res) == cond.value.(string) {
+						if oneOperatorOnly {
+							item.Response<- queueResponse
+
+							return
+						}
+
+						stageResults++
+					}
+				} else if cond.queryType == inequality {
+					if string(res) != cond.value.(string) {
+						if oneOperatorOnly {
+							item.Response<- queueResponse
+
+							return
+						}
+
+						stageResults++
+					}
 				}
 			}
 		}
 
-		if j.next == nil {
-			break
+		if stage.Op == "&&" && stageResults == len(stage.Nodes) {
+			fullResults[i] = true
+		} else {
+			fullResults[i] = false
 		}
 	}
 
-	if didFind {
-		item.Response<- queueResponse
+	for _, ok := range fullResults {
+		if !ok {
+			return
+		}
 	}
+
+	item.Response<- queueResponse
 }
 
 

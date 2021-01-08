@@ -10,6 +10,7 @@ type opNode struct {
 	next *opNode
 	parent *opNode
 	nextOp string
+	prevOp string
 }
 
 type singleCondition struct {
@@ -84,6 +85,10 @@ func (qb *queryBuilder) If(collName string, query string, params map[string]inte
 			}
 
 			root.next.parent = root
+
+			if root.parent != nil {
+				root.prevOp = root.parent.nextOp
+			}
 
 			root = root.next
 		}
