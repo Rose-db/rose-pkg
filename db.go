@@ -225,12 +225,12 @@ func (d *db) Replace(id int, data []uint8) Error {
 	return nil
 }
 
-func (d *db) Query(node *opNode) ([]QueryResult, Error) {
+func (d *db) Query(singleQuery *singleQuery) ([]QueryResult, Error) {
 	ch := make(chan *queueResponse)
 
 	bReq := &balancerRequest{
 		BlockNum: uint16(d.AutoIncrementCounter / blockMark + 1),
-		Operator: node,
+		Operator: singleQuery.opNode,
 		Response: ch,
 	}
 
