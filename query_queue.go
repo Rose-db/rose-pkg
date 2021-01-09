@@ -14,8 +14,8 @@ type queryQueue struct {
 type queueItem struct {
 	BlockId uint16
 	CollName string
+	OperationStages map[int]*operatorStages
 	Check func (v *fastjson.Value, item *queueItem, found *lineReaderData)
-	Operator *opNode
 	Response chan interface{}
 }
 

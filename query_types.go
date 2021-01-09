@@ -7,6 +7,7 @@ import (
 type singleQuery struct {
 	collName string
 	opNode *opNode
+	stages map[int]*operatorStages
 }
 
 type singleCondition struct {
@@ -15,6 +16,11 @@ type singleCondition struct {
 	value interface{}
 	dataType dataType
 	queryType queryType
+}
+
+type operatorStages struct {
+	Nodes []*opNode
+	Op string
 }
 
 func newSingleCondition(collName string, query string, params map[string]interface{}) *singleCondition {
@@ -142,12 +148,44 @@ func (sq *singleQuery) createCondList(collName string, conds []map[string]string
 	return root
 }
 
+func (sq *singleQuery) createStages(root *opNode) map[int]*operatorStages {
+	stages := make(map[int]*operatorStages)
+
+	currentStage := 0
+	currentOp := root.nextOp
+
+	for {
+		if stages[currentStage] == nil {
+			stages[currentStage] = &operatorStages{
+				Nodes: make([]*opNode, 0),
+				Op: currentOp,
+			}
+		}
+
+		stages[currentStage].Nodes = append(stages[currentStage].Nodes, root)
+
+		if root.next == nil {
+			break
+		}
+
+		if currentOp != root.nextOp {
+			currentOp = root.nextOp
+			currentStage++
+		}
+
+		root = root.next
+	}
+
+	return stages
+}
+
 func newSingleQuery(collName string, query string, params map[string]interface{}) *singleQuery {
 	sq := &singleQuery{
 		collName: collName,
 	}
 
 	sq.opNode = sq.createCondList(collName, sq.createConditions(query), params)
+	sq.stages = sq.createStages(sq.opNode)
 
 	return sq
 }

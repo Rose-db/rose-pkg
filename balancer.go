@@ -19,7 +19,8 @@ type balancer struct {
 
 type balancerRequest struct {
 	BlockNum uint16
-	Operator *opNode
+	CollName string
+	OperationStages map[int]*operatorStages
 	Response chan *queueResponse
 }
 
@@ -103,9 +104,9 @@ func (b *balancer) Push(item *balancerRequest) ([]QueryResult, Error) {
 		comm := b.queryQueue.Comm[b.Next]
 
 		queueItem := &queueItem{
+			CollName: item.CollName,
+			OperationStages: item.OperationStages,
 			BlockId:  i,
-			CollName: item.Operator.cond.collName,
-			Operator: item.Operator,
 			Check: singleCollectionQueryChecker,
 			Response: responses,
 		}
@@ -131,39 +132,7 @@ func (b *balancer) Close() {
 }
 
 func singleCollectionQueryChecker(v *fastjson.Value, item *queueItem, found *lineReaderData) {
-	stages := make(map[int]*struct{
-		Nodes []*opNode
-		Op string
-	})
-
-	currentStage := 0
-	r := item.Operator
-	currentOp := r.nextOp
-
-	for {
-		if stages[currentStage] == nil {
-			stages[currentStage] = &struct{
-				Nodes []*opNode
-				Op string
-			}{
-				Nodes: make([]*opNode, 0),
-				Op: currentOp,
-			}
-		}
-
-		stages[currentStage].Nodes = append(stages[currentStage].Nodes, r)
-
-		if r.next == nil {
-			break
-		}
-
-		if currentOp != r.nextOp {
-			currentOp = r.nextOp
-			currentStage++
-		}
-
-		r = r.next
-	}
+	stages := item.OperationStages
 
 	queueResponse := &queueResponse{
 		ID:   found.id,
