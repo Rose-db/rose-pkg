@@ -291,7 +291,7 @@ func (a *Rose) Replace(m ReplaceMetadata) (*AppResult, Error) {
 	}, nil
 }
 
-func (a *Rose) Query(qb *queryBuilder) ([]*QueryResult, Error) {
+func (a *Rose) Query(qb *queryBuilder) ([]QueryResult, Error) {
 	if qb.opNode != nil {
 		db, ok := a.Databases[qb.collName]
 

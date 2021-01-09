@@ -72,8 +72,8 @@ func (b *balancer) safeIncrement() {
 	}
 }
 
-func (b *balancer) Push(item *balancerRequest) ([]*QueryResult, Error) {
-	queryResults := make([]*QueryResult, 0)
+func (b *balancer) Push(item *balancerRequest) ([]QueryResult, Error) {
+	queryResults := make([]QueryResult, 0)
 	var err *queryError = nil
 
 	responses := make(chan interface{})
@@ -84,7 +84,7 @@ func (b *balancer) Push(item *balancerRequest) ([]*QueryResult, Error) {
 		for res := range responses {
 			switch v := res.(type) {
 			case *queueResponse:
-				queryResults = append(queryResults, &QueryResult{
+				queryResults = append(queryResults, QueryResult{
 					ID:   v.ID,
 					Data: v.Body,
 				})
@@ -120,7 +120,7 @@ func (b *balancer) Push(item *balancerRequest) ([]*QueryResult, Error) {
 	close(responses)
 
 	if err != nil {
-		queryResults = make([]*QueryResult, 0)
+		queryResults = make([]QueryResult, 0)
 	}
 
 	return queryResults[0:], err

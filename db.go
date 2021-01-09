@@ -225,7 +225,7 @@ func (d *db) Replace(id int, data []uint8) Error {
 	return nil
 }
 
-func (d *db) Query(node *opNode) ([]*QueryResult, Error) {
+func (d *db) Query(node *opNode) ([]QueryResult, Error) {
 	ch := make(chan *queueResponse)
 
 	bReq := &balancerRequest{
