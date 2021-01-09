@@ -106,7 +106,7 @@ func (b *balancer) Push(item *balancerRequest) ([]*QueryResult, Error) {
 			BlockId:  i,
 			CollName: item.Operator.cond.collName,
 			Operator: item.Operator,
-			EqChecker: singleCollectionQueryChecker,
+			Check: singleCollectionQueryChecker,
 			Response: responses,
 		}
 
@@ -232,7 +232,7 @@ func singleCollectionQueryChecker(v *fastjson.Value, item *queueItem, found *lin
 				}
 			}
 
-			if stage.Op == "&&" && success == false {
+			if stage.Op == "&&" && !success {
 				break
 			}
 		}

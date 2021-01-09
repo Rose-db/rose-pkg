@@ -228,11 +228,13 @@ func (d *db) Replace(id int, data []uint8) Error {
 func (d *db) Query(node *opNode) ([]*QueryResult, Error) {
 	ch := make(chan *queueResponse)
 
-	return d.Balancer.Push(&balancerRequest{
-		BlockNum: uint16(len(d.BlockTracker)),
+	bReq := &balancerRequest{
+		BlockNum: uint16(d.AutoIncrementCounter / blockMark + 1),
 		Operator: node,
 		Response: ch,
-	})
+	}
+
+	return d.Balancer.Push(bReq)
 }
 
 // shutdown does not do anything for now until I decide what to do with multiple drivers

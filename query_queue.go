@@ -14,7 +14,7 @@ type queryQueue struct {
 type queueItem struct {
 	BlockId uint16
 	CollName string
-	EqChecker func (v *fastjson.Value, item *queueItem, found *lineReaderData)
+	Check func (v *fastjson.Value, item *queueItem, found *lineReaderData)
 	Operator *opNode
 	Response chan interface{}
 }
@@ -127,7 +127,7 @@ func (qq *queryQueue) runWorker(c chan *queueItem) {
 				break
 			}
 
-			item.EqChecker(v, item, d)
+			item.Check(v, item, d)
 		}
 
 		if err := closeFile(file); err != nil {
