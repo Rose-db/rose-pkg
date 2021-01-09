@@ -285,7 +285,6 @@ var _ = GinkgoDescribe("Query tests", func() {
 	})
 
 	GinkgoIt("Should make an equality query with AND operator", func() {
-		ginkgo.Skip("")
 		r := testCreateRose(false)
 		collName := testCreateCollection(r, "coll_name")
 		n := 10000
@@ -300,7 +299,6 @@ var _ = GinkgoDescribe("Query tests", func() {
 
 		rand.Seed(time.Now().UnixNano())
 
-		writtenEmails := [5]int{}
 		for i := 0; i < n; i++ {
 			rnd := rand.Intn(len(emailList))
 
@@ -321,18 +319,19 @@ var _ = GinkgoDescribe("Query tests", func() {
 
 			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
-
-			writtenEmails[rnd]++
 		}
 
 		for _, email := range emailList {
+			email = email
 			qb := NewQueryBuilder()
 
 			qb.If(collName, "email == :email && type == company || type == user", map[string]interface{}{
-				":email": email,
+				":email": "incorrect",
 			})
 
-			_, err := r.Query(qb)
+			queryResults, err := r.Query(qb)
+
+			gomega.Expect(len(queryResults)).To(gomega.Equal(5000))
 
 			gomega.Expect(err).To(gomega.BeNil())
 		}

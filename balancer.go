@@ -141,10 +141,6 @@ func singleCollectionQueryChecker(v *fastjson.Value, item *queueItem, found *lin
 	currentOp := r.nextOp
 
 	for {
-		if currentOp != r.nextOp {
-			currentOp = r.nextOp
-		}
-
 		if stages[currentStage] == nil {
 			stages[currentStage] = &struct{
 				Nodes []*opNode
@@ -159,6 +155,11 @@ func singleCollectionQueryChecker(v *fastjson.Value, item *queueItem, found *lin
 
 		if r.next == nil {
 			break
+		}
+
+		if currentOp != r.nextOp {
+			currentOp = r.nextOp
+			currentStage++
 		}
 
 		r = r.next
@@ -179,13 +180,29 @@ func singleCollectionQueryChecker(v *fastjson.Value, item *queueItem, found *lin
 		oneOperatorOnly = true
 	}
 
-	fullResults := make(map[int]bool)
+	fullResults := make(map[int]*struct{
+		Type string
+		Res bool
+	})
 
 	for i, stage := range stages {
 		stageResults := 0
 
+		if stage.Op == "&&" || stage.Op == "" {
+			fullResults[i] = &struct{
+				Type string
+				Res bool
+			}{Type: "must", Res: false}
+		} else if stage.Op == "||" || stage.Op == "" {
+			fullResults[i] = &struct{
+				Type string
+				Res bool
+			}{Type: "optional", Res: false}
+		}
+
 		for _, node := range stage.Nodes {
 			cond := node.cond
+			success := false
 
 			if v.Exists(cond.field) {
 				res := v.GetStringBytes(cond.field)
@@ -199,6 +216,7 @@ func singleCollectionQueryChecker(v *fastjson.Value, item *queueItem, found *lin
 						}
 
 						stageResults++
+						success = true
 					}
 				} else if cond.queryType == inequality {
 					if string(res) != cond.value.(string) {
@@ -209,25 +227,32 @@ func singleCollectionQueryChecker(v *fastjson.Value, item *queueItem, found *lin
 						}
 
 						stageResults++
+						success = true
 					}
 				}
+			}
+
+			if stage.Op == "&&" && success == false {
+				break
 			}
 		}
 
 		if stage.Op == "&&" && stageResults == len(stage.Nodes) {
-			fullResults[i] = true
+			fullResults[i].Res = true
+		} else if stage.Op == "||" && stageResults != 0 {
+			fullResults[i].Res = true
 		} else {
-			fullResults[i] = false
+			fullResults[i].Res = false
 		}
 	}
 
-	for _, ok := range fullResults {
-		if !ok {
+	for _, r := range fullResults {
+		if r.Res {
+			item.Response<- queueResponse
+
 			return
 		}
 	}
-
-	item.Response<- queueResponse
 }
 
 
