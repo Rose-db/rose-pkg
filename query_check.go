@@ -40,22 +40,11 @@ func (c queryCheck) Check() {
 			success := false
 
 			if c.v.Exists(cond.field) {
-				var convRes interface{}
-				var convValue interface{}
-
 				if cond.dataType == stringType {
-					convRes = string(c.v.GetStringBytes(cond.field))
-					convValue = cond.value.(string)
-				} else if cond.dataType == boolType {
-					convRes = c.v.GetBool(cond.field)
-					convValue, _ = strconv.ParseBool(cond.value.(string))
-				} else if cond.dataType == intType {
-					convRes = c.v.GetInt(cond.field)
-					convValue, _ = strconv.Atoi(cond.value.(string))
-				}
+					convRes := string(c.v.GetStringBytes(cond.field))
+					convValue := cond.value.(string)
 
-				if cond.queryType == equality {
-					if convRes == convValue {
+					if str(convRes).compare(convValue, cond.comparisonType) {
 						if oneOperatorOnly {
 							c.item.Response<- queueResponse
 
@@ -65,8 +54,53 @@ func (c queryCheck) Check() {
 						stageResults++
 						success = true
 					}
-				} else if cond.queryType == inequality {
-					if convRes != convValue {
+				} else if cond.dataType == boolType {
+					convRes := c.v.GetBool(cond.field)
+					convValue, _ := strconv.ParseBool(cond.value.(string))
+
+					if boolean(convRes).compare(convValue, cond.comparisonType) {
+						if oneOperatorOnly {
+							c.item.Response<- queueResponse
+
+							return
+						}
+
+						stageResults++
+						success = true
+					}
+				} else if cond.dataType == intType {
+					convRes := c.v.GetInt(cond.field)
+					convValue, _ := strconv.Atoi(cond.value.(string))
+
+					if integer(convRes).compare(convValue, cond.comparisonType) {
+						if oneOperatorOnly {
+							c.item.Response<- queueResponse
+
+							return
+						}
+
+						stageResults++
+						success = true
+					}
+				} else if (cond.dataType == floatType) {
+					convRes := c.v.GetFloat64(cond.field)
+					convValue, _ := strconv.ParseFloat(cond.value.(string), 64)
+
+					if floating(convRes).compare(convValue, cond.comparisonType) {
+						if oneOperatorOnly {
+							c.item.Response<- queueResponse
+
+							return
+						}
+
+						stageResults++
+						success = true
+					}
+				} else {
+					convRes := string(c.v.GetStringBytes(cond.field))
+					convValue := cond.value.(string)
+
+					if str(convRes).compare(convValue, cond.comparisonType) {
 						if oneOperatorOnly {
 							c.item.Response<- queueResponse
 

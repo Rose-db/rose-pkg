@@ -66,7 +66,21 @@ func (d dataType) isValid() bool {
 	return !(d != stringType && d != intType && d != floatType && d != boolType)
 }
 
-type queryType string
+func (d dataType) isType(types ...dataType) bool {
+	for _, t := range types {
+		if t == d {
+			return true
+		}
+	}
 
-const equality queryType = "eq"
-const inequality queryType = "neq"
+	return false
+}
+
+type comparisonType string
+
+const equality comparisonType = "eq"
+const inequality comparisonType = "neq"
+const less comparisonType = "less"
+const more comparisonType = "more"
+const lessEqual comparisonType = "lessEqual"
+const moreEqual comparisonType = "moreEqual"

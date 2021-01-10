@@ -122,7 +122,7 @@ var _ = GinkgoDescribe("Query tests", func() {
 
 		qb := NewQueryBuilder()
 
-		qb.If(collName, "email == mario@gmail.com", map[string]interface{}{})
+		qb.If(collName, "email:string == mario@gmail.com", map[string]interface{}{})
 
 		queryResults, err := r.Query(qb)
 
@@ -141,7 +141,7 @@ var _ = GinkgoDescribe("Query tests", func() {
 		testRemoveFileSystemDb(roseDir())
 	})
 
-	GinkgoIt("Should make an inequality query", func() {
+	GinkgoIt("Should make an inequality query with single condition", func() {
 		r := testCreateRose(false)
 		collName := testCreateCollection(r, "coll_name")
 		n := 10000
@@ -184,79 +184,7 @@ var _ = GinkgoDescribe("Query tests", func() {
 		for i, email := range emailList {
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "email != :email", map[string]interface{}{
-				":email": email,
-			})
-
-			queryResults, err := r.Query(qb)
-
-			gomega.Expect(err).To(gomega.BeNil())
-
-			res := 0
-			for j, num := range writtenEmails {
-				if j != i {
-					res += num
-				}
-			}
-
-			gomega.Expect(len(queryResults)).To(gomega.Equal(res))
-		}
-
-		if err := r.Shutdown(); err != nil {
-			testRemoveFileSystemDb(roseDir())
-
-			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
-
-			return
-		}
-
-		testRemoveFileSystemDb(roseDir())
-	})
-
-	GinkgoIt("Should make an inequality query", func() {
-		r := testCreateRose(false)
-		collName := testCreateCollection(r, "coll_name")
-		n := 10000
-
-		emailList := []string{
-			"mario@gmail.com",
-			"mile@gmail.com",
-			"zdravko@gmail.com",
-			"miletina@gmail.com",
-			"zdravkina@gmail.com",
-		}
-
-		rand.Seed(time.Now().UnixNano())
-
-		writtenEmails := [5]int{}
-		for i := 0; i < n; i++ {
-			rnd := rand.Intn(len(emailList))
-
-			t := "company"
-			if i % 2 == 0 {
-				t = "user"
-			}
-
-			user := &TestUser{
-				Type:  t,
-				Email: emailList[rnd],
-			}
-
-			res := testSingleConcurrentInsert(WriteMetadata{
-				CollectionName: collName,
-				Data:           testAsJsonInterface(user),
-			}, r)
-
-			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
-			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
-
-			writtenEmails[rnd]++
-		}
-
-		for i, email := range emailList {
-			qb := NewQueryBuilder()
-
-			qb.If(collName, "email != :email", map[string]interface{}{
+			qb.If(collName, "email:string != :email", map[string]interface{}{
 				":email": email,
 			})
 
@@ -326,7 +254,7 @@ var _ = GinkgoDescribe("Query tests", func() {
 			email = email
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "email:string == :email && type == company || type:string == user", map[string]interface{}{
+			qb.If(collName, "email:string == :email && type:string == company || type:string == user", map[string]interface{}{
 				":email": "incorrect",
 			})
 
@@ -388,7 +316,7 @@ var _ = GinkgoDescribe("Query tests", func() {
 		for _, email := range emailList {
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "email == :email && type:string == :type || email == :email && type:string == :type", map[string]interface{}{
+			qb.If(collName, "email:string == :email && type:string == :type || email:string == :email && type:string == :type", map[string]interface{}{
 				":email": email,
 				":type": "sdfjsadfjsldfasfd",
 			})
@@ -451,7 +379,7 @@ var _ = GinkgoDescribe("Query tests", func() {
 		for _, email := range emailList {
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "email:string == :email && type == :type || email == :email && type == :type || type:string == user", map[string]interface{}{
+			qb.If(collName, "email:string == :email && type:string == :type || email:string == :email && type:string == :type || type:string == user", map[string]interface{}{
 				":email": email,
 				":type": "sdfjsadfjsldfasfd",
 			})

@@ -26,19 +26,19 @@ type singleCondition struct {
 	field string
 	value interface{}
 	dataType dataType
-	queryType queryType
+	comparisonType comparisonType
 }
 
 func newSingleCondition(collName string, query string, params map[string]interface{}) *singleCondition {
 	sc := &singleCondition{}
-	field, value, queryType := sc.resolveCondition(query, params)
-	field, dt := sc.resolveDataType(field, value)
+	field, value, comparisonType := sc.resolveCondition(query, params)
+	field, dt := sc.getExplicitDataType(field)
 
 	sc.collName = collName
 	sc.field = field
 	sc.value = value
 	sc.dataType = dt
-	sc.queryType = queryType
+	sc.comparisonType = comparisonType
 
 	return sc
 }
@@ -48,10 +48,14 @@ type operatorStages struct {
 	Op string
 }
 
-func (sc *singleCondition) resolveCondition(query string, params map[string]interface{}) (string, interface{}, queryType) {
+func (sc *singleCondition) resolveCondition(query string, params map[string]interface{}) (string, interface{}, comparisonType) {
 	conds := []string{
 		"==",
 		"!=",
+		"<",
+		">",
+		"<=",
+		"<=",
 	}
 
 	for _, c := range conds {
@@ -72,6 +76,14 @@ func (sc *singleCondition) resolveCondition(query string, params map[string]inte
 				return field, value, equality
 			} else if c == "!=" {
 				return field, value, inequality
+			} else if c == "<" {
+				return field, value, less
+			} else if  c == ">" {
+				return field, value, more
+			} else if c == "<=" {
+				return field, value, lessEqual
+			} else if c == ">=" {
+				return field, value, moreEqual
 			}
 		}
 	}
@@ -80,32 +92,17 @@ func (sc *singleCondition) resolveCondition(query string, params map[string]inte
 }
 
 func (sc *singleCondition) resolveDataType(field string, val interface{}) (string, dataType) {
-	var dt dataType
-
 	f, exp := sc.getExplicitDataType(field)
 
 	if exp != "" {
 		return f, exp
 	}
 
-	switch val.(type) {
-	case string:
-		dt = stringType
-	case int:
-		dt = intType
-	case float32:
-		dt = floatType
-	}
-
-	return field, dt
+	return f, ""
 }
 
 func (sc *singleCondition) getExplicitDataType(field string) (string, dataType) {
 	s := strings.Split(field, ":")
-
-	if len(s) != 2 {
-		return field, ""
-	}
 
 	t := s[1]
 
