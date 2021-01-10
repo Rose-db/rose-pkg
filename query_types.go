@@ -10,6 +10,17 @@ type singleQuery struct {
 	stages map[int]*operatorStages
 }
 
+func newSingleQuery(collName string, query string, params map[string]interface{}) *singleQuery {
+	sq := &singleQuery{
+		collName: collName,
+	}
+
+	sq.opNode = sq.createCondList(collName, sq.createConditions(query), params)
+	sq.stages = sq.createStages(sq.opNode)
+
+	return sq
+}
+
 type singleCondition struct {
 	collName string
 	field string
@@ -18,15 +29,10 @@ type singleCondition struct {
 	queryType queryType
 }
 
-type operatorStages struct {
-	Nodes []*opNode
-	Op string
-}
-
 func newSingleCondition(collName string, query string, params map[string]interface{}) *singleCondition {
 	sc := &singleCondition{}
 	field, value, queryType := sc.resolveCondition(query, params)
-	dt := sc.resolveDataType(value)
+	field, dt := sc.resolveDataType(field, value)
 
 	sc.collName = collName
 	sc.field = field
@@ -35,6 +41,11 @@ func newSingleCondition(collName string, query string, params map[string]interfa
 	sc.queryType = queryType
 
 	return sc
+}
+
+type operatorStages struct {
+	Nodes []*opNode
+	Op string
 }
 
 func (sc *singleCondition) resolveCondition(query string, params map[string]interface{}) (string, interface{}, queryType) {
@@ -68,8 +79,14 @@ func (sc *singleCondition) resolveCondition(query string, params map[string]inte
 	return "", "", ""
 }
 
-func (sc *singleCondition) resolveDataType(val interface{}) dataType {
+func (sc *singleCondition) resolveDataType(field string, val interface{}) (string, dataType) {
 	var dt dataType
+
+	f, exp := sc.getExplicitDataType(field)
+
+	if exp != "" {
+		return f, exp
+	}
 
 	switch val.(type) {
 	case string:
@@ -80,8 +97,31 @@ func (sc *singleCondition) resolveDataType(val interface{}) dataType {
 		dt = floatType
 	}
 
-	return dt
+	return field, dt
 }
+
+func (sc *singleCondition) getExplicitDataType(field string) (string, dataType) {
+	s := strings.Split(field, ":")
+
+	if len(s) != 2 {
+		return field, ""
+	}
+
+	t := s[1]
+
+	if t == "string" {
+		return s[0], stringType
+	} else if t == "int" {
+		return s[0], intType
+	} else if t == "float" {
+		return s[0], floatType
+	} else if t == "bool" {
+		return s[0], boolType
+	}
+
+	return field, ""
+}
+
 
 func (sq *singleQuery) createConditions(query string) []map[string]string {
 	parts := strings.Split(query, " ")
@@ -183,15 +223,4 @@ func (sq *singleQuery) createStages(root *opNode) map[int]*operatorStages {
 	}
 
 	return stages
-}
-
-func newSingleQuery(collName string, query string, params map[string]interface{}) *singleQuery {
-	sq := &singleQuery{
-		collName: collName,
-	}
-
-	sq.opNode = sq.createCondList(collName, sq.createConditions(query), params)
-	sq.stages = sq.createStages(sq.opNode)
-
-	return sq
 }

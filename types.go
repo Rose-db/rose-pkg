@@ -60,9 +60,10 @@ type dataType string
 const stringType dataType = "string"
 const intType dataType = "int"
 const floatType dataType = "float"
+const boolType dataType = "bool"
 
 func (d dataType) isValid() bool {
-	return !(d != stringType && d != intType && d != floatType)
+	return !(d != stringType && d != intType && d != floatType && d != boolType)
 }
 
 type queryType string

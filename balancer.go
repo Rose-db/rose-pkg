@@ -132,82 +132,13 @@ func (b *balancer) Close() {
 }
 
 func singleCollectionQueryChecker(v *fastjson.Value, item *queueItem, found *lineReaderData) {
-	stages := item.OperationStages
-
-	queueResponse := &queueResponse{
-		ID:   found.id,
-		Body: found.val,
+	qc := queryCheck{
+		v:     v,
+		item:  item,
+		found: found,
 	}
 
-	oneOperatorOnly := false
-	if len(stages) == 1 && len(stages[0].Nodes) == 1 {
-		oneOperatorOnly = true
-	}
-
-	fullResults := make(map[int]bool)
-
-	for i, stage := range stages {
-		stageResults := 0
-
-		if stage.Op == "&&" || stage.Op == "" {
-			fullResults[i] = false
-		} else if stage.Op == "||" || stage.Op == "" {
-			fullResults[i] = false
-		}
-
-		for _, node := range stage.Nodes {
-			cond := node.cond
-			success := false
-
-			if v.Exists(cond.field) {
-				res := v.GetStringBytes(cond.field)
-
-				if cond.queryType == equality {
-					if string(res) == cond.value.(string) {
-						if oneOperatorOnly {
-							item.Response<- queueResponse
-
-							return
-						}
-
-						stageResults++
-						success = true
-					}
-				} else if cond.queryType == inequality {
-					if string(res) != cond.value.(string) {
-						if oneOperatorOnly {
-							item.Response<- queueResponse
-
-							return
-						}
-
-						stageResults++
-						success = true
-					}
-				}
-			}
-
-			if stage.Op == "&&" && !success {
-				break
-			}
-		}
-
-		if stage.Op == "&&" && stageResults == len(stage.Nodes) {
-			fullResults[i] = true
-		} else if stage.Op == "||" && stageResults != 0 {
-			fullResults[i] = true
-		} else {
-			fullResults[i] = false
-		}
-	}
-
-	for _, ok := range fullResults {
-		if ok {
-			item.Response<- queueResponse
-
-			return
-		}
-	}
+	qc.Check()
 }
 
 
