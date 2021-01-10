@@ -91,16 +91,6 @@ func (sc *singleCondition) resolveCondition(query string, params map[string]inte
 	return "", "", ""
 }
 
-func (sc *singleCondition) resolveDataType(field string, val interface{}) (string, dataType) {
-	f, exp := sc.getExplicitDataType(field)
-
-	if exp != "" {
-		return f, exp
-	}
-
-	return f, ""
-}
-
 func (sc *singleCondition) getExplicitDataType(field string) (string, dataType) {
 	s := strings.Split(field, ":")
 
