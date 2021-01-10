@@ -140,33 +140,19 @@ func singleCollectionQueryChecker(v *fastjson.Value, item *queueItem, found *lin
 	}
 
 	oneOperatorOnly := false
-/*	oneStageOnly := false
-	if len(stages) == 0 {
-		oneStageOnly = true
-	}*/
-
 	if len(stages) == 1 && len(stages[0].Nodes) == 1 {
 		oneOperatorOnly = true
 	}
 
-	fullResults := make(map[int]*struct{
-		Type string
-		Res bool
-	})
+	fullResults := make(map[int]bool)
 
 	for i, stage := range stages {
 		stageResults := 0
 
 		if stage.Op == "&&" || stage.Op == "" {
-			fullResults[i] = &struct{
-				Type string
-				Res bool
-			}{Type: "must", Res: false}
+			fullResults[i] = false
 		} else if stage.Op == "||" || stage.Op == "" {
-			fullResults[i] = &struct{
-				Type string
-				Res bool
-			}{Type: "optional", Res: false}
+			fullResults[i] = false
 		}
 
 		for _, node := range stage.Nodes {
@@ -207,16 +193,16 @@ func singleCollectionQueryChecker(v *fastjson.Value, item *queueItem, found *lin
 		}
 
 		if stage.Op == "&&" && stageResults == len(stage.Nodes) {
-			fullResults[i].Res = true
+			fullResults[i] = true
 		} else if stage.Op == "||" && stageResults != 0 {
-			fullResults[i].Res = true
+			fullResults[i] = true
 		} else {
-			fullResults[i].Res = false
+			fullResults[i] = false
 		}
 	}
 
-	for _, r := range fullResults {
-		if r.Res {
+	for _, ok := range fullResults {
+		if ok {
 			item.Response<- queueResponse
 
 			return

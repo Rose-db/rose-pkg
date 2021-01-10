@@ -284,7 +284,7 @@ var _ = GinkgoDescribe("Query tests", func() {
 		testRemoveFileSystemDb(roseDir())
 	})
 
-	GinkgoIt("Should make an equality query with AND operator", func() {
+	GinkgoIt("Should make an equality query with multiple operators but true only for OR", func() {
 		r := testCreateRose(false)
 		collName := testCreateCollection(r, "coll_name")
 		n := 10000
@@ -328,6 +328,194 @@ var _ = GinkgoDescribe("Query tests", func() {
 			qb.If(collName, "email == :email && type == company || type == user", map[string]interface{}{
 				":email": "incorrect",
 			})
+
+			queryResults, err := r.Query(qb)
+
+			gomega.Expect(len(queryResults)).To(gomega.Equal(5000))
+
+			gomega.Expect(err).To(gomega.BeNil())
+		}
+
+		if err := r.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
+
+	GinkgoIt("Should make an equality query with two block of AND operators", func() {
+		r := testCreateRose(false)
+		collName := testCreateCollection(r, "coll_name")
+		n := 10000
+
+		emailList := []string{
+			"mario@gmail.com",
+			"mile@gmail.com",
+			"zdravko@gmail.com",
+			"miletina@gmail.com",
+			"zdravkina@gmail.com",
+		}
+
+		rand.Seed(time.Now().UnixNano())
+
+		for i := 0; i < n; i++ {
+			rnd := rand.Intn(len(emailList))
+
+			t := "company"
+			if i % 2 == 0 {
+				t = "user"
+			}
+
+			user := &TestUser{
+				Type:  t,
+				Email: emailList[rnd],
+			}
+
+			res := testSingleConcurrentInsert(WriteMetadata{
+				CollectionName: collName,
+				Data:           testAsJsonInterface(user),
+			}, r)
+
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
+		}
+
+		for _, email := range emailList {
+			qb := NewQueryBuilder()
+
+			qb.If(collName, "email == :email && type == :type || email == :email && type == :type", map[string]interface{}{
+				":email": email,
+				":type": "sdfjsadfjsldfasfd",
+			})
+
+			queryResults, err := r.Query(qb)
+
+			gomega.Expect(len(queryResults)).To(gomega.Equal(0))
+
+			gomega.Expect(err).To(gomega.BeNil())
+		}
+
+		if err := r.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
+
+	GinkgoIt("Should make an equality query with two blocks of AND operators with a true OR operator", func() {
+		r := testCreateRose(false)
+		collName := testCreateCollection(r, "coll_name")
+		n := 10000
+
+		emailList := []string{
+			"mario@gmail.com",
+			"mile@gmail.com",
+			"zdravko@gmail.com",
+			"miletina@gmail.com",
+			"zdravkina@gmail.com",
+		}
+
+		rand.Seed(time.Now().UnixNano())
+
+		for i := 0; i < n; i++ {
+			rnd := rand.Intn(len(emailList))
+
+			t := "company"
+			if i % 2 == 0 {
+				t = "user"
+			}
+
+			user := &TestUser{
+				Type:  t,
+				Email: emailList[rnd],
+			}
+
+			res := testSingleConcurrentInsert(WriteMetadata{
+				CollectionName: collName,
+				Data:           testAsJsonInterface(user),
+			}, r)
+
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
+		}
+
+		for _, email := range emailList {
+			qb := NewQueryBuilder()
+
+			qb.If(collName, "email == :email && type == :type || email == :email && type == :type || type == user", map[string]interface{}{
+				":email": email,
+				":type": "sdfjsadfjsldfasfd",
+			})
+
+			queryResults, err := r.Query(qb)
+
+			gomega.Expect(len(queryResults)).To(gomega.Equal(5000))
+
+			gomega.Expect(err).To(gomega.BeNil())
+		}
+
+		if err := r.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
+
+	GinkgoIt("Should make an equality query with only OR operators", func() {
+		r := testCreateRose(false)
+		collName := testCreateCollection(r, "coll_name")
+		n := 10000
+
+		emailList := []string{
+			"mario@gmail.com",
+			"mile@gmail.com",
+			"zdravko@gmail.com",
+			"miletina@gmail.com",
+			"zdravkina@gmail.com",
+		}
+
+		rand.Seed(time.Now().UnixNano())
+
+		for i := 0; i < n; i++ {
+			rnd := rand.Intn(len(emailList))
+
+			t := "company"
+			if i % 2 == 0 {
+				t = "user"
+			}
+
+			user := &TestUser{
+				Type:  t,
+				Email: emailList[rnd],
+			}
+
+			res := testSingleConcurrentInsert(WriteMetadata{
+				CollectionName: collName,
+				Data:           testAsJsonInterface(user),
+			}, r)
+
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
+		}
+
+		for _, email := range emailList {
+			email = email
+
+			qb := NewQueryBuilder()
+
+			qb.If(collName, "type == sdfksdf || type == sdfdfd || type == company", map[string]interface{}{})
 
 			queryResults, err := r.Query(qb)
 

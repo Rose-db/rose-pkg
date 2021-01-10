@@ -155,6 +155,10 @@ func (sq *singleQuery) createStages(root *opNode) map[int]*operatorStages {
 	currentOp := root.nextOp
 
 	for {
+		if root == nil {
+			break
+		}
+
 		if stages[currentStage] == nil {
 			stages[currentStage] = &operatorStages{
 				Nodes: make([]*opNode, 0),
@@ -164,16 +168,18 @@ func (sq *singleQuery) createStages(root *opNode) map[int]*operatorStages {
 
 		stages[currentStage].Nodes = append(stages[currentStage].Nodes, root)
 
-		if root.next == nil {
-			break
-		}
-
 		if currentOp != root.nextOp {
 			currentOp = root.nextOp
+
 			currentStage++
 		}
 
-		root = root.next
+		if currentOp == "||" && root.next != nil && root.next.nextOp == "&&" {
+			root = root.next
+			currentOp = root.nextOp
+		} else {
+			root = root.next
+		}
 	}
 
 	return stages
