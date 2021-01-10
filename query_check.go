@@ -49,6 +49,9 @@ func (c queryCheck) Check() {
 				} else if cond.dataType == boolType {
 					convRes = c.v.GetBool(cond.field)
 					convValue, _ = strconv.ParseBool(cond.value.(string))
+				} else if cond.dataType == intType {
+					convRes = c.v.GetInt(cond.field)
+					convValue, _ = strconv.Atoi(cond.value.(string))
 				}
 
 				if cond.queryType == equality {
