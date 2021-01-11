@@ -12,6 +12,8 @@ type TestUser struct {
 	Type string `json:"type"`
 	Email string `json:"email"`
 	IsValid bool `json:"isValid"`
+	Price float64 `json:"price"`
+	RandomNum int `json:"randomNum"`
 }
 
 var _ = GinkgoDescribe("Query tests", func() {
@@ -517,6 +519,215 @@ var _ = GinkgoDescribe("Query tests", func() {
 			queryResults, err := r.Query(qb)
 
 			gomega.Expect(len(queryResults)).To(gomega.Equal(n / 4))
+
+			gomega.Expect(err).To(gomega.BeNil())
+		}
+
+		if err := r.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
+
+	GinkgoIt("Should work comparison operator on the float type", func() {
+		r := testCreateRose(false)
+		collName := testCreateCollection(r, "coll_name")
+		n := 10000
+
+		emailList := []string{
+			"mario@gmail.com",
+			"mile@gmail.com",
+			"zdravko@gmail.com",
+			"miletina@gmail.com",
+			"zdravkina@gmail.com",
+		}
+
+		rand.Seed(time.Now().UnixNano())
+
+		for i := 0; i < n; i++ {
+			rnd := rand.Intn(len(emailList))
+
+			t := "company"
+			if i % 2 == 0 {
+				t = "user"
+			}
+
+			o := false
+			if i % 4 == 0 {
+				o = true
+			}
+
+			user := &TestUser{
+				Type:  t,
+				Email: emailList[rnd],
+				IsValid: o,
+				Price: 2.35,
+			}
+
+			res := testSingleConcurrentInsert(WriteMetadata{
+				CollectionName: collName,
+				Data:           testAsJsonInterface(user),
+			}, r)
+
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
+		}
+
+		for _, email := range emailList {
+			email = email
+
+			qb := NewQueryBuilder()
+
+			qb.If(collName, "isValid:bool == true && price:float > 1.23", map[string]interface{}{})
+
+			queryResults, err := r.Query(qb)
+
+			gomega.Expect(len(queryResults)).To(gomega.Equal(n / 4))
+
+			gomega.Expect(err).To(gomega.BeNil())
+		}
+
+		if err := r.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
+
+	GinkgoIt("Should work comparison operator on the integer type", func() {
+		r := testCreateRose(false)
+		collName := testCreateCollection(r, "coll_name")
+		n := 10000
+
+		emailList := []string{
+			"mario@gmail.com",
+			"mile@gmail.com",
+			"zdravko@gmail.com",
+			"miletina@gmail.com",
+			"zdravkina@gmail.com",
+		}
+
+		rand.Seed(time.Now().UnixNano())
+
+		for i := 0; i < n; i++ {
+			rnd := rand.Intn(len(emailList))
+
+			t := "company"
+			if i % 2 == 0 {
+				t = "user"
+			}
+
+			o := false
+			if i % 4 == 0 {
+				o = true
+			}
+
+			user := &TestUser{
+				Type:  t,
+				Email: emailList[rnd],
+				IsValid: o,
+				Price: 2.35,
+				RandomNum: 5,
+			}
+
+			res := testSingleConcurrentInsert(WriteMetadata{
+				CollectionName: collName,
+				Data:           testAsJsonInterface(user),
+			}, r)
+
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
+		}
+
+		for _, email := range emailList {
+			email = email
+
+			qb := NewQueryBuilder()
+
+			qb.If(collName, "price:float > 1.23 && randomNum:int > 4", map[string]interface{}{})
+
+			queryResults, err := r.Query(qb)
+
+			gomega.Expect(len(queryResults)).To(gomega.Equal(n))
+
+			gomega.Expect(err).To(gomega.BeNil())
+		}
+
+		if err := r.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
+
+	GinkgoIt("Should return no results with comparison operator", func() {
+		r := testCreateRose(false)
+		collName := testCreateCollection(r, "coll_name")
+		n := 10000
+
+		emailList := []string{
+			"mario@gmail.com",
+			"mile@gmail.com",
+			"zdravko@gmail.com",
+			"miletina@gmail.com",
+			"zdravkina@gmail.com",
+		}
+
+		rand.Seed(time.Now().UnixNano())
+
+		for i := 0; i < n; i++ {
+			rnd := rand.Intn(len(emailList))
+
+			t := "company"
+			if i % 2 == 0 {
+				t = "user"
+			}
+
+			o := false
+			if i % 4 == 0 {
+				o = true
+			}
+
+			user := &TestUser{
+				Type:  t,
+				Email: emailList[rnd],
+				IsValid: o,
+				Price: 2.35,
+				RandomNum: 5,
+			}
+
+			res := testSingleConcurrentInsert(WriteMetadata{
+				CollectionName: collName,
+				Data:           testAsJsonInterface(user),
+			}, r)
+
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
+		}
+
+		for _, email := range emailList {
+			email = email
+
+			qb := NewQueryBuilder()
+
+			qb.If(collName, "price:float >= 1.23 && randomNum:int > 5", map[string]interface{}{})
+
+			queryResults, err := r.Query(qb)
+
+			gomega.Expect(len(queryResults)).To(gomega.Equal(0))
 
 			gomega.Expect(err).To(gomega.BeNil())
 		}
