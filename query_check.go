@@ -96,6 +96,38 @@ func (c queryCheck) Check() {
 						stageResults++
 						success = true
 					}
+				}  else if (cond.dataType == dateType) {
+					convRes := c.v.GetStringBytes(cond.field)
+
+					dateFieldVal := getDateFromString(string(convRes))
+					dateUserVal := getDateFromString(cond.value.(string))
+
+					if dateTime(dateFieldVal).compare(dateUserVal, cond.comparisonType) {
+						if oneOperatorOnly {
+							c.item.Response<- queueResponse
+
+							return
+						}
+
+						stageResults++
+						success = true
+					}
+				} else if (cond.dataType == dateTimeType) {
+					convRes := c.v.GetStringBytes(cond.field)
+
+					dateFieldVal := getDateFromString(string(convRes))
+					dateUserVal := getDateFromString(cond.value.(string))
+
+					if date(dateFieldVal).compare(dateUserVal, cond.comparisonType) {
+						if oneOperatorOnly {
+							c.item.Response<- queueResponse
+
+							return
+						}
+
+						stageResults++
+						success = true
+					}
 				} else {
 					convRes := string(c.v.GetStringBytes(cond.field))
 					convValue := cond.value.(string)

@@ -52,10 +52,10 @@ func (sc *singleCondition) resolveCondition(query string, params map[string]inte
 	conds := []string{
 		"==",
 		"!=",
+		"<=",
+		">=",
 		"<",
 		">",
-		"<=",
-		"<=",
 	}
 
 	for _, c := range conds {
@@ -66,7 +66,7 @@ func (sc *singleCondition) resolveCondition(query string, params map[string]inte
 			p := strings.TrimSpace(s[1])
 			var value interface{}
 
-			if strings.Contains(p, ":") {
+			if strings.Contains(p, "#") {
 				value = params[p]
 			} else {
 				value = p
@@ -76,15 +76,17 @@ func (sc *singleCondition) resolveCondition(query string, params map[string]inte
 				return field, value, equality
 			} else if c == "!=" {
 				return field, value, inequality
+			}  else if c == "<=" {
+				return field, value, lessEqual
+			} else if c == ">=" {
+				return field, value, moreEqual
 			} else if c == "<" {
 				return field, value, less
 			} else if  c == ">" {
 				return field, value, more
-			} else if c == "<=" {
-				return field, value, lessEqual
-			} else if c == ">=" {
-				return field, value, moreEqual
 			}
+
+			panic("Not found")
 		}
 	}
 
@@ -104,6 +106,10 @@ func (sc *singleCondition) getExplicitDataType(field string) (string, dataType) 
 		return s[0], floatType
 	} else if t == "bool" {
 		return s[0], boolType
+	} else if t == "date" {
+		return s[0], dateType
+	} else if t == "date_time" {
+		return s[0], dateTimeType
 	}
 
 	return field, ""

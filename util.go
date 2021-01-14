@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -197,6 +198,42 @@ func getFsError(err error, op string) Error {
 		Code:    DbIntegrityViolationCode,
 		Message: fmt.Sprintf("Database integrity violation. Cannot do %s file operation with underlying message: %s", op, msg),
 	}
+}
+
+func createDateFromString(parts []string) time.Time {
+	if len(parts) == 3 {
+		year, _ := strconv.Atoi(parts[0])
+		month, _ := strconv.Atoi(parts[1])
+		day, _ := strconv.Atoi(parts[2])
+
+		return time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC)
+	}
+
+	year, _ := strconv.Atoi(parts[0])
+	month, _ := strconv.Atoi(parts[1])
+	day, _ := strconv.Atoi(parts[2])
+	hour, _ := strconv.Atoi(parts[3])
+	min, _ := strconv.Atoi(parts[4])
+	sec, _ := strconv.Atoi(parts[5])
+
+	return time.Date(year, time.Month(month), day, hour, min, sec, 0, time.UTC)
+}
+
+func getDateFromString(s string) time.Time {
+	sp := strings.Split(s, " ")
+
+	if len(sp) == 2 {
+		t := strings.Split(sp[0], "-")
+		p := strings.Split(sp[1], ":")
+
+		t = append(t, p...)
+
+		return createDateFromString(t)
+	}
+
+	sp = strings.Split(s,"-")
+
+	return createDateFromString(sp)
 }
 
 

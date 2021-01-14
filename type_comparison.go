@@ -1,11 +1,16 @@
 package rose
 
-import "strings"
+import (
+	"strings"
+	"time"
+)
 
 type str string
 type integer int
 type floating float64
 type boolean bool
+type date time.Time
+type dateTime time.Time
 
 func (s str) compare(p string, t comparisonType) bool {
 	if t == equality {
@@ -20,6 +25,42 @@ func (s str) compare(p string, t comparisonType) bool {
 		return strings.Compare(string(s), p) == -1 || strings.Compare(string(s), p) == 0
 	} else if t == moreEqual {
 		return strings.Compare(string(s), p) == 1 || strings.Compare(string(s), p) == 0
+	}
+
+	return false
+}
+
+func (s date) compare(p time.Time, t comparisonType) bool {
+	if t == equality {
+		return time.Time(s).Equal(p)
+	} else if t == inequality {
+		return !time.Time(s).Equal(p)
+	} else if t == less {
+		return time.Time(s).Before(p)
+	} else if t == more {
+		return time.Time(s).After(p)
+	} else if t == lessEqual {
+		return time.Time(s).Before(p) || time.Time(s).Equal(p)
+	} else if t == moreEqual {
+		return time.Time(s).After(p) || time.Time(s).Equal(p)
+	}
+
+	return false
+}
+
+func (s dateTime) compare(p time.Time, t comparisonType) bool {
+	if t == equality {
+		return time.Time(s).Equal(p)
+	} else if t == inequality {
+		return !time.Time(s).Equal(p)
+	} else if t == less {
+		return time.Time(s).Before(p)
+	} else if t == more {
+		return time.Time(s).After(p)
+	} else if t == lessEqual {
+		return time.Time(s).Before(p) || time.Time(s).Equal(p)
+	} else if t == moreEqual {
+		return time.Time(s).After(p) || time.Time(s).Equal(p)
 	}
 
 	return false

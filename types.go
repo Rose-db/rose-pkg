@@ -61,6 +61,8 @@ const stringType dataType = "string"
 const intType dataType = "int"
 const floatType dataType = "float"
 const boolType dataType = "bool"
+const dateType dataType = "date"
+const dateTimeType dataType = "date_time"
 
 func (d dataType) isValid() bool {
 	return !(d != stringType && d != intType && d != floatType && d != boolType)
