@@ -23,10 +23,7 @@ var createDatabases = func() (map[string]*db, Error) {
 	stats, err := ioutil.ReadDir(dbDir)
 
 	if err != nil {
-		return nil, &dbIntegrityError{
-			Code:    DbIntegrityViolationCode,
-			Message: fmt.Sprintf("Creating collection databases failed: %s", err.Error()),
-		}
+		return nil, newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Creating collection databases failed: %s", err.Error()))
 	}
 
 	collections := make(map[string]*db)
@@ -38,10 +35,7 @@ var createDatabases = func() (map[string]*db, Error) {
 		files, err := ioutil.ReadDir(driverDir)
 
 		if err != nil {
-			return nil, &dbIntegrityError{
-				Code:    DbIntegrityViolationCode,
-				Message: fmt.Sprintf("Unable to read collection directory: %s", err.Error()),
-			}
+			return nil, newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Unable to read collection directory: %s", err.Error()))
 		}
 
 		var blocksNum uint16
@@ -90,7 +84,7 @@ func New(output bool) (*Rose, Error) {
 
 	if output {
 		fmt.Println("")
-		fmt.Println("\033[32minfo:\033[0m " + "Loading indexes...")
+		fmt.Println("\033[32mINFO:\033[0m " + "Loading indexes...")
 	}
 
 	if err := loadIndexes(r.Databases); err != nil {
@@ -100,10 +94,6 @@ func New(output bool) (*Rose, Error) {
 	if output {
 		fmt.Println("      Indexes loaded")
 		fmt.Println("")
-	}
-
-	if output {
-		fmt.Printf("\033[32m" + "Rose is ready to use!" + "\033[0m" + "\n\n")
 	}
 
 	if output {
@@ -124,20 +114,14 @@ func (a *Rose) NewCollection(name string) Error {
 	}
 
 	if err := os.Mkdir(collDir, 0755); err != nil {
-		return &systemError{
-			Code:    SystemErrorCode,
-			Message: fmt.Sprintf("Unable to create collection directory with underlying error: %s", err.Error()),
-		}
+		return newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Unable to create collection directory with underlying error: %s", err.Error()))
 	}
 
 	firstBlock := roseBlockFile(0, collDir)
 	file, e := createFile(firstBlock, os.O_RDWR|os.O_CREATE)
 
 	if e != nil {
-		return &systemError{
-			Code:    SystemErrorCode,
-			Message: fmt.Sprintf("      Trying to create initial block file failed with underlying message: %s", e.Error()),
-		}
+		return newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("      Trying to create initial block file failed with underlying message: %s", e.Error()))
 	}
 
 	e = closeFile(file)
@@ -169,10 +153,7 @@ func (a *Rose) Write(m WriteMetadata) (*AppResult, Error) {
 	db, ok := a.Databases[m.CollectionName]
 
 	if !ok {
-		return nil, &dbIntegrityError{
-			Code:    DbIntegrityViolationCode,
-			Message: fmt.Sprintf("Invalid write request. Collection %s does not exist", m.CollectionName),
-		}
+		return nil, newError(GenericMasterErrorCode, InvalidUserSuppliedDataCode, fmt.Sprintf("Invalid write request. Collection %s does not exist", m.CollectionName))
 	}
 
 	// save the entry under idx into memory
@@ -197,10 +178,7 @@ func (a *Rose) Read(m ReadMetadata) (*AppResult, Error) {
 	db, ok := a.Databases[m.CollectionName]
 
 	if !ok {
-		return nil, &dbIntegrityError{
-			Code:    DbIntegrityViolationCode,
-			Message: fmt.Sprintf("Invalid read request. Collection %s does not exist", m.CollectionName),
-		}
+		return nil, newError(GenericMasterErrorCode, InvalidUserSuppliedDataCode, fmt.Sprintf("Invalid read request. Collection %s does not exist", m.CollectionName))
 	}
 
 	res, err := db.ReadStrategic(m.ID, m.Data)
@@ -233,10 +211,7 @@ func (a *Rose) Delete(m DeleteMetadata) (*AppResult, Error) {
 	db, ok := a.Databases[m.CollectionName]
 
 	if !ok {
-		return nil, &dbIntegrityError{
-			Code:    DbIntegrityViolationCode,
-			Message: fmt.Sprintf("Invalid read request. Collection %s does not exist", m.CollectionName),
-		}
+		return nil, newError(GenericMasterErrorCode, InvalidUserSuppliedDataCode, fmt.Sprintf("Invalid read request. Collection %s does not exist", m.CollectionName))
 	}
 
 	res, err := db.Delete(m.ID)
@@ -273,10 +248,7 @@ func (a *Rose) Replace(m ReplaceMetadata) (*AppResult, Error) {
 	db, ok := a.Databases[m.CollectionName]
 
 	if !ok {
-		return nil, &dbIntegrityError{
-			Code:    DbIntegrityViolationCode,
-			Message: fmt.Sprintf("Invalid read request. Collection %s does not exist", m.CollectionName),
-		}
+		return nil, newError(GenericMasterErrorCode, InvalidUserSuppliedDataCode, fmt.Sprintf("Invalid read request. Collection %s does not exist", m.CollectionName))
 	}
 
 	err := db.Replace(m.ID, m.Data)
@@ -296,10 +268,7 @@ func (a *Rose) Query(qb *queryBuilder) ([]QueryResult, Error) {
 		db, ok := a.Databases[qb.singleQuery.collName]
 
 		if !ok {
-			return nil, &dbIntegrityError{
-				Code:    DbIntegrityViolationCode,
-				Message: fmt.Sprintf("Invalid read request. Collection %s does not exist", qb.singleQuery.collName),
-			}
+			return nil, newError(GenericMasterErrorCode, InvalidUserSuppliedDataCode, fmt.Sprintf("Invalid read request. Collection %s does not exist", qb.singleQuery.collName))
 		}
 
 		return db.Query(qb.singleQuery)
@@ -313,20 +282,14 @@ func (a *Rose) Size() (uint64, Error) {
 	colls, err := ioutil.ReadDir(roseDbDir())
 
 	if err != nil {
-		return 0, &dbIntegrityError{
-			Code:    DbIntegrityViolationCode,
-			Message: fmt.Sprintf("Could not determine size: %s", err.Error()),
-		}
+		return 0, newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Could not determine size: %s", err.Error()))
 	}
 
 	for _, fi := range colls {
 		files, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", roseDbDir(), fi.Name()))
 
 		if err != nil {
-			return 0, &dbIntegrityError{
-				Code:    DbIntegrityViolationCode,
-				Message: fmt.Sprintf("Could not determine size: %s", err.Error()),
-			}
+			return 0, newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Could not determine size: %s", err.Error()))
 		}
 
 		for _, f := range files {
@@ -351,10 +314,7 @@ func (a *Rose) Shutdown() Error {
 		if msg != "" {
 			base := fmt.Sprintf("Shutdown failed with these errors:\n%s", msg)
 
-			return &systemError{
-				Code:    SystemErrorCode,
-				Message: base,
-			}
+			return newError(SystemMasterErrorCode, ShutdownFailureCode, base)
 		}
 	}
 

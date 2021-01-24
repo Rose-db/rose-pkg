@@ -21,10 +21,7 @@ func loadIndexes(dbs map[string]*db) Error {
 		files, fsErr := ioutil.ReadDir(fmt.Sprintf("%s/%s", roseDbDir(), collName))
 
 		if fsErr != nil {
-			return &systemError{
-				Code:    SystemErrorCode,
-				Message: fmt.Sprintf("Could not read %s directory with underlynging message: %s", roseDbDir(), fsErr.Error()),
-			}
+			return newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Could not read %s directory with underlynging message: %s", roseDbDir(), fsErr.Error()))
 		}
 
 		limit, err := getOpenFileHandleLimit()
@@ -62,7 +59,7 @@ func loadIndexes(dbs map[string]*db) Error {
 			err := errs.Wait()
 
 			if err != nil {
-				return &dbIntegrityError{Code: DbIntegrityViolationCode, Message: err.Error()}
+				return newError(SystemMasterErrorCode, OperatingSystemCode, err.Error())
 			}
 		}
 	}
@@ -84,7 +81,7 @@ func loadSingleFile(f os.FileInfo, m *db, collName string) Error {
 	for {
 		offset, val, err := reader.Read()
 
-		if err != nil && err.GetCode() == EOFErrorCode {
+		if err != nil && err.GetCode() == EOFCode {
 			break
 		}
 
@@ -105,10 +102,7 @@ func loadSingleFile(f os.FileInfo, m *db, collName string) Error {
 				return fsErr
 			}
 
-			return &dbIntegrityError{
-				Code:    DbIntegrityViolationCode,
-				Message: "Database integrity violation. Cannot populate database. Invalid row encountered.",
-			}
+			return newError(DbIntegrityMasterErrorCode, BlockCorruptedCode, "Database integrity violation. Cannot populate database. Invalid row encountered")
 		}
 
 		err = m.writeIndex(val.id, offset)

@@ -15,10 +15,7 @@ func defragmentBlock(blockId uint16, collName string) (map[int]int64, Error) {
 
 	e := l.TryLock()
 	if e != nil {
-		return nil, &systemError{
-			Code:    SystemErrorCode,
-			Message: fmt.Sprintf("Unable to lock file %s with underlying message: %s", origFileName, e.Error()),
-		}
+		return nil, newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Unable to lock file %s with underlying message: %s", origFileName, e.Error()))
 	}
 
 	origFile, err := createFile(origFileName, os.O_RDWR)
@@ -35,17 +32,14 @@ func defragmentBlock(blockId uint16, collName string) (map[int]int64, Error) {
 	for {
 		_, val, err := reader.Read()
 
-		if err != nil && err.GetCode() == EOFErrorCode {
+		if err != nil && err.GetCode() == EOFCode {
 			break
 		}
 
 		if err != nil {
 			e = l.Unlock()
 			if e != nil {
-				return nil, &systemError{
-					Code:    SystemErrorCode,
-					Message: fmt.Sprintf("Unable to lock file %s with underlying message: %s", origFileName, e.Error()),
-				}
+				return nil, newError(SystemMasterErrorCode, FsPermissionsCode,  fmt.Sprintf("Unable to lock file %s with underlying message: %s", origFileName, e.Error()))
 			}
 
 			fsErr := closeFile(origFile)
@@ -54,19 +48,13 @@ func defragmentBlock(blockId uint16, collName string) (map[int]int64, Error) {
 				return nil, fsErr
 			}
 
-			return nil, &dbIntegrityError{
-				Code:    DbIntegrityViolationCode,
-				Message: fmt.Sprintf("Database integrity violation while defragmenting with underlying message: %s", err.Error()),
-			}
+			return nil, newError(DbIntegrityMasterErrorCode, BlockCorruptedCode, fmt.Sprintf("Database integrity violation while defragmenting with underlying message: %s", err.Error()))
 		}
 
 		if val == nil {
 			e = l.Unlock()
 			if e != nil {
-				return nil, &systemError{
-					Code:    SystemErrorCode,
-					Message: fmt.Sprintf("Unable to lock file %s with underlying message: %s", origFileName, e.Error()),
-				}
+				return nil, newError(SystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Unable to lock file %s with underlying message: %s", origFileName, e.Error()))
 			}
 
 			fsErr := closeFile(origFile)
@@ -75,10 +63,7 @@ func defragmentBlock(blockId uint16, collName string) (map[int]int64, Error) {
 				return nil, fsErr
 			}
 
-			return nil, &dbIntegrityError{
-				Code:    DbIntegrityViolationCode,
-				Message: "Database integrity violation while defragmenting. Invalid row encountered.",
-			}
+			return nil, newError(SystemMasterErrorCode, FsPermissionsCode, "Database integrity violation while defragmenting. Invalid row encountered")
 		}
 
 		d := string(prepareData(val.id, val.val))
@@ -92,25 +77,16 @@ func defragmentBlock(blockId uint16, collName string) (map[int]int64, Error) {
 	if e != nil {
 		e = l.Unlock()
 		if e != nil {
-			return nil, &systemError{
-				Code:    SystemErrorCode,
-				Message: fmt.Sprintf("Unable to lock file %s with underlying message: %s", origFileName, e.Error()),
-			}
+			return nil, newError(SystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Unable to lock file %s with underlying message: %s", origFileName, e.Error()))
 		}
 
-		return nil, &systemError{
-			Code:    SystemErrorCode,
-			Message: fmt.Sprintf("Could not convert string to int during defragmentation with underlying message: %s", e.Error()),
-		}
+		return nil, newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Could not convert string to int during defragmentation with underlying message: %s", e.Error()))
 	}
 
 	if err := closeFile(origFile); err != nil {
 		e = l.Unlock()
 		if e != nil {
-			return nil, &systemError{
-				Code:    SystemErrorCode,
-				Message: fmt.Sprintf("Unable to lock file %s with underlying message: %s", origFileName, e.Error()),
-			}
+			return nil, newError(SystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Unable to unlock file %s with underlying message: %s", origFileName, e.Error()))
 		}
 
 		return nil, err
@@ -118,10 +94,7 @@ func defragmentBlock(blockId uint16, collName string) (map[int]int64, Error) {
 
 	e = l.Unlock()
 	if e != nil {
-		return nil, &systemError{
-			Code:    SystemErrorCode,
-			Message: fmt.Sprintf("Unable to lock file %s with underlying message: %s", origFileName, e.Error()),
-		}
+		return nil, newError(SystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Unable to unlock file %s with underlying message: %s", origFileName, e.Error()))
 	}
 
 	return indexes, nil

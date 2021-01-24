@@ -20,10 +20,7 @@ func newFsDriver(dbDir string, t driverType) *fsDriver {
 
 func (d *fsDriver) Save(data []uint8, mapIdx uint16) (int64, int64, Error) {
 	if d.DriverType != writeDriver {
-		return 0, 0, &systemError{
-			Code:    SystemErrorCode,
-			Message: "Driver not used correctly. This driver must be used as a write driver only",
-		}
+		return 0, 0, newError(SystemMasterErrorCode, AppInvalidUsageCode, "Driver not used correctly. This driver must be used as a write driver only")
 	}
 
 	if err := d.loadHandler(mapIdx); err != nil {
@@ -43,10 +40,7 @@ func (d *fsDriver) ReadStrategic(index int64, mapIdx uint16) (*[]uint8, Error) {
 
 func (d *fsDriver) MarkStrategicDeleted(id []uint8, del []uint8, mapIdx uint16, offset int64) Error {
 	if d.DriverType != updateDriver {
-		return &systemError{
-			Code:    SystemErrorCode,
-			Message: "Driver not used correctly. This driver must be used as an update driver only",
-		}
+		return newError(SystemMasterErrorCode, AppInvalidUsageCode, "Driver not used correctly. This driver must be used as an update driver only")
 	}
 
 	if err := d.loadHandler(mapIdx); err != nil {

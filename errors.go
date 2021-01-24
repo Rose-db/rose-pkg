@@ -1,200 +1,57 @@
 package rose
 
 import (
-	"fmt"
+	"encoding/json"
 )
+
+type masterCode int
+type code int
 
 type Error interface {
 	Error() string
-	Type() string
 	GetCode() int
-	JSON() map[string]interface{}
-}
-
-type systemError struct {
-	Code int
-	Message string
-}
-
-type dataError struct {
-	Code int
-	Message string
-}
-
-type dbIntegrityError struct {
-	Code int
-	Message string
+	GetMasterCode() int
+	JSON() []uint8
 }
 
 type dbError struct {
+	MasterCode int
 	Code int
 	Message string
 }
-
-type validationError struct {
-	Code int
-	Message string
-}
-
-type timeoutError struct {
-	Code int
-	Message string
-}
-
-type endOfFileError struct {
-	Code int
-	Message string
-}
-
-type queryError struct {
-	Code int
-	Message string
-}
-
-
-
-func (e *queryError) Error() string {
-	return fmt.Sprintf("Code: %d, Message: %s", e.Code, e.Message)
-}
-
-func (e *queryError) Type() string {
-	return queryErrorType
-}
-
-func (e *queryError) GetCode() int {
-	return QueryErrorCode
-}
-
-func (e *queryError) JSON() map[string]interface{} {
-	return map[string]interface{}{}
-}
-
-
-
-
-func (e *endOfFileError) Error() string {
-	return fmt.Sprintf("Code: %d, Message: %s", e.Code, e.Message)
-}
-
-func (e *endOfFileError) Type() string {
-	return endOfFileErrorType
-}
-
-func (e *endOfFileError) GetCode() int {
-	return EOFErrorCode
-}
-
-func (e *endOfFileError) JSON() map[string]interface{} {
-	return map[string]interface{}{}
-}
-
-
-
-
-func (e *timeoutError) Error() string {
-	return fmt.Sprintf("Code: %d, Message: %s", e.Code, e.Message)
-}
-
-func (e *timeoutError) Type() string {
-	return timeoutErrorType
-}
-
-func (e *timeoutError) GetCode() int {
-	return TimeoutErrorCode
-}
-
-func (e *timeoutError) JSON() map[string]interface{} {
-	return map[string]interface{}{}
-}
-
-
-
-
-func (e *validationError) Error() string {
-	return fmt.Sprintf("Code: %d, Message: %s", e.Code, e.Message)
-}
-
-func (e *validationError) Type() string {
-	return validationErrorType
-}
-
-func (e *validationError) GetCode() int {
-	return ValidationErrorCode
-}
-
-func (e *validationError) JSON() map[string]interface{} {
-	return map[string]interface{}{}
-}
-
-
-
-func (e *systemError) Error() string {
-	return fmt.Sprintf("Code: %d, Message: %s", e.Code, e.Message)
-}
-
-func (e *systemError) Type() string {
-	return systemErrorType
-}
-
-func (e *systemError) GetCode() int {
-	return SystemErrorCode
-}
-
-func (e *systemError) JSON() map[string]interface{} {
-	return map[string]interface{}{}
-}
-
-
-
 
 func (e *dbError) Error() string {
-	return fmt.Sprintf("Code: %d, Message: %s", e.Code, e.Message)
-}
-
-func (e *dbError) Type() string {
-	return dbErrorType
+	return e.Message
 }
 
 func (e *dbError) GetCode() int {
-	return DbErrorCode
+	return e.Code
 }
 
-func (e *dbError) JSON() map[string]interface{} {
-	return map[string]interface{}{}
+func (e *dbError) GetMasterCode() int {
+	return e.MasterCode
 }
 
-
-
-func (e *dbIntegrityError) Error() string {
-	return fmt.Sprintf("Code: %d, Message: %s", e.Code, e.Message)
+func (e *dbError) JSON() []uint8 {
+	return errToJson(e)
 }
 
-func (e *dbIntegrityError) Type() string {
-	return dbIntegrityErrorType
+func newError(m masterCode, c code, msg string) Error {
+	return &dbError{
+		MasterCode: int(m),
+		Code: int(c),
+		Message: msg,
+	}
 }
 
-func (e *dbIntegrityError) GetCode() int {
-	return DbIntegrityViolationCode
-}
+func errToJson(e Error) []uint8 {
+	j := map[string]interface{}{
+		"masterCode": e.GetMasterCode(),
+		"code": e.GetCode(),
+		"message": e.Error(),
+	}
 
-func (e *dbIntegrityError) JSON() map[string]interface{} {
-	return map[string]interface{}{}
-}
+	b, _ := json.Marshal(j)
 
-
-
-func (e *dataError) Error() string {
-	return fmt.Sprintf("Code: %d, Message: %s", e.Code, e.Message)
-}
-
-func (e *dataError) Type() string {
-	return metadataErrorType
-}
-
-func (e *dataError) GetCode() int {
-	return DataErrorCode
-}
-
-func (e *dataError) JSON() map[string]interface{} {
-	return map[string]interface{}{}
+	return b
 }

@@ -51,10 +51,7 @@ func (d *db) Write(data []uint8) (int, int, Error) {
 	if _, ok := d.Index[id]; ok {
 		d.Unlock()
 
-		return 0, 0, &dbIntegrityError{
-			Code:    DbIntegrityViolationCode,
-			Message: fmt.Sprintf( "ID integrity validation. Duplicate ID %d found. This should not happen. Try this write again", id),
-		}
+		return 0, 0, newError(DbIntegrityMasterErrorCode, IndexNotExistsCode, fmt.Sprintf( "ID integrity validation. Duplicate ID %d found. This should not happen. Try this write again", id))
 	}
 
 	mapId := d.getBlockId(id)
@@ -134,19 +131,13 @@ func (d *db) ReadStrategic(id int, data interface{}) (*dbReadResult, Error) {
 	d.Unlock()
 
 	if err != nil {
-		return nil, &dbIntegrityError{
-			Code:    DbIntegrityViolationCode,
-			Message: fmt.Sprintf("An error occurred while trying to read driver: %s", err.Error()),
-		}
+		return nil, err
 	}
 
 	e := json.Unmarshal(*b, data)
 
 	if e != nil {
-		return nil, &systemError{
-			Code:    SystemErrorCode,
-			Message: fmt.Sprintf("Cannot unmarshal JSON string. This can be a bug with Rose or an invalid document. Try deleting and write the document again. The underlying error is: %s", e.Error()),
-		}
+		return nil, newError(SystemMasterErrorCode, UnmarshalFailCode, fmt.Sprintf("Cannot unmarshal JSON string. This can be a bug with Rose or an invalid document. Try deleting and write the document again. The underlying error is: %s", e.Error()))
 	}
 
 	return &dbReadResult{

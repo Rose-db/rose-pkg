@@ -103,10 +103,7 @@ func (s *lineReader) getData() (*lineReaderData, Error) {
 	id, err := strconv.Atoi(a)
 
 	if err != nil {
-		return nil, &systemError{
-			Code:    SystemErrorCode,
-			Message: fmt.Sprintf("Unable to convert string to int32 with message: %s", err.Error()),
-		}
+		return nil, newError(SystemMasterErrorCode, DataConversionCode, fmt.Sprintf("Unable to convert string to int32 with message: %s", err.Error()))
 	}
 
 	return &lineReaderData{
@@ -119,17 +116,11 @@ func (s *lineReader) populateBuffer() Error {
 	b, err := s.internalReader.ReadBytes('\n')
 
 	if err == io.EOF {
-		return &endOfFileError{
-			Code:    EOFErrorCode,
-			Message: "End of file",
-		}
+		return newError(FilesystemMasterErrorCode, EOFCode, "End of file")
 	}
 
 	if err != nil {
-		return &systemError{
-			Code:    SystemErrorCode,
-			Message: fmt.Sprintf("Reading file failed with message: %s", err.Error()),
-		}
+		return newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Reading file failed with message: %s", err.Error()))
 	}
 
 	s.buf = b[:len(b) - 1]
@@ -182,10 +173,7 @@ func (r *offsetReader) populateBuffer() (bool, Error) {
 		}
 
 		if err != nil {
-			return false, &dbIntegrityError{
-				Code:    DbIntegrityViolationCode,
-				Message: fmt.Sprintf("Unable to read filesystem database with message: %s", err.Error()),
-			}
+			return false, newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Unable to read filesystem database with message: %s", err.Error()))
 		}
 
 		r.offset++

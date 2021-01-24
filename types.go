@@ -1,25 +1,25 @@
 package rose
 
-// error types
-const systemErrorType = "system_error"
-const metadataErrorType = "metadata_error"
-const dbErrorType = "db_error"
-const dbIntegrityErrorType = "db_integrity_error"
-const validationErrorType = "validation_error"
-const timeoutErrorType = "timeout_error"
-const endOfFileErrorType = "end_of_file_error"
-const queryErrorType = "query_error"
+// master codes
+const FilesystemMasterErrorCode = 1
+const ValidationMasterErrorCode = 2
+const DbIntegrityMasterErrorCode = 3
+const SystemMasterErrorCode = 4
+const GenericMasterErrorCode = 5
 
 // application error codes
-const DataErrorCode = 1
-const SystemErrorCode = 2
-const DbIntegrityViolationCode = 3
-const DbErrorCode = 4
-const TooManyOpenFilesCode = 5
-const ValidationErrorCode = 6
-const TimeoutErrorCode = 7
-const EOFErrorCode = 8
-const QueryErrorCode = 9
+const IndexNotExistsCode = 1
+const FsPermissionsCode = 2
+const TooManyFilesOpenCode = 3
+const InvalidUserSuppliedDataCode = 4
+const EOFCode = 5
+const DataConversionCode = 6
+const DocumentNotFoundCode = 7
+const UnmarshalFailCode = 8
+const AppInvalidUsageCode = 9
+const ShutdownFailureCode = 10
+const BlockCorruptedCode = 11
+const OperatingSystemCode = 12
 
 // result status
 const OkResultStatus = "ok"

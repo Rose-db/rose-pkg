@@ -10,8 +10,6 @@ import (
 
 var _ = GinkgoDescribe("Successfully failing tests", func() {
 	GinkgoIt("Should fail to write if the collection does not exist", func() {
-		ginkgo.Skip("")
-
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 
 		a := testCreateRose(false)
@@ -24,9 +22,10 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 			})
 
 			gomega.Expect(err).To(gomega.Not(gomega.BeNil()))
-			gomega.Expect(err.GetCode()).To(gomega.Equal(DbIntegrityViolationCode))
+			gomega.Expect(err.GetCode()).To(gomega.Equal(InvalidUserSuppliedDataCode))
+			gomega.Expect(err.GetMasterCode()).To(gomega.Equal(GenericMasterErrorCode))
 
-			gomega.Expect(err.Error()).To(gomega.Equal("Code: 3, Message: Invalid write request. Collection not_exists does not exist"))
+			gomega.Expect(err.Error()).To(gomega.Equal("Invalid write request. Collection not_exists does not exist"))
 
 			resChan<- res
 		}()
@@ -47,8 +46,6 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail to read if the collection does not exist", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 
 		wg := &sync.WaitGroup{}
@@ -64,15 +61,15 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 			gomega.Expect(res).To(gomega.BeNil())
 
 			gomega.Expect(err).To(gomega.Not(gomega.BeNil()))
-			gomega.Expect(err.GetCode()).To(gomega.Equal(DbIntegrityViolationCode))
+			gomega.Expect(err.GetCode()).To(gomega.Equal(InvalidUserSuppliedDataCode))
+			gomega.Expect(err.GetMasterCode()).To(gomega.Equal(GenericMasterErrorCode))
 
-			gomega.Expect(err.Error()).To(gomega.Equal("Code: 3, Message: Invalid read request. Collection not_exists does not exist"))
+			gomega.Expect(err.Error()).To(gomega.Equal("Invalid read request. Collection not_exists does not exist"))
 
 			wg.Done()
 		}(wg)
 
 		wg.Wait()
-
 
 		if err := a.Shutdown(); err != nil {
 			testRemoveFileSystemDb(roseDir())
@@ -86,8 +83,6 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail write() if data is not a json byte array", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll")
 
@@ -101,8 +96,9 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 			return
 		}
 
-		gomega.Expect(err.GetCode()).To(gomega.Equal(DataErrorCode), fmt.Sprintf("DataErrorCode should have been returned as Error.Status"))
-		gomega.Expect(err.Error()).To(gomega.Equal("Code: 1, Message: Data must be a JSON byte array"))
+		gomega.Expect(err.GetMasterCode()).To(gomega.Equal(ValidationMasterErrorCode))
+		gomega.Expect(err.GetCode()).To(gomega.Equal(InvalidUserSuppliedDataCode), fmt.Sprintf("DataErrorCode should have been returned as Error.Status"))
+		gomega.Expect(err.Error()).To(gomega.Equal("Data must be a JSON byte array"))
 
 		if err := a.Shutdown(); err != nil {
 			testRemoveFileSystemDb(roseDir())
@@ -116,8 +112,6 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail replace() if data is not a json byte array", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll")
 
@@ -131,8 +125,9 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 			return
 		}
 
-		gomega.Expect(err.GetCode()).To(gomega.Equal(DataErrorCode), fmt.Sprintf("DataErrorCode should have been returned as Error.Status"))
-		gomega.Expect(err.Error()).To(gomega.Equal("Code: 1, Message: Data must be a JSON byte array"))
+		gomega.Expect(err.GetMasterCode()).To(gomega.Equal(ValidationMasterErrorCode))
+		gomega.Expect(err.GetCode()).To(gomega.Equal(InvalidUserSuppliedDataCode), fmt.Sprintf("DataErrorCode should have been returned as Error.Status"))
+		gomega.Expect(err.Error()).To(gomega.Equal("Data must be a JSON byte array"))
 
 		if err := a.Shutdown(); err != nil {
 			testRemoveFileSystemDb(roseDir())
@@ -145,9 +140,7 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 		testRemoveFileSystemDb(roseDir())
 	})
 
-	GinkgoIt("Should fail because data too large > 16MB", func() {
-		ginkgo.Skip("")
-
+	GinkgoIt("Should fail because data too large > 5MB", func() {
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll")
 
@@ -178,7 +171,8 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 			return
 		}
 
-		gomega.Expect(err.GetCode()).To(gomega.Equal(DataErrorCode), fmt.Sprintf("DataErrorCode should have been returned as Error.Status"))
+		gomega.Expect(err.GetMasterCode()).To(gomega.Equal(ValidationMasterErrorCode))
+		gomega.Expect(err.GetCode()).To(gomega.Equal(InvalidUserSuppliedDataCode), fmt.Sprintf("DataErrorCode should have been returned as Error.Status"))
 		// TODO: There seems to be a difference when converting json byte array to string and back into byte array, check later
 		//gomega.Expect(err.Error()).To(gomega.Equal(fmt.Sprintf("Code: 1, Message: %s", fmt.Sprintf("Data cannot be larger than 16000000 bytes (16MB), %d bytes given", len(d)))))
 
@@ -194,8 +188,6 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail to read a document if not exists", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 
 		collName := testCreateCollection(a, "coll")
@@ -217,8 +209,6 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 	})
 
 	GinkgoIt("Should fail to delete a document if not exist", func() {
-		ginkgo.Skip("")
-
 		a := testCreateRose(false)
 
 		collName := testCreateCollection(a, "coll")

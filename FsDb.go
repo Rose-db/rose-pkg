@@ -30,10 +30,8 @@ func newFsDb(b uint16, dbDir string, perms int) (*fsDb, Error) {
 	stat, statErr := os.Stat(a)
 
 	if statErr != nil {
-		return nil, &dbError{
-			Code:    DbErrorCode,
-			Message: fmt.Sprintf("Database integrity violation. Cannot read stats on existing file %s with underlying message: %s", a, statErr.Error()),
-		}
+		return nil, newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Database integrity violation. Cannot read stats on existing file %s with underlying message: %s", a, statErr.Error()))
+
 	}
 
 	return &fsDb{
@@ -74,7 +72,7 @@ func (fs *fsDb) ReadStrategic(offset int64) (*[]uint8, Error) {
 
 	_, data, e := r.Read()
 
-	if e != nil && e.GetCode() == EOFErrorCode {
+	if e != nil && e.GetCode() == EOFCode {
 		return nil, nil
 	}
 
@@ -83,10 +81,7 @@ func (fs *fsDb) ReadStrategic(offset int64) (*[]uint8, Error) {
 	}
 
 	if data == nil {
-		return nil, &dbIntegrityError{
-			Code:    DbIntegrityViolationCode,
-			Message: "Document not found",
-		}
+		return nil, newError(GenericMasterErrorCode, DocumentNotFoundCode, "Document not found")
 	}
 
 	return &data.val, nil
@@ -104,10 +99,7 @@ func (fs *fsDb) StrategicDelete(id []uint8, del []uint8, offset int64) Error {
 	}
 
 	if err != nil {
-		return &dbError{
-			Code:    DbErrorCode,
-			Message: fmt.Sprintf("Unable to delete %s with underlying message: %s", string(id), err.Error()),
-		}
+		return newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Unable to delete %s with underlying message: %s", string(id), err.Error()))
 	}
 
 	return nil
@@ -121,10 +113,7 @@ func (fs *fsDb) SyncAndClose() Error {
 	err = fs.File.Close()
 
 	if err != nil {
-		return &dbError{
-			Code:    DbErrorCode,
-			Message: fmt.Sprintf("Database integrity violation. Cannot close file %s with underlying message: %s", name, err.Error()),
-		}
+		return newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Database integrity violation. Cannot close file %s with underlying message: %s", name, err.Error()))
 	}
 
 	return nil

@@ -75,7 +75,7 @@ func (b *balancer) safeIncrement() {
 
 func (b *balancer) Push(item *balancerRequest) ([]QueryResult, Error) {
 	queryResults := make([]QueryResult, 0)
-	var err *queryError = nil
+	var err *dbError = nil
 
 	responses := make(chan interface{})
 
@@ -89,7 +89,7 @@ func (b *balancer) Push(item *balancerRequest) ([]QueryResult, Error) {
 					ID:   v.ID,
 					Data: v.Body,
 				})
-			case *queryError:
+			case *dbError:
 				if err == nil {
 					err = v
 				}

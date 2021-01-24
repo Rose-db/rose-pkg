@@ -77,20 +77,14 @@ func (qq *queryQueue) runWorker(c chan *queueItem) {
 			file, err = secureBlockingCreateFile(blockPath, os.O_RDONLY)
 
 			if err != nil {
-				item.Response<- &queryError{
-					Code:    QueryErrorCode,
-					Message: fmt.Sprintf("Query resulted in an error: %s", err.Error()),
-				}
+				item.Response<- err
 
 				item.Response<- true
 			}
 		}
 
 		if err != nil {
-			item.Response<- &queryError{
-				Code:    QueryErrorCode,
-				Message: fmt.Sprintf("Query resulted in an error: %s", err.Error()),
-			}
+			item.Response<- err
 
 			item.Response<- true
 
@@ -103,15 +97,12 @@ func (qq *queryQueue) runWorker(c chan *queueItem) {
 		for {
 			_, d, err := reader.Read()
 
-			if err != nil && err.GetCode() == EOFErrorCode {
+			if err != nil && err.GetCode() == EOFCode {
 				break
 			}
 
 			if d == nil {
-				item.Response<- &queryError{
-					Code:    QueryErrorCode,
-					Message: "Unable to read a row during query search",
-				}
+				item.Response<- newError(DbIntegrityMasterErrorCode, BlockCorruptedCode, "Unable to read a row during query search")
 
 				break
 			}
@@ -119,10 +110,7 @@ func (qq *queryQueue) runWorker(c chan *queueItem) {
 			v, jErr := p.Parse(string(d.val))
 
 			if jErr != nil {
-				item.Response<- &queryError{
-					Code:    QueryErrorCode,
-					Message: fmt.Sprintf("Query resulted in an error: %s", jErr.Error()),
-				}
+				item.Response<- newError(DbIntegrityMasterErrorCode, BlockCorruptedCode, fmt.Sprintf("Query resulted in an error: %s", jErr.Error()))
 
 				break
 			}
@@ -131,10 +119,7 @@ func (qq *queryQueue) runWorker(c chan *queueItem) {
 		}
 
 		if err := closeFile(file); err != nil {
-			item.Response<- &queryError{
-				Code:    QueryErrorCode,
-				Message: fmt.Sprintf("Query resulted in an error: %s", err.Error()),
-			}
+			item.Response<- err
 		}
 
 		reader.Close()

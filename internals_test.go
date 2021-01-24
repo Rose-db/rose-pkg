@@ -10,8 +10,6 @@ import (
 
 var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	GinkgoIt("Should inspect block tracker in multiple collections", func() {
-		ginkgo.Skip("")
-
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 		a := testCreateRose(false)
 		collOne := testCreateCollection(a, "coll_one")
@@ -64,8 +62,6 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	})
 
 	GinkgoIt("Should inspect block tracker replace", func() {
-		ginkgo.Skip("")
-
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll")
@@ -113,8 +109,6 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	})
 
 	GinkgoIt("Should assert block number based on different write numbers", func() {
-		ginkgo.Skip("")
-
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 		a := testCreateRose(false)
 		collName := testCreateCollection(a, "coll")
@@ -145,8 +139,6 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	})
 
 	GinkgoIt("Should successfully perform and inspect inserts", func() {
-		ginkgo.Skip("")
-
 		r := testCreateRose(false)
 
 		collName := testCreateCollection(r, "coll")
@@ -171,8 +163,6 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	})
 
 	GinkgoIt("Should successfully perform and inspect deletes", func() {
-		ginkgo.Skip("")
-
 		r := testCreateRose(false)
 
 		collName := testCreateCollection(r, "coll")
@@ -226,8 +216,6 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 	})
 
 	GinkgoIt("Should successfully perform and inspect delete reallocation", func() {
-		ginkgo.Skip("")
-
 		r := testCreateRose(false)
 		collName := testCreateCollection(r, "coll")
 		n := 10000

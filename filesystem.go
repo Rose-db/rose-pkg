@@ -25,11 +25,10 @@ func createDbIfNotExists(output bool) (bool, Error) {
 		if _, err := os.Stat(d); os.IsNotExist(err) {
 			updated++
 			fsErr := os.Mkdir(d, os.ModePerm)
+
+
 			if fsErr != nil {
-				return false, &systemError{
-					Code:    SystemErrorCode,
-					Message: fmt.Sprintf("      Trying to create directory %s failed with underlying message: %s", d, fsErr.Error()),
-				}
+				return false, newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("      Trying to create directory %s failed with underlying message: %s", d, fsErr.Error()))
 			}
 		}
 	}
@@ -41,10 +40,8 @@ func createFile(f string, flag int) (*os.File, Error) {
 	file, err := os.OpenFile(f, flag, 0666)
 
 	if err != nil {
-		sysErr := &systemError{
-			Code:    SystemErrorCode,
-			Message: fmt.Sprintf("Error occurred trying to create file %s: %s", f, err.Error()),
-		}
+		sysErr := newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Error occurred trying to create file %s: %s", f, err.Error()))
+
 
 		return nil, sysErr
 	}
@@ -56,19 +53,16 @@ func closeFile(file *os.File) Error {
 	fsErr := file.Sync()
 
 	if fsErr != nil {
-		return &systemError{
-			Code:    SystemErrorCode,
-			Message: fmt.Sprintf("Error occurred trying to sync file: %s", fsErr.Error()),
-		}
+
+		return newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Error occurred trying to sync file: %s", fsErr.Error()))
+
 	}
 
 	fsErr = file.Close()
 
 	if fsErr != nil {
-		return &systemError{
-			Code:    SystemErrorCode,
-			Message: fmt.Sprintf("Error occurred trying to close file %s: %s", file.Name(), fsErr.Error()),
-		}
+		return newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Error occurred trying to close file %s: %s", file.Name(), fsErr.Error()))
+
 	}
 
 	return nil

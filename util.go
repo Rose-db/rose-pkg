@@ -22,18 +22,12 @@ func isJSON(s []uint8) bool {
 
 func validateData(data []uint8) Error {
 	if !isJSON(data) {
-		return &dataError{
-			Code:    DataErrorCode,
-			Message: "Data must be a JSON byte array",
-		}
+		return newError(ValidationMasterErrorCode, InvalidUserSuppliedDataCode, "Data must be a JSON byte array")
 	}
 
 	l := len(data)
 	if l > maxValSize {
-		return &dataError{
-			Code:    DataErrorCode,
-			Message: fmt.Sprintf("Data cannot be larger than %d bytes (16MB), %d bytes given", maxValSize, l),
-		}
+		return newError(ValidationMasterErrorCode, InvalidUserSuppliedDataCode, fmt.Sprintf("Data cannot be larger than %d bytes (16MB), %d bytes given", maxValSize, l))
 	}
 
 	return nil
@@ -86,7 +80,7 @@ func secureBlockingCreateFile(a string, flag int) (*os.File, Error) {
 				return nil, err
 			}
 
-			if err.GetCode() == TooManyOpenFilesCode {
+			if err.GetCode() == TooManyFilesOpenCode {
 				continue
 			}
 
@@ -114,7 +108,7 @@ func secureBlockingWriteFile(f *os.File, d []uint8) Error {
 				return getFsError(err, "write")
 			}
 
-			if e.GetCode() == TooManyOpenFilesCode {
+			if e.GetCode() == TooManyFilesOpenCode {
 				continue
 			}
 
@@ -142,7 +136,7 @@ func secureBlockingSeekFile(f *os.File, offset int64) Error {
 				return getFsError(err, "write")
 			}
 
-			if e.GetCode() == TooManyOpenFilesCode {
+			if e.GetCode() == TooManyFilesOpenCode {
 				continue
 			}
 
@@ -170,7 +164,7 @@ func secureBlockingWriteAtFile(f *os.File, d []uint8, offset int64) Error {
 				return getFsError(err, "writeAt")
 			}
 
-			if e.GetCode() == TooManyOpenFilesCode {
+			if e.GetCode() == TooManyFilesOpenCode {
 				continue
 			}
 
@@ -188,16 +182,11 @@ func getFsError(err error, op string) Error {
 	msg := err.Error()
 
 	if strings.Contains(msg, "too many open files") {
-		return &timeoutError{
-			Code:    TimeoutErrorCode,
-			Message: fmt.Sprintf("Filesystem timeout error. Cannot do %s file operation with underlying message: %s", op, msg),
-		}
+		return newError(FilesystemMasterErrorCode, TooManyFilesOpenCode, fmt.Sprintf("Filesystem timeout error. Cannot do %s file operation with underlying message: %s", op, msg))
+
 	}
 
-	return &dbError{
-		Code:    DbIntegrityViolationCode,
-		Message: fmt.Sprintf("Database integrity violation. Cannot do %s file operation with underlying message: %s", op, msg),
-	}
+	return newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Database integrity violation. Cannot do %s file operation with underlying message: %s", op, msg))
 }
 
 func createDateFromString(parts []string) time.Time {
