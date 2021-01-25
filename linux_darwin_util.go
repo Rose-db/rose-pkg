@@ -14,7 +14,8 @@ import (
 	to just return limit - 20, just in case not to reach the limit
  */
 func getOpenFileHandleLimit() (int, Error) {
-	cmd := exec.Command("ulimit", "-n")
+	return 200, nil
+/*	cmd := exec.Command("ulimit", "-n")
 
 	var out bytes.Buffer
 	cmd.Stdout = &out
@@ -42,7 +43,7 @@ func getOpenFileHandleLimit() (int, Error) {
 		return 200, nil
 	}
 
-	return n - 20, nil
+	return n - 20, nil*/
 }
 
 func getDbSize() (int, Error) {
