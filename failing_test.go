@@ -88,10 +88,10 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 
 		data := "string_that_is_not_json"
 
-		_, err := a.Write(WriteMetadata{Data: []uint8(data), CollectionName: collName})
+		_, err := a.Write(WriteMetadata{Data: data, CollectionName: collName})
 
 		if err == nil {
-			ginkgo.Fail("err should not be nil")
+			ginkgo.Fail(fmt.Sprintf("Failed with error: %s", err.Error()))
 
 			return
 		}
@@ -117,10 +117,10 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 
 		data := "string_that_is_not_json"
 
-		_, err := a.Replace(ReplaceMetadata{Data: []uint8(data), CollectionName: collName, ID: 0})
+		_, err := a.Replace(ReplaceMetadata{Data: data, CollectionName: collName, ID: 0})
 
 		if err == nil {
-			ginkgo.Fail("err should not be nil")
+			ginkgo.Fail(fmt.Sprintf("Failed with error: %s", err.Error()))
 
 			return
 		}

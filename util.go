@@ -9,8 +9,8 @@ import (
 	"time"
 )
 
-func prepareData(id int, data []uint8) []uint8 {
-	s := []uint8(fmt.Sprintf("%d%s%s%s", id, delim, string(data), "\n"))
+func prepareData(id int, data interface{}) []uint8 {
+	s := []uint8(fmt.Sprintf("%d%s%s%s", id, delim, data.(string), "\n"))
 
 	return s
 }
@@ -20,12 +20,8 @@ func isJSON(s []uint8) bool {
 	return json.Unmarshal(s, &js) == nil
 }
 
-func validateData(data []uint8) Error {
-	if !isJSON(data) {
-		return newError(ValidationMasterErrorCode, InvalidUserSuppliedDataCode, "Data must be a JSON byte array")
-	}
-
-	l := len(data)
+func validateData(data interface{}) Error {
+	l := len(data.(string))
 	if l > maxValSize {
 		return newError(ValidationMasterErrorCode, InvalidUserSuppliedDataCode, fmt.Sprintf("Data cannot be larger than %d bytes (16MB), %d bytes given", maxValSize, l))
 	}

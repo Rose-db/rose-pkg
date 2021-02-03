@@ -147,7 +147,7 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 
 		m := r.Databases[collName]
 
-		testMultipleConcurrentInsert(n, []uint8{}, r, collName)
+		testMultipleConcurrentInsert(n, "", r, collName)
 
 		assertIndexIntegrity(m, n)
 

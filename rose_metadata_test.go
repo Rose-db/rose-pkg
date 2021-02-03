@@ -85,7 +85,7 @@ var _ = GinkgoDescribe("Metadata tests", func() {
 		m = ReplaceMetadata{
 			CollectionName: "coll_name",
 			ID: 0,
-			Data: []uint8{},
+			Data: "",
 		}
 
 		err = m.Validate()

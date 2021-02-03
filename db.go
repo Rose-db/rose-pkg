@@ -41,7 +41,7 @@ func newDb(write *fsDriver, read *fsDriver, delete *fsDriver, name string, block
 	return d
 }
 
-func (d *db) Write(data []uint8) (int, int, Error) {
+func (d *db) Write(data interface{}) (int, int, Error) {
 	d.Lock()
 
 	id := d.AutoIncrementCounter
@@ -151,7 +151,7 @@ func (d *db) ReadStrategic(id int, data interface{}) (*dbReadResult, Error) {
     2. Write the new document into the same block
     3. Replace the previous index with the new one
  */
-func (d *db) Replace(id int, data []uint8) Error {
+func (d *db) Replace(id int, data interface{}) Error {
 	d.Lock()
 	_, ok := d.Index[id]
 
@@ -300,7 +300,7 @@ func (d *db) unlockedDelete(id int, mapId uint16) Error {
 	return nil
 }
 
-func (d *db) unlockedWrite(id int, data []uint8, mapId uint16) Error {
+func (d *db) unlockedWrite(id int, data interface{}, mapId uint16) Error {
 	// r operation, add COMPUTED index to the index map
 	bytesWritten, size, err := d.saveOnFs(id, data, mapId)
 	offset := size - bytesWritten
@@ -319,7 +319,7 @@ PRIVATE METHOD. DO NOT USE IN CLIENT CODE
 
 Save the data on the filesystem
 */
-func (d *db) saveOnFs(id int, v []uint8, mapId uint16) (int64, int64, Error) {
+func (d *db) saveOnFs(id int, v interface{}, mapId uint16) (int64, int64, Error) {
 	return d.WriteDriver.Save(prepareData(id, v), mapId)
 }
 

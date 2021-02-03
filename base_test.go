@@ -87,7 +87,7 @@ func testRemoveFileSystemDb(dir string) {
 	gomega.Expect(err).To(gomega.BeNil())
 }
 
-func testMultipleConcurrentInsert(num int, value []uint8, r *Rose, collName string) map[int]int {
+func testMultipleConcurrentInsert(num int, value string, r *Rose, collName string) map[int]int {
 	ids := make(map[int]int, num)
 
 	for i := 0; i < num; i++ {
@@ -160,22 +160,22 @@ func assertIndexIntegrity(m *db, expectedLen int) {
 	gomega.Expect(len(index)).To(gomega.Equal(expectedLen))
 }
 
-func testAsJson(j string) []uint8 {
+func testAsJson(j string) string {
 	js, err := json.Marshal(j)
 
 	if err != nil {
 		ginkgo.Fail(fmt.Sprintf("Cannot marshal json with message: %s", err.Error()))
 	}
 
-	return js
+	return string(js)
 }
 
-func testAsJsonInterface(j interface{}) []uint8 {
+func testAsJsonInterface(j interface{}) string {
 	js, err := json.Marshal(j)
 
 	if err != nil {
 		ginkgo.Fail(fmt.Sprintf("Cannot marshal json with message: %s", err.Error()))
 	}
 
-	return js
+	return string(js)
 }

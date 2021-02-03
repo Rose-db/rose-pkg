@@ -66,7 +66,7 @@ func defragmentBlock(blockId uint16, collName string) (map[int]int64, Error) {
 			return nil, newError(SystemMasterErrorCode, FsPermissionsCode, "Database integrity violation while defragmenting. Invalid row encountered")
 		}
 
-		d := string(prepareData(val.id, val.val))
+		d := string(prepareData(val.id, string(val.val)))
 		dataToWrite += d
 		indexes[val.id] = index
 		index += int64(len(d))

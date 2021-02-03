@@ -7,10 +7,10 @@ import (
 )
 
 type AppResult struct {
-	ID   int
-	Method string
-	Status string
-	Reason string
+	ID   int `json:"id"`
+	Method string `json:"method"`
+	Status string `json:"status"`
+	Reason string `json:"reason"`
 }
 
 type Rose struct {
@@ -230,6 +230,7 @@ func (a *Rose) Delete(m DeleteMetadata) (*AppResult, Error) {
 	}
 
 	return &AppResult{
+		ID: m.ID,
 		Method: DeleteMethodType,
 		Status: DeletedResultStatus,
 	}, nil
@@ -243,7 +244,6 @@ func (a *Rose) Replace(m ReplaceMetadata) (*AppResult, Error) {
 	if err := validateData(m.Data); err != nil {
 		return nil, err
 	}
-
 
 	db, ok := a.Databases[m.CollectionName]
 
