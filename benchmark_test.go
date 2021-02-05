@@ -66,3 +66,34 @@ func BenchmarkAppInsertHundredThousand(b *testing.B) {
 		testRemoveFileSystemDb(roseDir())
 	}
 }
+
+func BenchmarkAppBulkInsertHundredThousand(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		a := testCreateRose(false)
+		collName := testCreateCollection(a, "coll_name")
+
+		s := testAsJson("\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed elementum felis vel aliquam scelerisque. Nullam nibh mi, lacinia in euismod vel, ultricies non nisl. Etiam dictum nec ipsum id sodales. Suspendisse eget dictum neque. Etiam ullamcorper orci sed tristique tempor. Proin quis elit commodo enim pretium imperdiet semper vel augue. Donec eu vehicula eros. Proin faucibus sed quam ut tempor. Aenean in facilisis sem. Nullam semper, massa sed ultricies sagittis, tellus lorem tincidunt justo, non laoreet lacus urna at libero.\n\nQuisque id ipsum nec quam mattis rutrum. Mauris sit amet pharetra metus. Aliquam nec sem nec urna pharetra posuere et ac lacus. Ut ligula purus, porta vel pretium vitae, blandit ac nunc. Donec sem turpis, pellentesque in condimentum ac, fermentum in mi. Phasellus commodo faucibus gravida. Curabitur at orci sit amet elit eleifend laoreet quis eget magna. Aliquam pretium tempus neque. Quisque urna purus, vestibulum sit amet sapien id, viverra lacinia nisi. Nullam augue dolor, consectetur ut. ")
+
+		ms := []interface{}{}
+
+		for i := 0; i < 100000; i++ {
+			ms[i] = s
+		}
+
+		resChan := make(chan *BulkAppResult)
+		go func() {
+			res, err := a.BulkWrite(BulkWriteMetadata{CollectionName: collName, Data: ms})
+
+			gomega.Expect(err).To(gomega.BeNil())
+
+			resChan<- res
+		}()
+		<-resChan
+
+		err := a.Shutdown()
+
+		gomega.Expect(err).To(gomega.BeNil())
+
+		testRemoveFileSystemDb(roseDir())
+	}
+}

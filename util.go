@@ -10,7 +10,7 @@ import (
 )
 
 func prepareData(id int, data interface{}) []uint8 {
-	s := []uint8(fmt.Sprintf("%d%s%s%s", id, delim, data.(string), "\n"))
+	s := []uint8(fmt.Sprintf("%d%s%v%s", id, delim, data, "\n"))
 
 	return s
 }
@@ -28,7 +28,6 @@ func validateData(data interface{}) Error {
 
 	return nil
 }
-
 
 /**
 	Creates batches based on {size}. If len(files) < size,

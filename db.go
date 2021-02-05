@@ -78,11 +78,68 @@ func (d *db) Write(data interface{}) (int, int, Error) {
 
 	d.BlockTracker[mapId] = track
 
-	d.Balancer.reSpawnIfNeeded(uint16(len(d.BlockTracker)))
+	go func(bLen int, b *balancer) {
+		b.reSpawnIfNeeded(uint16(bLen))
+	}(len(d.BlockTracker), d.Balancer)
 
 	d.Unlock()
 
 	return NormalExecutionStatus, id, nil
+}
+
+func (d *db) BulkWrite(data []interface{}) (int, int, Error) {
+	d.Lock()
+
+	if len(data) == 0 {
+		return NormalExecutionStatus, 0, nil
+	}
+
+	written := 0
+	for _, v := range data {
+		id := d.AutoIncrementCounter
+		d.AutoIncrementCounter += 1
+
+		// check if the entry already exists
+		if _, ok := d.Index[id]; ok {
+			d.Unlock()
+
+			//return 0, 0, newError(DbIntegrityMasterErrorCode, IndexNotExistsCode, fmt.Sprintf( "ID integrity validation. Duplicate ID %d found. This should not happen. Try this write again", id))
+		}
+
+		mapId := d.getBlockId(id)
+
+		bytesWritten, size, err := d.saveOnFs(id, v, mapId)
+
+		if err != nil {
+			//return 0, 0, err
+		}
+
+		offset := size - bytesWritten
+
+		d.Index[id] = offset
+
+		track, ok := d.BlockTracker[mapId]
+
+		if !ok {
+			t := [2]uint16{}
+
+			track = t
+		}
+
+		track[0] += 1
+
+		d.BlockTracker[mapId] = track
+
+		written++
+	}
+
+	go func(bLen int, b *balancer) {
+		b.reSpawnIfNeeded(uint16(bLen))
+	}(len(d.BlockTracker), d.Balancer)
+
+	d.Unlock()
+
+	return NormalExecutionStatus, written, nil
 }
 
 func (d *db) Delete(id int) (bool, Error) {

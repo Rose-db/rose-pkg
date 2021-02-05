@@ -13,6 +13,13 @@ type AppResult struct {
 	Reason string `json:"reason"`
 }
 
+type BulkAppResult struct {
+	WrittenIDs   int `json:"writtenIds"`
+	Method string `json:"method"`
+	Status string `json:"status"`
+	Reason string `json:"reason"`
+}
+
 type Rose struct {
 	Databases map[string]*db
 }
@@ -166,6 +173,27 @@ func (a *Rose) Write(m WriteMetadata) (*AppResult, Error) {
 	return &AppResult{
 		ID:   ID,
 		Method: WriteMethodType,
+		Status: OkResultStatus,
+	}, nil
+}
+
+func (a *Rose) BulkWrite(m BulkWriteMetadata) (*BulkAppResult, Error) {
+	db, ok := a.Databases[m.CollectionName]
+
+	if !ok {
+		return nil, newError(GenericMasterErrorCode, InvalidUserSuppliedDataCode, fmt.Sprintf("Invalid write request. Collection %s does not exist", m.CollectionName))
+	}
+
+	// save the entry under idx into memory
+	_, written, err := db.BulkWrite(m.Data)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &BulkAppResult{
+		WrittenIDs: written,
+		Method: BulkWriteMethodType,
 		Status: OkResultStatus,
 	}, nil
 }

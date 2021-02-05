@@ -9,6 +9,11 @@ type WriteMetadata struct {
 	Data interface{} `json:"data"`
 }
 
+type BulkWriteMetadata struct {
+	CollectionName string `json:"collectionName"`
+	Data []interface{} `json:"data"`
+}
+
 type ReadMetadata struct {
 	CollectionName string `json:"collectionName"`
 	ID int `json:"id"`

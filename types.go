@@ -30,6 +30,7 @@ const ReplacedResultStatus = "replaced"
 
 // method types
 const WriteMethodType = "insert"
+const BulkWriteMethodType = "bulkWrite"
 const DeleteMethodType = "delete"
 const ReadMethodType = "read"
 const ReplaceMethodType = "replace"
