@@ -36,8 +36,7 @@ const ReadMethodType = "read"
 const ReplaceMethodType = "replace"
 
 // memory db status types
-const NewBlockCreatedStatus = 1
-const NormalExecutionStatus = 2
+const NormalExecutionStatus = 1
 
 type driverType int
 

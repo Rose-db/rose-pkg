@@ -17,6 +17,7 @@ type db struct {
 	Index                map[int]int64
 	AutoIncrementCounter int
 	BlockTracker map[uint16][2]uint16
+	DocCount map[uint16]int
 	Name string
 	Balancer *balancer
 	sync.RWMutex
@@ -32,6 +33,7 @@ func newDb(write *fsDriver, read *fsDriver, delete *fsDriver, name string, block
 		ReadDriver: read,
 		DeleteDriver: delete,
 		Name: name,
+		DocCount: make(map[uint16]int),
 	}
 
 	d.init()
@@ -78,6 +80,8 @@ func (d *db) Write(data interface{}) (int, int, Error) {
 
 	d.BlockTracker[mapId] = track
 
+	d.incrementDocCount(mapId)
+
 	go func(bLen int, b *balancer) {
 		b.reSpawnIfNeeded(uint16(bLen))
 	}(len(d.BlockTracker), d.Balancer)
@@ -111,7 +115,7 @@ func (d *db) BulkWrite(data []interface{}) (int, int, Error) {
 		bytesWritten, size, err := d.saveOnFs(id, v, mapId)
 
 		if err != nil {
-			//return 0, 0, err
+			return 0, 0, err
 		}
 
 		offset := size - bytesWritten
@@ -416,6 +420,18 @@ func (d *db) resetBlockTracker(blockId uint16) {
 	track[1] = 0
 
 	d.BlockTracker[blockId] = track
+}
+
+func (d *db) incrementDocCount(mapId uint16) {
+	if _, ok := d.DocCount[mapId]; !ok {
+		d.DocCount[mapId] = 0
+	}
+
+	d.DocCount[mapId]++
+
+	if len(d.DocCount) == 2 {
+		delete(d.DocCount, mapId - 1)
+	}
 }
 
 func (d *db) init() {

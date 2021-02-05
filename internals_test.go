@@ -35,6 +35,13 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 
 			db := a.Databases[collOne]
 
+			gomega.Expect(len(db.DocCount)).To(gomega.Equal(1))
+
+			for c := range db.DocCount {
+				gomega.Expect(c <= blockMark).To(gomega.Equal(true))
+				gomega.Expect(c != 0).To(gomega.Equal(true))
+			}
+
 			gomega.Expect(len(db.BlockTracker)).To(gomega.Equal(4))
 
 			_, ok := db.BlockTracker[0]
