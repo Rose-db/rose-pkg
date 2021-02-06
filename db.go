@@ -56,7 +56,7 @@ func (d *db) Write(data interface{}) (int, int, Error) {
 		return 0, 0, newError(DbIntegrityMasterErrorCode, IndexNotExistsCode, fmt.Sprintf( "ID integrity validation. Duplicate ID %d found. This should not happen. Try this write again", id))
 	}
 
-	mapId := d.getBlockId(id)
+	mapId := d.getMapId(id)
 
 	bytesWritten, size, err := d.saveOnFs(id, data, mapId)
 
@@ -98,6 +98,26 @@ func (d *db) BulkWrite(data []interface{}) (int, int, Error) {
 		return NormalExecutionStatus, 0, nil
 	}
 
+/*	bulkWrites := make([]uint8, 0)
+	var writesDone uint8 = 0
+	regenerate := 0
+	for _, v := range data {
+		id := d.AutoIncrementCounter
+		d.AutoIncrementCounter += 1
+
+		mapId := d.getMapId(id)
+		bulkTopWrite := blockMark - d.DocCount[mapId]
+
+		if bulkTopWrite > 100 {
+			bulkTopWrite = 100
+		}
+
+		bulkWrites = append(bulkWrites, prepareData(id, v)...)
+
+		writesDone++
+	}*/
+
+
 	written := 0
 	for _, v := range data {
 		id := d.AutoIncrementCounter
@@ -107,10 +127,10 @@ func (d *db) BulkWrite(data []interface{}) (int, int, Error) {
 		if _, ok := d.Index[id]; ok {
 			d.Unlock()
 
-			//return 0, 0, newError(DbIntegrityMasterErrorCode, IndexNotExistsCode, fmt.Sprintf( "ID integrity validation. Duplicate ID %d found. This should not happen. Try this write again", id))
+			return 0, 0, newError(DbIntegrityMasterErrorCode, IndexNotExistsCode, fmt.Sprintf( "ID integrity validation. Duplicate ID %d found. This should not happen. Try this write again", id))
 		}
 
-		mapId := d.getBlockId(id)
+		mapId := d.getMapId(id)
 
 		bytesWritten, size, err := d.saveOnFs(id, v, mapId)
 
@@ -149,7 +169,7 @@ func (d *db) BulkWrite(data []interface{}) (int, int, Error) {
 func (d *db) Delete(id int) (bool, Error) {
 	d.Lock()
 
-	blockId := d.getBlockId(id)
+	blockId := d.getMapId(id)
 
 	idx, ok := d.Index[id]
 
@@ -185,7 +205,7 @@ func (d *db) ReadStrategic(id int, data interface{}) (*dbReadResult, Error) {
 		return nil, nil
 	}
 
-	mapId := d.getBlockId(id)
+	mapId := d.getMapId(id)
 
 	b, err := d.ReadDriver.ReadStrategic(index, mapId)
 
@@ -222,7 +242,7 @@ func (d *db) Replace(id int, data interface{}) Error {
 		return nil
 	}
 
-	blockId := d.getBlockId(id)
+	blockId := d.getMapId(id)
 
 	if err := d.unlockedDelete(id, blockId); err != nil {
 		d.Unlock()
@@ -391,7 +411,7 @@ func (d *db) deleteFromFs(id int, mapIdx uint16, idx int64) Error {
 	return d.DeleteDriver.MarkStrategicDeleted(idByte, []uint8(delMark), mapIdx, idx)
 }
 
-func (d *db) getBlockId(id int) uint16 {
+func (d *db) getMapId(id int) uint16 {
 	return uint16(id / blockMark)
 }
 
