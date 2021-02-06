@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
+	"strconv"
 	"strings"
 )
 
@@ -290,6 +291,18 @@ var _ = GinkgoDescribe("Read tests", func() {
 		gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(BulkWriteMethodType))
 		gomega.Expect(len(strings.Split(res.WrittenIDs, ","))).To(gomega.Equal(100000))
+
+		ids := strings.Split(res.WrittenIDs, ",")
+
+		for _, sId := range ids {
+			id, _ := strconv.Atoi(sId)
+
+			r := ""
+			res := testSingleRead(ReadMetadata{ID: id, Data: &r, CollectionName: collName}, a)
+
+			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
+		}
 
 		if err := a.Shutdown(); err != nil {
 			testRemoveFileSystemDb(roseDir())
