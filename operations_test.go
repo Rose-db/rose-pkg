@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
+	"strings"
 )
 
 var _ = GinkgoDescribe("Insertion tests", func() {
@@ -248,7 +249,7 @@ var _ = GinkgoDescribe("Read tests", func() {
 		}()
 		res := <-resChan
 
-		gomega.Expect(res.WrittenIDs).To(gomega.Equal(0))
+		gomega.Expect(res.WrittenIDs).To(gomega.Equal(""))
 		gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(BulkWriteMethodType))
 
@@ -286,9 +287,9 @@ var _ = GinkgoDescribe("Read tests", func() {
 		}()
 		res := <-resChan
 
-		gomega.Expect(res.WrittenIDs).To(gomega.Equal(len(ms)))
 		gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(BulkWriteMethodType))
+		gomega.Expect(len(strings.Split(res.WrittenIDs, ","))).To(gomega.Equal(100000))
 
 		if err := a.Shutdown(); err != nil {
 			testRemoveFileSystemDb(roseDir())

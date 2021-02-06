@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -91,11 +92,11 @@ func (d *db) Write(data interface{}) (int, int, Error) {
 	return NormalExecutionStatus, id, nil
 }
 
-func (d *db) BulkWrite(data []interface{}) (int, int, Error) {
+func (d *db) BulkWrite(data []interface{}) (int, string, Error) {
 	d.Lock()
 
 	if len(data) == 0 {
-		return NormalExecutionStatus, 0, nil
+		return NormalExecutionStatus, "", nil
 	}
 
 /*	bulkWrites := make([]uint8, 0)
@@ -118,7 +119,7 @@ func (d *db) BulkWrite(data []interface{}) (int, int, Error) {
 	}*/
 
 
-	written := 0
+	written := ""
 	for _, v := range data {
 		id := d.AutoIncrementCounter
 		d.AutoIncrementCounter += 1
@@ -127,7 +128,7 @@ func (d *db) BulkWrite(data []interface{}) (int, int, Error) {
 		if _, ok := d.Index[id]; ok {
 			d.Unlock()
 
-			return 0, 0, newError(DbIntegrityMasterErrorCode, IndexNotExistsCode, fmt.Sprintf( "ID integrity validation. Duplicate ID %d found. This should not happen. Try this write again", id))
+			return 0, "", newError(DbIntegrityMasterErrorCode, IndexNotExistsCode, fmt.Sprintf( "ID integrity validation. Duplicate ID %d found. This should not happen. Try this write again", id))
 		}
 
 		mapId := d.getMapId(id)
@@ -135,7 +136,7 @@ func (d *db) BulkWrite(data []interface{}) (int, int, Error) {
 		bytesWritten, size, err := d.saveOnFs(id, v, mapId)
 
 		if err != nil {
-			return 0, 0, err
+			return 0, "", err
 		}
 
 		offset := size - bytesWritten
@@ -154,8 +155,10 @@ func (d *db) BulkWrite(data []interface{}) (int, int, Error) {
 
 		d.BlockTracker[mapId] = track
 
-		written++
+		written += fmt.Sprintf("%d,", id)
 	}
+
+	written = strings.TrimRight(written, ",")
 
 	go func(bLen int, b *balancer) {
 		b.reSpawnIfNeeded(uint16(bLen))

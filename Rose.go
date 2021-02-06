@@ -14,7 +14,7 @@ type AppResult struct {
 }
 
 type BulkAppResult struct {
-	WrittenIDs   int `json:"writtenIds"`
+	WrittenIDs   string `json:"writtenIds"`
 	Method string `json:"method"`
 	Status string `json:"status"`
 	Reason string `json:"reason"`
