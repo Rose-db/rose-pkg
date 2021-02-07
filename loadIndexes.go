@@ -8,6 +8,24 @@ import (
 	"os"
 )
 
+func loadIndexes(dbs map[string]*db, output bool) Error {
+	if output {
+		fmt.Println("")
+		fmt.Println("\033[32mINFO:\033[0m " + "Loading primary index...")
+	}
+
+	if err := loadPrimaryIndex(dbs); err != nil {
+		return err
+	}
+
+	if output {
+		fmt.Println("      Primary index loaded")
+		fmt.Println("")
+	}
+
+	return nil
+}
+
 /**
   1. Iterate over all collections
   2. Create a batch of files for each collection
@@ -16,7 +34,7 @@ import (
   - On error, every goroutine working must stop and return the error.
   - on error, every batch and collection iteration must stop and exit with error
 */
-func loadIndexes(dbs map[string]*db) Error {
+func loadPrimaryIndex(dbs map[string]*db) Error {
 	for collName, db := range dbs {
 		files, fsErr := ioutil.ReadDir(fmt.Sprintf("%s/%s", roseDbDir(), collName))
 

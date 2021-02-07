@@ -113,18 +113,8 @@ func New(output bool) (*Rose, Error) {
 		Databases: dbs,
 	}
 
-	if output {
-		fmt.Println("")
-		fmt.Println("\033[32mINFO:\033[0m " + "Loading indexes...")
-	}
-
-	if err := loadIndexes(r.Databases); err != nil {
+	if err := loadIndexes(r.Databases, output); err != nil {
 		return nil, err
-	}
-
-	if output {
-		fmt.Println("      Indexes loaded")
-		fmt.Println("")
 	}
 
 	if output {
