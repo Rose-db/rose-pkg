@@ -11,11 +11,17 @@ type fsDriver struct {
 	HandlerIdx uint16
 }
 
-func newFsDriver(dbDir string, t driverType) *fsDriver {
-	return &fsDriver{
+func newFsDriver(dbDir string, t driverType) (*fsDriver, Error) {
+	db := &fsDriver{
 		DbDir: dbDir,
 		DriverType: t,
 	}
+
+	if err := db.loadHandler(0); err != nil {
+		return nil, err
+	}
+
+	return db, nil
 }
 
 func (d *fsDriver) Save(data []uint8, mapIdx uint16) (int64, int64, Error) {

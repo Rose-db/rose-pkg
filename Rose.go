@@ -52,10 +52,28 @@ var createDatabases = func() (map[string]*db, Error) {
 			}
 		}
 
+		w, dErr := newFsDriver(driverDir, writeDriver)
+
+		if dErr != nil {
+			return nil, dErr
+		}
+
+		r, dErr := newFsDriver(driverDir, updateDriver)
+
+		if dErr != nil {
+			return nil, dErr
+		}
+
+		d, dErr := newFsDriver(driverDir, updateDriver)
+
+		if dErr != nil {
+			return nil, dErr
+		}
+
 		m := newDb(
-			newFsDriver(driverDir, writeDriver),
-			newFsDriver(driverDir, updateDriver),
-			newFsDriver(driverDir, updateDriver),
+			w,
+			r,
+			d,
 			collName,
 			blocksNum,
 		)
@@ -137,10 +155,28 @@ func (a *Rose) NewCollection(name string) Error {
 		return e
 	}
 
+	w, dErr := newFsDriver(collDir, writeDriver)
+
+	if dErr != nil {
+		return dErr
+	}
+
+	r, dErr := newFsDriver(collDir, updateDriver)
+
+	if dErr != nil {
+		return dErr
+	}
+
+	d, dErr := newFsDriver(collDir, updateDriver)
+
+	if dErr != nil {
+		return dErr
+	}
+
 	a.Databases[name] = newDb(
-		newFsDriver(collDir, writeDriver),
-		newFsDriver(collDir, updateDriver),
-		newFsDriver(collDir, updateDriver),
+		w,
+		r,
+		d,
 		name,
 		1,
 	)
