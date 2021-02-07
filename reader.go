@@ -2,7 +2,6 @@ package rose
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -126,85 +125,4 @@ func (s *lineReader) populateBuffer() Error {
 	s.buf = b[:len(b) - 1]
 
 	return nil
-}
-
-func NewOffsetReader(f *os.File) *offsetReader {
-	a := bufio.NewReader(f)
-	return &offsetReader{
-		internalReader: a,
-		buf:            make([]uint8, 1),
-	}
-}
-
-func (r *offsetReader) GetOffset(id string) (bool, int64, Error)  {
-	for {
-		status, err := r.populateBuffer()
-
-		if err != nil {
-			return false, 0, err
-		}
-
-		if !status {
-			return false, 0, nil
-		}
-
-		if status {
-			s := bytes.Split(r.buf, []uint8(delim))
-
-			if string(s[0]) == id {
-				off := r.offset
-				r.offset = 0
-				off = off - int64(len(r.buf))
-				r.buf = make([]uint8, 1)
-				return true, off, nil
-			}
-
-			r.buf = make([]uint8, 1)
-		}
-	}
-}
-
-func (r *offsetReader) populateBuffer() (bool, Error) {
-	skip := false
-	for {
-		b, err := r.internalReader.ReadByte()
-
-		if err == io.EOF {
-			return false, nil
-		}
-
-		if err != nil {
-			return false, newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Unable to read filesystem database with message: %s", err.Error()))
-		}
-
-		r.offset++
-		if b == 10 {
-			if skip {
-				skip = false
-
-				continue
-			}
-
-			r.buf = append(r.buf, b)
-
-			break
-		}
-
-		if skip {
-			continue
-		}
-
-		if len(r.buf[1:]) == 9 && string(r.buf[1:]) == delMark {
-			skip = true
-			r.buf = make([]uint8, 1)
-
-			continue
-		}
-
-		r.buf = append(r.buf, b)
-	}
-
-	r.buf = r.buf[1:]
-
-	return true, nil
 }
