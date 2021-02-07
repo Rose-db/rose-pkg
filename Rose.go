@@ -103,6 +103,12 @@ func New(output bool) (*Rose, Error) {
 		return nil, err
 	}
 
+	err = createIndexLocation()
+
+	if err != nil {
+		return nil, err
+	}
+
 	r := &Rose{
 		Databases: dbs,
 	}

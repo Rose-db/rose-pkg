@@ -68,6 +68,22 @@ func closeFile(file *os.File) Error {
 	return nil
 }
 
+func createIndexLocation() Error {
+	idxLoc := roseIndexLocation()
+
+	_, err := os.Stat(idxLoc)
+
+	if os.IsNotExist(err) {
+		_, err := createFile(idxLoc, os.O_RDWR|os.O_CREATE)
+
+		if err != nil {
+			return newError(masterCode(err.GetMasterCode()), code(err.GetCode()), fmt.Sprintf("Cannot create index file. This is probably a permissions error but the error message can give you more details: %s", err.Error()))
+		}
+	}
+
+	return nil
+}
+
 // Returns the directory name of the user home directory.
 // Directory returned does not have a leading slash, e.i /path/to/dir
 func userHomeDir() string {
@@ -98,4 +114,8 @@ func roseDbDir() string {
 
 func roseBlockFile(block uint16, dbDir string) string {
 	return fmt.Sprintf("%s/block_%d.rose", dbDir, block)
+}
+
+func roseIndexLocation() string {
+	return fmt.Sprintf("%s/%s", roseDir(), "/indexes.rose")
 }
