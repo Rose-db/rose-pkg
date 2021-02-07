@@ -129,6 +129,16 @@ func New(output bool) (*Rose, Error) {
 	return r, nil
 }
 
+func (a *Rose) Index(collName string, fieldName string) Error {
+	_, ok := a.Databases[collName]
+
+	if !ok {
+		return newError(GenericMasterErrorCode, InvalidUserSuppliedDataCode, fmt.Sprintf("Invalid index request. Collection %s does not exist", collName))
+	}
+
+	return nil
+}
+
 func (a *Rose) NewCollection(name string) Error {
 	collDir := fmt.Sprintf("%s/%s", roseDbDir(), name)
 
