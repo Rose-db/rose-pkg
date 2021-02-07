@@ -10,6 +10,8 @@ import (
 
 var _ = GinkgoDescribe("Insertion tests", func() {
 	GinkgoIt("Should insert a single piece of data", func() {
+		ginkgo.Skip("")
+
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 
 		a := testCreateRose(false)
@@ -33,6 +35,8 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 	})
 
 	GinkgoIt("Should insert a single piece of data in multiple collection", func() {
+		ginkgo.Skip("")
+
 		s := testAsJson("sdčkfjalsčkjfdlsčakdfjlčk")
 
 		a := testCreateRose(false)
@@ -68,6 +72,8 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 	})
 
 	GinkgoIt("Should insert multiple values", func() {
+		ginkgo.Skip("")
+
 		var currId uint64
 
 		a := testCreateRose(false)
@@ -99,6 +105,8 @@ var _ = GinkgoDescribe("Insertion tests", func() {
 
 var _ = GinkgoDescribe("Read tests", func() {
 	GinkgoIt("Should read a single result", func() {
+		ginkgo.Skip("")
+
 		a := testCreateRose(false)
 
 		collName := testCreateCollection(a, "test_coll")
@@ -126,6 +134,8 @@ var _ = GinkgoDescribe("Read tests", func() {
 	})
 
 	GinkgoIt("Should perform multiple reads", func() {
+		ginkgo.Skip("")
+
 		a := testCreateRose(false)
 
 		collName := testCreateCollection(a, "test_coll")
@@ -162,6 +172,8 @@ var _ = GinkgoDescribe("Read tests", func() {
 	})
 
 	GinkgoIt("Should delete a single document", func() {
+		ginkgo.Skip("")
+
 		a := testCreateRose(false)
 
 		collName := testCreateCollection(a, "test_coll")
@@ -198,6 +210,8 @@ var _ = GinkgoDescribe("Read tests", func() {
 	})
 
 	GinkgoIt("Should replace a single document", func() {
+		ginkgo.Skip("")
+
 		a := testCreateRose(false)
 
 		collName := testCreateCollection(a, "test_coll")
@@ -234,6 +248,8 @@ var _ = GinkgoDescribe("Read tests", func() {
 	})
 
 	GinkgoIt("Should return 0 written results if user provides 0 documents to write", func() {
+		ginkgo.Skip("")
+
 		a := testCreateRose(false)
 
 		collName := testCreateCollection(a, "test_coll")
@@ -270,11 +286,11 @@ var _ = GinkgoDescribe("Read tests", func() {
 
 		collName := testCreateCollection(a, "test_coll")
 
-		s := testAsJson("\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed elementum felis vel aliquam scelerisque. Nullam nibh mi, lacinia in euismod vel, ultricies non nisl. Etiam dictum nec ipsum id sodales. Suspendisse eget dictum neque. Etiam ullamcorper orci sed tristique tempor. Proin quis elit commodo enim pretium imperdiet semper vel augue. Donec eu vehicula eros. Proin faucibus sed quam ut tempor. Aenean in facilisis sem. Nullam semper, massa sed ultricies sagittis, tellus lorem tincidunt justo, non laoreet lacus urna at libero.\n\nQuisque id ipsum nec quam mattis rutrum. Mauris sit amet pharetra metus. Aliquam nec sem nec urna pharetra posuere et ac lacus. Ut ligula purus, porta vel pretium vitae, blandit ac nunc. Donec sem turpis, pellentesque in condimentum ac, fermentum in mi. Phasellus commodo faucibus gravida. Curabitur at orci sit amet elit eleifend laoreet quis eget magna. Aliquam pretium tempus neque. Quisque urna purus, vestibulum sit amet sapien id, viverra lacinia nisi. Nullam augue dolor, consectetur ut. ")
+		s := testAsJson("Random")
 
 		ms := []interface{}{}
 
-		for i := 0; i < 100000; i++ {
+		for i := 0; i < 10000; i++ {
 			ms = append(ms, s)
 		}
 
@@ -290,7 +306,7 @@ var _ = GinkgoDescribe("Read tests", func() {
 
 		gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(BulkWriteMethodType))
-		gomega.Expect(len(strings.Split(res.WrittenIDs, ","))).To(gomega.Equal(100000))
+		gomega.Expect(len(strings.Split(res.WrittenIDs, ","))).To(gomega.Equal(10000))
 
 		ids := strings.Split(res.WrittenIDs, ",")
 
@@ -302,6 +318,59 @@ var _ = GinkgoDescribe("Read tests", func() {
 
 			gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
 			gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
+		}
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
+
+	GinkgoIt("Should insert 100 thousand 3 times in a row in bulk and read them all", func() {
+		a := testCreateRose(false)
+
+		collName := testCreateCollection(a, "test_coll")
+
+
+		ms := []interface{}{}
+
+		for i := 0; i < 10000; i++ {
+			s := testAsJson(fmt.Sprintf("Random %d", i))
+
+			ms = append(ms, s)
+		}
+
+		for i := 0; i < 3; i++ {
+			resChan := make(chan *BulkAppResult)
+			go func() {
+				res, err := a.BulkWrite(BulkWriteMetadata{CollectionName: collName, Data: ms})
+
+				gomega.Expect(err).To(gomega.BeNil())
+
+				resChan<- res
+			}()
+			res := <-resChan
+
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(BulkWriteMethodType))
+			gomega.Expect(len(strings.Split(res.WrittenIDs, ","))).To(gomega.Equal(10000))
+
+			ids := strings.Split(res.WrittenIDs, ",")
+
+			for _, sId := range ids {
+				id, _ := strconv.Atoi(sId)
+
+				r := ""
+				res := testSingleRead(ReadMetadata{ID: id, Data: &r, CollectionName: collName}, a)
+
+				gomega.Expect(res.Status).To(gomega.Equal(FoundResultStatus))
+				gomega.Expect(res.Method).To(gomega.Equal(ReadMethodType))
+			}
 		}
 
 		if err := a.Shutdown(); err != nil {

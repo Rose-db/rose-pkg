@@ -220,5 +220,18 @@ func getDateFromString(s string) time.Time {
 	return createDateFromString(sp)
 }
 
+func shrink(num int, data []interface{}) ([]interface{}, []interface{}) {
+	c := make([]interface{}, 0)
+	b := make([]interface{}, 0)
+	for i, v := range data {
+		if i < num {
+			c = append(c, v)
+		} else {
+			b = append(b, v)
+		}
+	}
+
+	return c, b
+}
 
 

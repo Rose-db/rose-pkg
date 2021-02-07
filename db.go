@@ -14,6 +14,12 @@ type dbReadResult struct {
 	Result interface{}
 }
 
+type bulkWriteBlock struct {
+	MapId uint16
+	Min int
+	Max int
+}
+
 type db struct {
 	Index                map[int]int64
 	AutoIncrementCounter int
@@ -99,63 +105,103 @@ func (d *db) BulkWrite(data []interface{}) (int, string, Error) {
 		return NormalExecutionStatus, "", nil
 	}
 
-/*	bulkWrites := make([]uint8, 0)
-	var writesDone uint8 = 0
-	regenerate := 0
-	for _, v := range data {
-		id := d.AutoIncrementCounter
-		d.AutoIncrementCounter += 1
+	futureId := d.AutoIncrementCounter + 1
+	blockId := d.getMapId(futureId)
 
-		mapId := d.getMapId(id)
-		bulkTopWrite := blockMark - d.DocCount[mapId]
+	var size int64
+	currentId := d.AutoIncrementCounter
+	tempIdx := make(map[int]int64)
 
-		if bulkTopWrite > 100 {
-			bulkTopWrite = 100
+	nextWrite := func(data []interface{}) []uint8 {
+		bulkWrites := make([]uint8, 0)
+
+		for _, v := range data {
+			preparedData := prepareData(currentId, v)
+
+			size += int64(len(preparedData))
+			tempIdx[currentId] = size - int64(len(preparedData))
+			bulkWrites = append(bulkWrites, preparedData...)
+
+			currentId++
 		}
 
-		bulkWrites = append(bulkWrites, prepareData(id, v)...)
+		return bulkWrites
+	}
 
-		writesDone++
-	}*/
+	ln := len(data)
+	docCountMap := copyDocCount(d.DocCount)
 
+	currentDocCount := docCountMap[blockId]
 
-	written := ""
-	for _, v := range data {
-		id := d.AutoIncrementCounter
-		d.AutoIncrementCounter += 1
+	blockNum := uint16(ln / blockMark + 1) + blockId
+	currLn := blockMark - currentDocCount
 
-		// check if the entry already exists
-		if _, ok := d.Index[id]; ok {
-			d.Unlock()
-
-			return 0, "", newError(DbIntegrityMasterErrorCode, IndexNotExistsCode, fmt.Sprintf( "ID integrity validation. Duplicate ID %d found. This should not happen. Try this write again", id))
-		}
-
-		mapId := d.getMapId(id)
-
-		bytesWritten, size, err := d.saveOnFs(id, v, mapId)
-
-		if err != nil {
+	for i := blockId; i < blockNum; i++ {
+		if err := d.WriteDriver.loadHandler(i); err != nil {
 			return 0, "", err
 		}
 
-		offset := size - bytesWritten
+		size = d.WriteDriver.Handler.Size
 
-		d.Index[id] = offset
+		if currLn < 100 {
+			v, p := shrink(currLn, data)
 
-		track, ok := d.BlockTracker[mapId]
+			data = p
 
-		if !ok {
-			t := [2]uint16{}
+			o := nextWrite(v)
 
-			track = t
+			_, _, err := d.saveBulkOnFs(o, i)
+
+			if err != nil {
+				panic(err)
+			}
+
+			break
 		}
 
-		track[0] += 1
+		a := currLn / 100
+		for j := 0; j < a; j++ {
+			v, p := shrink(100, data)
+			data = p
 
-		d.BlockTracker[mapId] = track
+			o := nextWrite(v)
 
-		written += fmt.Sprintf("%d,", id)
+			_, _, err := d.saveBulkOnFs(o, i)
+
+			if err != nil {
+				panic(err)
+			}
+		}
+
+		left := currLn - a * 100
+
+		v, p := shrink(left, data)
+		data = p
+
+		o := nextWrite(v)
+
+		_, _, err := d.saveBulkOnFs(o, i)
+
+		if err != nil {
+			panic(err)
+		}
+
+		if len(data) > blockMark {
+			currLn = blockMark
+		} else {
+			currLn = len(data)
+		}
+	}
+
+	for k, v := range tempIdx {
+		d.Index[k] = v
+	}
+
+	written := ""
+	for i := 0; i < ln; i++ {
+		id := fmt.Sprintf("%d", d.AutoIncrementCounter)
+		written += id + ","
+		d.AutoIncrementCounter += 1
 	}
 
 	written = strings.TrimRight(written, ",")
@@ -223,6 +269,8 @@ func (d *db) ReadStrategic(id int, data interface{}) (*dbReadResult, Error) {
 	if e != nil {
 		return nil, newError(SystemMasterErrorCode, UnmarshalFailCode, fmt.Sprintf("Cannot unmarshal JSON string. This can be a bug with Rose or an invalid document. Try deleting and write the document again. The underlying error is: %s", e.Error()))
 	}
+
+	fmt.Println(id, mapId, index)
 
 	return &dbReadResult{
 		ID:     id,
@@ -407,6 +455,10 @@ func (d *db) saveOnFs(id int, v interface{}, mapId uint16) (int64, int64, Error)
 	return d.WriteDriver.Save(prepareData(id, v), mapId)
 }
 
+func (d *db) saveBulkOnFs(v []uint8, mapId uint16) (int64, int64, Error) {
+	return d.WriteDriver.Save(v, mapId)
+}
+
 func (d *db) deleteFromFs(id int, mapIdx uint16, idx int64) Error {
 	idStr := strconv.Itoa(id)
 	idByte := []uint8(idStr)
@@ -461,4 +513,13 @@ func (d *db) init() {
 	d.Index = make(map[int]int64)
 	d.AutoIncrementCounter = 1
 	d.BlockTracker = make(map[uint16][2]uint16)
+}
+
+func copyDocCount(d map[uint16]int) map[uint16]int {
+	p := make(map[uint16]int)
+	for k, v := range d {
+		p[k] = v
+	}
+
+	return p
 }
