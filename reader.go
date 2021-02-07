@@ -127,6 +127,7 @@ func (s *lineReader) populateBuffer() Error {
 
 	return nil
 }
+
 func NewOffsetReader(f *os.File) *offsetReader {
 	a := bufio.NewReader(f)
 	return &offsetReader{
