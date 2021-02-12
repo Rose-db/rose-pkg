@@ -22,114 +22,26 @@ type BulkAppResult struct {
 
 type Rose struct {
 	Databases map[string]*db
-}
-
-var createDatabases = func() (map[string]*db, Error) {
-	dbDir := roseDbDir()
-
-	stats, err := ioutil.ReadDir(dbDir)
-
-	if err != nil {
-		return nil, newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Creating collection databases failed: %s", err.Error()))
-	}
-
-	collections := make(map[string]*db)
-
-	for _, d := range stats {
-		collName := d.Name()
-		driverDir := fmt.Sprintf("%s/%s", roseDbDir(), collName)
-
-		files, err := ioutil.ReadDir(driverDir)
-
-		if err != nil {
-			return nil, newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Unable to read collection directory: %s", err.Error()))
-		}
-
-		var blocksNum uint16
-		for _, f := range files {
-			if !f.IsDir() {
-				blocksNum++
-			}
-		}
-
-		w, dErr := newFsDriver(driverDir, writeDriver)
-
-		if dErr != nil {
-			return nil, dErr
-		}
-
-		r, dErr := newFsDriver(driverDir, updateDriver)
-
-		if dErr != nil {
-			return nil, dErr
-		}
-
-		d, dErr := newFsDriver(driverDir, updateDriver)
-
-		if dErr != nil {
-			return nil, dErr
-		}
-
-		m := newDb(
-			w,
-			r,
-			d,
-			collName,
-			blocksNum,
-		)
-
-		collections[collName] = m
-	}
-
-	return collections, nil
+	fsIndexHandler *indexFsHandler
 }
 
 func New(output bool) (*Rose, Error) {
-	if output {
-		fmt.Println("")
-		fmt.Println("=============")
-		fmt.Println("")
-	}
-
-	_, err := createDbIfNotExists(output)
-
-	if err != nil {
-		return nil, err
-	}
-
-	dbs, err := createDatabases()
-
-	if err != nil {
-		return nil, err
-	}
-
-	err = createIndexLocation()
-
-	if err != nil {
-		return nil, err
-	}
-
-	r := &Rose{
-		Databases: dbs,
-	}
-
-	if err := loadIndexes(r.Databases, output); err != nil {
-		return nil, err
-	}
-
-	if output {
-		fmt.Println("=============")
-		fmt.Println("")
-	}
-
-	return r, nil
+	return boot(output)
 }
 
-func (a *Rose) Index(collName string, fieldName string) Error {
+func (a *Rose) NewIndex(collName string, fieldName string, dType indexDataType) Error {
 	_, ok := a.Databases[collName]
 
 	if !ok {
-		return newError(GenericMasterErrorCode, InvalidUserSuppliedDataCode, fmt.Sprintf("Invalid index request. Collection %s does not exist", collName))
+		return newError(ValidationMasterErrorCode, InvalidUserSuppliedDataCode, fmt.Sprintf("Invalid index request. Collection %s does not exist", collName))
+	}
+
+	if err := a.fsIndexHandler.Add(fsIndex{
+		Name:    collName,
+		Field:    fieldName,
+		DataType: dType,
+	}); err != nil {
+		return err
 	}
 
 	return nil

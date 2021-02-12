@@ -15,7 +15,8 @@ type dbReadResult struct {
 }
 
 type db struct {
-	Index                map[int]int64
+	PrimaryIndex                map[int]int64
+	
 	AutoIncrementCounter int
 	BlockTracker map[uint16][2]uint16
 	DocCount map[uint16]int
@@ -51,7 +52,7 @@ func (d *db) Write(data interface{}) (int, int, Error) {
 	d.AutoIncrementCounter += 1
 
 	// check if the entry already exists
-	if _, ok := d.Index[id]; ok {
+	if _, ok := d.PrimaryIndex[id]; ok {
 		d.Unlock()
 
 		return 0, 0, newError(DbIntegrityMasterErrorCode, IndexNotExistsCode, fmt.Sprintf( "ID integrity validation. Duplicate ID %d found. This should not happen. Try this write again", id))
@@ -67,7 +68,7 @@ func (d *db) Write(data interface{}) (int, int, Error) {
 
 	offset := size - bytesWritten
 
-	d.Index[id] = offset
+	d.PrimaryIndex[id] = offset
 
 	track, ok := d.BlockTracker[mapId]
 
@@ -105,7 +106,7 @@ func (d *db) BulkWrite(data []interface{}) (int, string, Error) {
 		d.AutoIncrementCounter += 1
 
 		// check if the entry already exists
-		if _, ok := d.Index[id]; ok {
+		if _, ok := d.PrimaryIndex[id]; ok {
 			d.Unlock()
 
 			return 0, "", newError(DbIntegrityMasterErrorCode, IndexNotExistsCode, fmt.Sprintf( "ID integrity validation. Duplicate ID %d found. This should not happen. Try this write again", id))
@@ -121,7 +122,7 @@ func (d *db) BulkWrite(data []interface{}) (int, string, Error) {
 
 		offset := size - bytesWritten
 
-		d.Index[id] = offset
+		d.PrimaryIndex[id] = offset
 
 		track, ok := d.BlockTracker[mapId]
 
@@ -154,7 +155,7 @@ func (d *db) Delete(id int) (bool, Error) {
 
 	blockId := d.getBlockId(id)
 
-	idx, ok := d.Index[id]
+	idx, ok := d.PrimaryIndex[id]
 
 	if !ok {
 		d.Unlock()
@@ -162,7 +163,7 @@ func (d *db) Delete(id int) (bool, Error) {
 		return false, nil
 	}
 
-	delete(d.Index, id)
+	delete(d.PrimaryIndex, id)
 
 	err := d.deleteFromFs(id, blockId, idx)
 
@@ -180,7 +181,7 @@ func (d *db) Delete(id int) (bool, Error) {
 func (d *db) ReadStrategic(id int, data interface{}) (*dbReadResult, Error) {
 	d.Lock()
 
-	index, ok := d.Index[id]
+	index, ok := d.PrimaryIndex[id]
 
 	if !ok {
 		d.Unlock()
@@ -217,7 +218,7 @@ func (d *db) ReadStrategic(id int, data interface{}) (*dbReadResult, Error) {
  */
 func (d *db) Replace(id int, data interface{}) Error {
 	d.Lock()
-	_, ok := d.Index[id]
+	_, ok := d.PrimaryIndex[id]
 
 	if !ok {
 		d.Unlock()
@@ -251,7 +252,7 @@ func (d *db) Replace(id int, data interface{}) Error {
 		}
 
 		for i, index := range indexes {
-			d.Index[i] = index
+			d.PrimaryIndex[i] = index
 		}
 
 		if err := d.WriteDriver.reload(); err != nil {
@@ -318,13 +319,13 @@ func (d *db) writeIndex(id int, offset int64) Error {
 	d.Lock()
 
 	// check if the entry already exists
-	if _, ok := d.Index[id]; ok {
+	if _, ok := d.PrimaryIndex[id]; ok {
 		d.Unlock()
 
 		return nil
 	}
 
-	d.Index[id] = offset
+	d.PrimaryIndex[id] = offset
 
 	d.AutoIncrementCounter += 1
 
@@ -335,7 +336,7 @@ func (d *db) writeIndex(id int, offset int64) Error {
 
 func (d *db) writeOnDefragmentation(id int, v []uint8, mapIdx uint16) Error {
 	// check if the entry already exists
-	if _, ok := d.Index[id]; ok {
+	if _, ok := d.PrimaryIndex[id]; ok {
 		return nil
 	}
 
@@ -349,7 +350,7 @@ func (d *db) writeOnDefragmentation(id int, v []uint8, mapIdx uint16) Error {
 }
 
 func (d *db) unlockedDelete(id int, mapId uint16) Error {
-	idx, ok := d.Index[id]
+	idx, ok := d.PrimaryIndex[id]
 
 	if !ok {
 		return nil
@@ -369,7 +370,7 @@ func (d *db) unlockedWrite(id int, data interface{}, mapId uint16) Error {
 	bytesWritten, size, err := d.saveOnFs(id, data, mapId)
 	offset := size - bytesWritten
 
-	d.Index[id] = offset
+	d.PrimaryIndex[id] = offset
 
 	if err != nil {
 		return err
@@ -438,7 +439,7 @@ func (d *db) incrementDocCount(mapId uint16) {
 }
 
 func (d *db) init() {
-	d.Index = make(map[int]int64)
+	d.PrimaryIndex = make(map[int]int64)
 	d.AutoIncrementCounter = 1
 	d.BlockTracker = make(map[uint16][2]uint16)
 }

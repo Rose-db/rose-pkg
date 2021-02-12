@@ -155,7 +155,7 @@ func testSingleRead(w ReadMetadata, r *Rose) *AppResult {
 }
 
 func assertIndexIntegrity(m *db, expectedLen int) {
-	index := m.Index
+	index := m.PrimaryIndex
 
 	gomega.Expect(len(index)).To(gomega.Equal(expectedLen))
 }
