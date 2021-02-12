@@ -68,7 +68,7 @@ func closeFile(file *os.File) Error {
 	return nil
 }
 
-func createIndexLocation() Error {
+func createIndexLocationIfNotExists() Error {
 	idxLoc := roseIndexLocation()
 
 	_, err := os.Stat(idxLoc)

@@ -78,13 +78,13 @@ func boot(output bool) (*Rose, Error) {
 		return nil, err
 	}
 
-	dbs, err := createDatabases()
+	err = createIndexLocationIfNotExists()
 
 	if err != nil {
 		return nil, err
 	}
 
-	err = createIndexLocation()
+	dbs, err := createDatabases()
 
 	if err != nil {
 		return nil, err

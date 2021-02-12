@@ -15,8 +15,9 @@ type dbReadResult struct {
 }
 
 type db struct {
-	PrimaryIndex                map[int]int64
-	
+	PrimaryIndex  map[int]int64
+	FieldIndex *fieldIndex
+
 	AutoIncrementCounter int
 	BlockTracker map[uint16][2]uint16
 	DocCount map[uint16]int

@@ -2,7 +2,9 @@ package rose
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
+	"strings"
 )
 
 type indexDataType string
@@ -42,6 +44,37 @@ func (ih *indexFsHandler) Add(fsi fsIndex) Error {
 	}
 
 	return nil
+}
+
+// this function is only to be used at boot, it loads all indexes into memory for ease of use, it must not be used
+// in other operations
+func (ih *indexFsHandler) Find(collName string) (*fsIndex, Error) {
+	// it is safe to read all indexes into memory, not expected to be a lot of them (millions)
+	b, err := ioutil.ReadAll(ih.file)
+
+	if err != nil {
+		return nil, newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Cannot read from index location: %s", err.Error()))
+	}
+
+	s := strings.Split(string(b), "\n")
+
+	for _, a := range s {
+		t := strings.Split(a, delim)
+
+		if len(t) != 3 {
+			return nil, newError(SystemMasterErrorCode, MalformedIndexCode, fmt.Sprintf("Found malformed index value -> %s", a))
+		}
+
+		if t[0] == collName {
+			return &fsIndex{
+				Name:    t[0],
+				Field:    t[1],
+				DataType: indexDataType(t[2]),
+			}, nil
+		}
+	}
+
+	return nil, nil
 }
 
 func newIndexHandler() (*indexFsHandler, Error) {

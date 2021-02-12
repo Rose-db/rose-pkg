@@ -20,6 +20,7 @@ const AppInvalidUsageCode = 9
 const ShutdownFailureCode = 10
 const BlockCorruptedCode = 11
 const OperatingSystemCode = 12
+const MalformedIndexCode = 13
 
 // result status
 const OkResultStatus = "ok"

@@ -107,5 +107,46 @@ var _ = GinkgoDescribe("Index tests", func() {
 
 		testRemoveFileSystemDb(roseDir())
 	})
+
+	GinkgoIt("Should assert that an is read from the filesystem in a proper format", func() {
+		a := testCreateRose(false)
+
+		colls := make([]string, 0)
+
+		colls = append(colls, testCreateCollection(a, "coll_1"))
+		colls = append(colls, testCreateCollection(a, "coll_2"))
+		colls = append(colls, testCreateCollection(a, "coll_3"))
+		colls = append(colls, testCreateCollection(a, "coll_4"))
+
+		ih, err := newIndexHandler()
+
+		gomega.Expect(err).To(gomega.BeNil())
+
+		for _, coll := range colls {
+			fieldName := fmt.Sprintf("%s_field_name", coll)
+			err := a.NewIndex(coll, fieldName, stringIndexType)
+
+			gomega.Expect(err).To(gomega.BeNil())
+
+			idx, err := ih.Find(coll)
+
+			gomega.Expect(err).To(gomega.BeNil())
+			gomega.Expect(idx).To(gomega.Not(gomega.BeNil()))
+
+			gomega.Expect(idx.Name).To(gomega.Equal(coll))
+			gomega.Expect(idx.Field).To(gomega.Equal(fieldName))
+			gomega.Expect(idx.DataType).To(gomega.Equal(idx.DataType))
+		}
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
 })
 
