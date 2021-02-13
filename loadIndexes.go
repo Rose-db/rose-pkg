@@ -35,6 +35,12 @@ func loadIndexes(dbs map[string]*db, output bool) Error {
   - on error, every batch and collection iteration must stop and exit with error
 */
 func loadPrimaryIndex(dbs map[string]*db) Error {
+	fsIdx, err := newIndexHandler()
+
+	if err != nil {
+		return err
+	}
+
 	for collName, db := range dbs {
 		files, fsErr := ioutil.ReadDir(fmt.Sprintf("%s/%s", roseDbDir(), collName))
 
@@ -63,8 +69,9 @@ func loadPrimaryIndex(dbs map[string]*db) Error {
 				fileInfo := f
 				c := collName
 				currentDb := db
+
 				errs.Go(func() error {
-					err := loadSingleFile(fileInfo, currentDb, c)
+					err := loadSingleFile(fileInfo, currentDb, c, fsIdx)
 
 					if err != nil {
 						return err
@@ -82,10 +89,14 @@ func loadPrimaryIndex(dbs map[string]*db) Error {
 		}
 	}
 
+	if err := fsIdx.Close(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func loadSingleFile(f os.FileInfo, m *db, collName string) Error {
+func loadSingleFile(f os.FileInfo, m *db, collName string, fsIndex *indexFsHandler) Error {
 	db := fmt.Sprintf("%s/%s", fmt.Sprintf("%s/%s", roseDbDir(), collName), f.Name())
 
 	file, err := createFile(db, os.O_RDONLY)
@@ -94,7 +105,19 @@ func loadSingleFile(f os.FileInfo, m *db, collName string) Error {
 		return err
 	}
 
+	_, err = fsIndex.Find(collName)
+
+	if err != nil {
+		return err
+	}
+
 	reader := NewLineReader(file)
+
+	idx, err := fsIndex.Find(collName)
+
+	if err != nil {
+		return err
+	}
 
 	for {
 		offset, val, err := reader.Read()
@@ -124,6 +147,10 @@ func loadSingleFile(f os.FileInfo, m *db, collName string) Error {
 		}
 
 		err = m.writeIndex(val.id, offset)
+
+		if idx.processable {
+
+		}
 
 		if err != nil {
 			fsErr := closeFile(file)

@@ -21,6 +21,7 @@ const ShutdownFailureCode = 10
 const BlockCorruptedCode = 11
 const OperatingSystemCode = 12
 const MalformedIndexCode = 13
+const IndexExistsCode = 14
 
 // result status
 const OkResultStatus = "ok"

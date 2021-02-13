@@ -16,7 +16,7 @@ type dbReadResult struct {
 
 type db struct {
 	PrimaryIndex  map[int]int64
-	FieldIndex *fieldIndex
+	FieldIndex map[string]*fieldIndex
 
 	AutoIncrementCounter int
 	BlockTracker map[uint16][2]uint16
@@ -37,6 +37,7 @@ func newDb(write *fsDriver, read *fsDriver, delete *fsDriver, name string, block
 		DeleteDriver: delete,
 		Name: name,
 		DocCount: make(map[uint16]int),
+		FieldIndex: make(map[string]*fieldIndex),
 	}
 
 	d.init()

@@ -108,6 +108,42 @@ var _ = GinkgoDescribe("Index tests", func() {
 		testRemoveFileSystemDb(roseDir())
 	})
 
+	GinkgoIt("Should assert that an index cannot be created for equal collection name and field name", func() {
+		a := testCreateRose(false)
+
+		err := a.NewCollection("coll_name")
+
+		gomega.Expect(err).To(gomega.BeNil())
+
+		err = a.NewIndex("coll_name", "field", stringIndexType)
+
+		gomega.Expect(err).To(gomega.BeNil())
+
+		idxLoc := roseIndexLocation()
+
+		b, e := ioutil.ReadFile(idxLoc)
+
+		gomega.Expect(e).To(gomega.BeNil())
+		created := fmt.Sprintf("%s%s%s%s%s\n", "coll_name", delim, "field", delim, stringIndexType)
+
+		gomega.Expect(string(b)).To(gomega.Equal(created))
+
+		err = a.NewIndex("coll_name", "field", stringIndexType)
+
+		gomega.Expect(err).To(gomega.Not(gomega.BeNil()))
+		gomega.Expect(err.Error()).To(gomega.Equal("Invalid index. Index with collection name coll_name and field name field already exists"))
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
+
 	GinkgoIt("Should assert that an is read from the filesystem in a proper format", func() {
 		a := testCreateRose(false)
 
@@ -124,7 +160,11 @@ var _ = GinkgoDescribe("Index tests", func() {
 
 		for _, coll := range colls {
 			fieldName := fmt.Sprintf("%s_field_name", coll)
-			err := a.NewIndex(coll, fieldName, stringIndexType)
+			err := ih.Add(fsIndex{
+				Name:     coll,
+				Field:    fieldName,
+				DataType: stringIndexType,
+			})
 
 			gomega.Expect(err).To(gomega.BeNil())
 
@@ -135,8 +175,12 @@ var _ = GinkgoDescribe("Index tests", func() {
 
 			gomega.Expect(idx.Name).To(gomega.Equal(coll))
 			gomega.Expect(idx.Field).To(gomega.Equal(fieldName))
-			gomega.Expect(idx.DataType).To(gomega.Equal(idx.DataType))
+			gomega.Expect(idx.DataType).To(gomega.Equal(stringIndexType))
 		}
+
+		err = ih.Close()
+
+		gomega.Expect(err).To(gomega.BeNil())
 
 		if err := a.Shutdown(); err != nil {
 			testRemoveFileSystemDb(roseDir())

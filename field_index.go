@@ -7,9 +7,19 @@ type specificIndex struct {
 
 type fieldIndex struct {
 	DataType indexDataType
-	Index map[string][]*specificIndex
+	Index[]specificIndex
 }
 
 func newFieldIndex(dataType indexDataType) *fieldIndex {
-	return &fieldIndex{DataType: dataType}
+	return &fieldIndex{
+		DataType: dataType,
+		Index: make([]specificIndex, 0),
+	}
+}
+
+func (fi *fieldIndex) Add(pos int64, value interface{}) {
+	fi.Index = append(fi.Index, specificIndex{
+		Pos:   pos,
+		Value: value,
+	})
 }

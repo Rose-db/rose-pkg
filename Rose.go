@@ -283,6 +283,10 @@ func (a *Rose) Size() (uint64, Error) {
 }
 
 func (a *Rose) Shutdown() Error {
+	if err := a.fsIndexHandler.Close(); err != nil {
+		return err
+	}
+
 	for _, db := range a.Databases {
 		errors := db.Shutdown()
 		msg := ""
