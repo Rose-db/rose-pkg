@@ -14,7 +14,7 @@ func loadIndexes(dbs map[string]*db, output bool) Error {
 		fmt.Println("\033[32mINFO:\033[0m " + "Loading primary index...")
 	}
 
-	if err := loadPrimaryIndex(dbs); err != nil {
+	if err := loadAllIndexes(dbs); err != nil {
 		return err
 	}
 
@@ -34,7 +34,9 @@ func loadIndexes(dbs map[string]*db, output bool) Error {
   - On error, every goroutine working must stop and return the error.
   - on error, every batch and collection iteration must stop and exit with error
 */
-func loadPrimaryIndex(dbs map[string]*db) Error {
+func loadAllIndexes(dbs map[string]*db) Error {
+	// a filesystem index handler used by this function to get
+	// the currently saved indexes
 	fsIdx, err := newIndexHandler()
 
 	if err != nil {
@@ -54,6 +56,7 @@ func loadPrimaryIndex(dbs map[string]*db) Error {
 			return err
 		}
 
+		// get all indexes from indexes.rose for this collection
 		indexes, err := fsIdx.Find(collName)
 
 		// Creates as many batches as there are files, 50 files per batch
@@ -138,6 +141,7 @@ func loadSingleFile(f os.FileInfo, m *db, collName string, indexes []*fsIndex) E
 
 		err = m.writeIndex(val.id, offset)
 
+		// write all indexes into memory in the specified database based on the collection name
 		if indexes != nil {
 			for _, fsi := range indexes {
 				if err := m.writeFieldIndex(fsi.Field, fsi.DataType, offset, val.val); err != nil {

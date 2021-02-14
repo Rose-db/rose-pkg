@@ -29,6 +29,16 @@ func New(output bool) (*Rose, Error) {
 	return boot(output)
 }
 
+/**
+Creates a new index, not on the database level, but in the filesystem (.rose_db/indexes.rose). Then later, when the application is booted up,
+the booter takes the index information and creates the index in memory. That is why, after adding any new indexes, a reboot should be done
+so that the indexes are written into memory from the database.
+
+If an index that is already created is given, this function silently skips the index, and does not add it. Uniqueness is determined by collection
+name and field name.
+
+If the collection that the index is written for does not exists, this function returns an error.
+ */
 func (a *Rose) NewIndex(collName string, fieldName string, dType indexDataType) Error {
 	_, ok := a.Databases[collName]
 
