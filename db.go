@@ -3,6 +3,7 @@ package rose
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/valyala/fastjson"
 	"strconv"
 	"strings"
 	"sync"
@@ -334,14 +335,35 @@ func (d *db) writeIndex(id int, offset int64) Error {
 	return nil
 }
 
-func (d *db) writeFieldIndex(fieldName string, dType indexDataType, offset int64, val []uint8) {
+func (d *db) writeFieldIndex(fieldName string, dType indexDataType, offset int64, val []uint8) Error {
 	d.Lock()
+
+	var p fastjson.Parser
 
 	idx := d.createFieldIndex(fieldName, dType)
 
-	idx.Add(offset, val)
+	v, err := p.ParseBytes(val)
+
+	if err != nil {
+		return newError(SystemMasterErrorCode, UnmarshalFailCode, fmt.Sprintf("Unable to parse document: %s", err.Error()))
+	}
+
+	var idxVal interface{}
+	if dType == stringIndexType {
+		idxVal = v.GetStringBytes(fieldName)
+	} else if dType == intIndexType {
+		idxVal = v.GetInt(fieldName)
+	} else if dType == floatIndexType {
+		idxVal = v.GetFloat64(fieldName)
+	} else if dType == boolIndexType {
+		idxVal = v.GetBool(fieldName)
+	}
+
+	idx.Add(offset, idxVal)
 
 	d.Unlock()
+
+	return nil
 }
 
 func (d *db) createFieldIndex(fieldName string, dType indexDataType) *fieldIndex {

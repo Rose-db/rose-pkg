@@ -172,7 +172,11 @@ var _ = GinkgoDescribe("Index tests", func() {
 
 			gomega.Expect(err).To(gomega.BeNil())
 
-			idx, err := ih.Find(coll)
+			indexes, err := ih.Find(coll)
+
+			gomega.Expect(len(indexes)).To(gomega.Equal(1))
+
+			idx := indexes[0]
 
 			gomega.Expect(err).To(gomega.BeNil())
 			gomega.Expect(idx).To(gomega.Not(gomega.BeNil()))

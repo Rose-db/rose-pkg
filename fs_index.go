@@ -79,18 +79,19 @@ func (ih *indexFsHandler) Add(fsi fsIndex) Error {
 
 // this function is only to be used at boot, it loads all indexes into memory for ease of use, it must not be used
 // in other operations
-func (ih *indexFsHandler) Find(collName string) (*fsIndex, Error) {
+func (ih *indexFsHandler) Find(collName string) ([]*fsIndex, Error) {
 	if len(ih.indexes) == 0 {
 		return nil, nil
 	}
 
+	indexes := make([]*fsIndex, 0)
 	for _, a := range ih.indexes {
 		if a.Name == collName {
-			return a, nil
+			indexes = append(indexes, a)
 		}
 	}
 
-	return nil, nil
+	return indexes, nil
 }
 
 func (ih *indexFsHandler) Close() Error {

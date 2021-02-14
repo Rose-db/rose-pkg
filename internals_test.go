@@ -316,4 +316,91 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 
 		testRemoveFileSystemDb(roseDir())
 	})
+
+	GinkgoIt("Should create multiple indexes and write to it, then after restart, have the indexes in memory", func() {
+		r := testCreateRose(false)
+		collName := testCreateCollection(r, "coll")
+		err := r.NewIndex(collName, "type", stringIndexType)
+
+		gomega.Expect(err).To(gomega.BeNil())
+
+		err = r.NewIndex(collName, "email", stringIndexType)
+
+		gomega.Expect(err).To(gomega.BeNil())
+
+		err = r.NewIndex(collName, "isValid", boolIndexType)
+
+		gomega.Expect(err).To(gomega.BeNil())
+
+		err = r.NewIndex(collName, "price", floatIndexType)
+
+		gomega.Expect(err).To(gomega.BeNil())
+
+		err = r.NewIndex(collName, "randomNum", intIndexType)
+
+		gomega.Expect(err).To(gomega.BeNil())
+
+		n := 10000
+
+		testMultipleConcurrentInsert(n, testAsJsonInterface(TestUser{
+			Type:      "user",
+			Email:     "mario@gmail.com",
+			IsValid:   false,
+			Price:     12.34,
+			RandomNum: 67,
+			CreatedAt: "",
+			UpdatedAt: "",
+		}), r, collName)
+
+		if err := r.Shutdown(); err != nil {
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		r = testCreateRose(false)
+
+		m := r.Databases[collName]
+
+		typeFieldIndex, ok := m.FieldIndex["type"]
+
+		gomega.Expect(ok).To(gomega.Equal(true))
+		gomega.Expect(typeFieldIndex.DataType).To(gomega.Equal(stringIndexType))
+		gomega.Expect(len(typeFieldIndex.Index)).To(gomega.Equal(n))
+
+		emailFieldIndex, ok := m.FieldIndex["email"]
+
+		gomega.Expect(ok).To(gomega.Equal(true))
+		gomega.Expect(emailFieldIndex.DataType).To(gomega.Equal(stringIndexType))
+		gomega.Expect(len(emailFieldIndex.Index)).To(gomega.Equal(n))
+
+		isValidFieldIndex, ok := m.FieldIndex["isValid"]
+
+		gomega.Expect(ok).To(gomega.Equal(true))
+		gomega.Expect(isValidFieldIndex.DataType).To(gomega.Equal(boolIndexType))
+		gomega.Expect(len(isValidFieldIndex.Index)).To(gomega.Equal(n))
+
+		priceFieldIndex, ok := m.FieldIndex["price"]
+
+		gomega.Expect(ok).To(gomega.Equal(true))
+		gomega.Expect(priceFieldIndex.DataType).To(gomega.Equal(floatIndexType))
+		gomega.Expect(len(priceFieldIndex.Index)).To(gomega.Equal(n))
+
+		randomNumFieldIndex, ok := m.FieldIndex["randomNum"]
+
+		gomega.Expect(ok).To(gomega.Equal(true))
+		gomega.Expect(randomNumFieldIndex.DataType).To(gomega.Equal(intIndexType))
+		gomega.Expect(len(randomNumFieldIndex.Index)).To(gomega.Equal(n))
+
+
+		if err := r.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
 })
