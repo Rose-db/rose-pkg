@@ -270,4 +270,50 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 
 		testRemoveFileSystemDb(roseDir())
 	})
+
+	GinkgoIt("Should create an index and write to it, then after restart, have the index in memory", func() {
+		r := testCreateRose(false)
+		collName := testCreateCollection(r, "coll")
+		err := r.NewIndex(collName, "type", stringIndexType)
+
+		gomega.Expect(err).To(gomega.BeNil())
+
+		n := 10000
+
+		testMultipleConcurrentInsert(n, testAsJsonInterface(TestUser{
+			Type:      "user",
+			Email:     "mario@gmail.com",
+			IsValid:   false,
+			Price:     12.34,
+			RandomNum: 67,
+			CreatedAt: "",
+			UpdatedAt: "",
+		}), r, collName)
+
+		if err := r.Shutdown(); err != nil {
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		r = testCreateRose(false)
+
+		m := r.Databases[collName]
+
+		fieldIndex, ok := m.FieldIndex["type"]
+
+		gomega.Expect(ok).To(gomega.Equal(true))
+		gomega.Expect(fieldIndex.DataType).To(gomega.Equal(stringIndexType))
+		gomega.Expect(len(fieldIndex.Index)).To(gomega.Equal(n))
+
+		if err := r.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
 })

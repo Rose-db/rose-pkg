@@ -108,7 +108,7 @@ var _ = GinkgoDescribe("Index tests", func() {
 		testRemoveFileSystemDb(roseDir())
 	})
 
-	GinkgoIt("Should assert that an index cannot be created for equal collection name and field name", func() {
+	GinkgoIt("Should assert that an index did not create if it is equal to the one created before", func() {
 		a := testCreateRose(false)
 
 		err := a.NewCollection("coll_name")
@@ -130,8 +130,12 @@ var _ = GinkgoDescribe("Index tests", func() {
 
 		err = a.NewIndex("coll_name", "field", stringIndexType)
 
-		gomega.Expect(err).To(gomega.Not(gomega.BeNil()))
-		gomega.Expect(err.Error()).To(gomega.Equal("Invalid index. Index with collection name coll_name and field name field already exists"))
+		b, e = ioutil.ReadFile(idxLoc)
+
+		gomega.Expect(e).To(gomega.BeNil())
+		created = fmt.Sprintf("%s%s%s%s%s\n", "coll_name", delim, "field", delim, stringIndexType)
+
+		gomega.Expect(string(b)).To(gomega.Equal(created))
 
 		if err := a.Shutdown(); err != nil {
 			testRemoveFileSystemDb(roseDir())

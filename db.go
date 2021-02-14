@@ -36,8 +36,6 @@ func newDb(write *fsDriver, read *fsDriver, delete *fsDriver, name string, block
 		ReadDriver: read,
 		DeleteDriver: delete,
 		Name: name,
-		DocCount: make(map[uint16]int),
-		FieldIndex: make(map[string]*fieldIndex),
 	}
 
 	d.init()
@@ -336,6 +334,26 @@ func (d *db) writeIndex(id int, offset int64) Error {
 	return nil
 }
 
+func (d *db) writeFieldIndex(fieldName string, dType indexDataType, offset int64, val []uint8) {
+	d.Lock()
+
+	idx := d.createFieldIndex(fieldName, dType)
+
+	idx.Add(offset, val)
+
+	d.Unlock()
+}
+
+func (d *db) createFieldIndex(fieldName string, dType indexDataType) *fieldIndex {
+	if idx, ok := d.FieldIndex[fieldName]; ok {
+		return idx
+	}
+
+	d.FieldIndex[fieldName] = newFieldIndex(dType)
+
+	return d.FieldIndex[fieldName]
+}
+
 func (d *db) writeOnDefragmentation(id int, v []uint8, mapIdx uint16) Error {
 	// check if the entry already exists
 	if _, ok := d.PrimaryIndex[id]; ok {
@@ -444,4 +462,6 @@ func (d *db) init() {
 	d.PrimaryIndex = make(map[int]int64)
 	d.AutoIncrementCounter = 1
 	d.BlockTracker = make(map[uint16][2]uint16)
+	d.DocCount = make(map[uint16]int)
+	d.FieldIndex = make(map[string]*fieldIndex)
 }

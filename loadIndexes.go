@@ -54,6 +54,8 @@ func loadPrimaryIndex(dbs map[string]*db) Error {
 			return err
 		}
 
+		idx, err := fsIdx.Find(collName)
+
 		// Creates as many batches as there are files, 50 files per batch
 		batch := createFileInfoBatch(files, limit)
 
@@ -71,7 +73,7 @@ func loadPrimaryIndex(dbs map[string]*db) Error {
 				currentDb := db
 
 				errs.Go(func() error {
-					err := loadSingleFile(fileInfo, currentDb, c, fsIdx)
+					err := loadSingleFile(fileInfo, currentDb, c, idx)
 
 					if err != nil {
 						return err
@@ -96,7 +98,7 @@ func loadPrimaryIndex(dbs map[string]*db) Error {
 	return nil
 }
 
-func loadSingleFile(f os.FileInfo, m *db, collName string, fsIndex *indexFsHandler) Error {
+func loadSingleFile(f os.FileInfo, m *db, collName string, fsi *fsIndex) Error {
 	db := fmt.Sprintf("%s/%s", fmt.Sprintf("%s/%s", roseDbDir(), collName), f.Name())
 
 	file, err := createFile(db, os.O_RDONLY)
@@ -105,19 +107,7 @@ func loadSingleFile(f os.FileInfo, m *db, collName string, fsIndex *indexFsHandl
 		return err
 	}
 
-	_, err = fsIndex.Find(collName)
-
-	if err != nil {
-		return err
-	}
-
 	reader := NewLineReader(file)
-
-	idx, err := fsIndex.Find(collName)
-
-	if err != nil {
-		return err
-	}
 
 	for {
 		offset, val, err := reader.Read()
@@ -148,8 +138,8 @@ func loadSingleFile(f os.FileInfo, m *db, collName string, fsIndex *indexFsHandl
 
 		err = m.writeIndex(val.id, offset)
 
-		if idx.processable {
-
+		if fsi != nil {
+			m.writeFieldIndex(fsi.Field, fsi.DataType, offset, val.val)
 		}
 
 		if err != nil {

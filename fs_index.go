@@ -31,7 +31,7 @@ func (fsi fsIndex) validate() Error {
 
 type indexFsHandler struct {
 	file *os.File
-	indexes []fsIndex
+	indexes []*fsIndex
 }
 
 func newIndexHandler() (*indexFsHandler, Error) {
@@ -66,24 +66,22 @@ func (ih *indexFsHandler) Add(fsi fsIndex) Error {
 
 	d := fmt.Sprintf("%s%s%s%s%s\n", fsi.Name, delim, fsi.Field, delim, fsi.DataType)
 
-	if _, err := ih.file.Write([]uint8(d)); err != nil {
-		return newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Cannot create write index to filesystem: %s", err.Error()))
+	if ok := ih.exists(fsi.Name, fsi.Field); !ok {
+		if _, err := ih.file.Write([]uint8(d)); err != nil {
+			return newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Cannot create write index to filesystem: %s", err.Error()))
+		}
 	}
 
-	if ok := ih.exists(fsi.Name, fsi.Field); ok {
-		return newError(ValidationMasterErrorCode, IndexExistsCode, fmt.Sprintf("Invalid index. Index with collection name %s and field name %s already exists", fsi.Name, fsi.Field))
-	}
-
-	ih.indexes = append(ih.indexes, fsi)
+	ih.indexes = append(ih.indexes, &fsi)
 
 	return nil
 }
 
 // this function is only to be used at boot, it loads all indexes into memory for ease of use, it must not be used
 // in other operations
-func (ih *indexFsHandler) Find(collName string) (fsIndex, Error) {
+func (ih *indexFsHandler) Find(collName string) (*fsIndex, Error) {
 	if len(ih.indexes) == 0 {
-		return fsIndex{processable: false}, nil
+		return nil, nil
 	}
 
 	for _, a := range ih.indexes {
@@ -92,7 +90,7 @@ func (ih *indexFsHandler) Find(collName string) (fsIndex, Error) {
 		}
 	}
 
-	return fsIndex{processable: false}, nil
+	return nil, nil
 }
 
 func (ih *indexFsHandler) Close() Error {
@@ -108,7 +106,7 @@ func (ih *indexFsHandler) Close() Error {
 }
 
 func (ih *indexFsHandler) init(indexes []uint8) Error {
-	ih.indexes = make([]fsIndex, 0)
+	ih.indexes = make([]*fsIndex, 0)
 
 	if len(indexes) == 0 {
 		return nil
@@ -119,20 +117,22 @@ func (ih *indexFsHandler) init(indexes []uint8) Error {
 	s := strings.Split(a, "\n")
 
 	for _, a := range s {
-		t := strings.Split(a, delim)
+		if a != "" {
+			t := strings.Split(a, delim)
 
-		if len(t) != 3 {
-			return newError(SystemMasterErrorCode, MalformedIndexCode, fmt.Sprintf("Found malformed index value -> %s", a))
+			if len(t) != 3 {
+				return newError(SystemMasterErrorCode, MalformedIndexCode, fmt.Sprintf("Found malformed index value -> %s", a))
+			}
+
+			fsi := fsIndex{
+				Name:    t[0],
+				Field:    t[1],
+				DataType: indexDataType(t[2]),
+				processable: true,
+			}
+
+			ih.indexes = append(ih.indexes, &fsi)
 		}
-
-		fsi := fsIndex{
-			Name:    t[0],
-			Field:    t[1],
-			DataType: indexDataType(t[2]),
-			processable: true,
-		}
-
-		ih.indexes = append(ih.indexes, fsi)
 	}
 
 	return nil

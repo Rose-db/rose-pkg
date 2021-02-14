@@ -18,6 +18,16 @@ var GinkgoAfterSuite = ginkgo.AfterSuite
 var GinkgoDescribe = ginkgo.Describe
 var GinkgoIt = ginkgo.It
 
+type TestUser struct {
+	Type string `json:"type"`
+	Email string `json:"email"`
+	IsValid bool `json:"isValid"`
+	Price float64 `json:"price"`
+	RandomNum int `json:"randomNum"`
+	CreatedAt string `json:"createdAt"`
+	UpdatedAt string `json:"updatedAt"`
+}
+
 func TestRose(t *testing.T) {
 	GomegaRegisterFailHandler(GinkgoFail)
 	GinkgoRunSpecs(t, "Rose Suite")
@@ -92,7 +102,7 @@ func testMultipleConcurrentInsert(num int, value string, r *Rose, collName strin
 
 	for i := 0; i < num; i++ {
 		if len(value) == 0 {
-			value = testAsJson("sdkfjsdjfsadfjklsajdfkčl")
+			value = testAsJson(value)
 		}
 
 		res := testSingleConcurrentInsert(WriteMetadata{Data: value, CollectionName: collName}, r)

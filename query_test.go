@@ -8,16 +8,6 @@ import (
 	"time"
 )
 
-type TestUser struct {
-	Type string `json:"type"`
-	Email string `json:"email"`
-	IsValid bool `json:"isValid"`
-	Price float64 `json:"price"`
-	RandomNum int `json:"randomNum"`
-	CreatedAt string `json:"createdAt"`
-	UpdatedAt string `json:"updatedAt"`
-}
-
 var _ = GinkgoDescribe("Query tests", func() {
 	GinkgoIt("Should make an equality query", func() {
 		r := testCreateRose(false)
