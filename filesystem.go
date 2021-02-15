@@ -77,11 +77,11 @@ func createIndexLocationIfNotExists() Error {
 		f, err := createFile(idxLoc, os.O_RDWR|os.O_CREATE)
 
 		if err != nil {
-			return newError(masterCode(err.GetMasterCode()), code(err.GetCode()), fmt.Sprintf("Cannot create index file. This is probably a permissions error but the error message can give you more details: %s", err.Error()))
+			return newError(masterCode(err.GetMasterCode()), code(err.GetCode()), fmt.Sprintf("A system error occurred and Rose cannot be booted. Cannot create index file. This is probably a permissions error but the error message can give you more details: %s", err.Error()))
 		}
 
 		if e := f.Close(); e != nil {
-			return newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Unable to close index file: %s", e.Error()))
+			return newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("A system error occurred and Rose cannot be booted. Unable to close index file: %s", e.Error()))
 		}
 	}
 

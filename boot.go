@@ -11,7 +11,7 @@ func createDatabases() (map[string]*db, Error) {
 	stats, err := ioutil.ReadDir(dbDir)
 
 	if err != nil {
-		return nil, newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Creating collection databases failed: %s", err.Error()))
+		return nil, newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Creating collection databases failed. This is probably a permissons error but you can find out more from the error message: %s", err.Error()))
 	}
 
 	collections := make(map[string]*db)
@@ -23,7 +23,7 @@ func createDatabases() (map[string]*db, Error) {
 		files, err := ioutil.ReadDir(driverDir)
 
 		if err != nil {
-			return nil, newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Unable to read collection directory: %s", err.Error()))
+			return nil, newError(SystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Unable to read collection directory. This is system error and Rose cannot boot: %s", err.Error()))
 		}
 
 		var blocksNum uint16

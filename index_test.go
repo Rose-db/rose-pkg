@@ -64,7 +64,7 @@ var _ = GinkgoDescribe("Index tests", func() {
 		gomega.Expect(err).To(gomega.Not(gomega.BeNil()))
 		gomega.Expect(err.GetMasterCode()).To(gomega.Equal(ValidationMasterErrorCode))
 		gomega.Expect(err.GetCode()).To(gomega.Equal(InvalidUserSuppliedDataCode))
-		gomega.Expect(err.Error()).To(gomega.Equal("Index field name cannot be an empty string"))
+		gomega.Expect(err.Error()).To(gomega.Equal("Validation error. Index field name cannot be an empty string"))
 
 		if err := a.Shutdown(); err != nil {
 			testRemoveFileSystemDb(roseDir())

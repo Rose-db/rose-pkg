@@ -30,7 +30,7 @@ func newFsDb(b uint16, dbDir string, perms int) (*fsDb, Error) {
 	stat, statErr := os.Stat(a)
 
 	if statErr != nil {
-		return nil, newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Database integrity violation. Cannot read stats on existing file %s with underlying message: %s", a, statErr.Error()))
+		return nil, newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Database integrity violation. Cannot read stats on existing file %s. This is probably a permissions error with underlying message: %s", a, statErr.Error()))
 
 	}
 
@@ -99,7 +99,7 @@ func (fs *fsDb) StrategicDelete(id []uint8, del []uint8, offset int64) Error {
 	}
 
 	if err != nil {
-		return newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Unable to delete %s with underlying message: %s", string(id), err.Error()))
+		return newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Unable to delete document %s. This is probably a permissions error with underlying message: %s", string(id), err.Error()))
 	}
 
 	return nil

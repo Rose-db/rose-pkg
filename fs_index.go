@@ -23,7 +23,7 @@ type fsIndex struct {
 
 func (fsi fsIndex) validate() Error {
 	if fsi.Field == "" {
-		return newError(ValidationMasterErrorCode, InvalidUserSuppliedDataCode, fmt.Sprintf("Index field name cannot be an empty string"))
+		return newError(ValidationMasterErrorCode, InvalidUserSuppliedDataCode, fmt.Sprintf("Validation error. Index field name cannot be an empty string"))
 	}
 
 	return nil
@@ -38,14 +38,14 @@ func newIndexHandler() (*indexFsHandler, Error) {
 	f, err := createFile(roseIndexLocation(), os.O_RDWR)
 
 	if err != nil {
-		return nil, newError(GenericMasterErrorCode, FilesystemMasterErrorCode, fmt.Sprintf("Cannot open index location. This is an unrecoverable error: %s", err.Error()))
+		return nil, newError(GenericMasterErrorCode, FilesystemMasterErrorCode, fmt.Sprintf("A system error occurred and Rose cannot be booted. Cannot open index location. This is an unrecoverable error: %s", err.Error()))
 	}
 
 	// it is safe to read all indexes into memory, not expected to be a lot of them (millions)
 	b, e := ioutil.ReadAll(f)
 
 	if e != nil {
-		return nil, newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Cannot read from index location: %s", e.Error()))
+		return nil, newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("A system error occurred and Rose cannot be booted. Cannot read from index location: %s", e.Error()))
 	}
 
 	c := &indexFsHandler{
@@ -68,7 +68,7 @@ func (ih *indexFsHandler) Add(fsi fsIndex) Error {
 
 	if ok := ih.exists(fsi.Name, fsi.Field); !ok {
 		if _, err := ih.file.Write([]uint8(d)); err != nil {
-			return newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("Cannot create write index to filesystem: %s", err.Error()))
+			return newError(FilesystemMasterErrorCode, FsPermissionsCode, fmt.Sprintf("A system error occurred and Rose cannot be booted. Cannot create write index to filesystem: %s", err.Error()))
 		}
 	}
 
@@ -98,7 +98,7 @@ func (ih *indexFsHandler) Close() Error {
 	e := ih.file.Close()
 
 	if e != nil {
-		return newError(SystemMasterErrorCode, MalformedIndexCode, fmt.Sprintf("Unable to close index file: %s", e.Error()))
+		return newError(SystemMasterErrorCode, MalformedIndexCode, fmt.Sprintf("A system error occurred and Rose cannot be booted. Unable to close index file: %s", e.Error()))
 	}
 
 	ih.indexes = nil
@@ -122,7 +122,7 @@ func (ih *indexFsHandler) init(indexes []uint8) Error {
 			t := strings.Split(a, delim)
 
 			if len(t) != 3 {
-				return newError(SystemMasterErrorCode, MalformedIndexCode, fmt.Sprintf("Found malformed index value -> %s", a))
+				return newError(SystemMasterErrorCode, MalformedIndexCode, fmt.Sprintf("A system error occurred and Rose cannot be booted. Found malformed index value -> %s", a))
 			}
 
 			fsi := fsIndex{

@@ -102,7 +102,7 @@ func (s *lineReader) getData() (*lineReaderData, Error) {
 	id, err := strconv.Atoi(a)
 
 	if err != nil {
-		return nil, newError(SystemMasterErrorCode, DataConversionCode, fmt.Sprintf("Unable to convert string to int32 with message: %s", err.Error()))
+		return nil, newError(SystemMasterErrorCode, DataConversionCode, fmt.Sprintf("A system error occurred and Rose failed. Unable to convert string to int32 with message: %s", err.Error()))
 	}
 
 	return &lineReaderData{
