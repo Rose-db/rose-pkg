@@ -200,5 +200,91 @@ var _ = GinkgoDescribe("Index tests", func() {
 
 		testRemoveFileSystemDb(roseDir())
 	})
+
+	GinkgoIt("Should fail if field name of an existing index does not exist in written data", func() {
+		a := testCreateRose(false)
+
+		collName := testCreateCollection(a, "coll")
+
+		err := a.NewIndex(collName, "field", stringIndexType)
+
+		gomega.Expect(err).To(gomega.BeNil())
+
+		resChan := make(chan *AppResult)
+		go func() {
+			res, err := a.Write(WriteMetadata{
+				CollectionName: collName,
+				Data:           testAsJsonInterface(TestProfile{
+					Name:     "mario",
+					Lastname: "mario",
+					Age:      15,
+				}),
+			})
+
+			gomega.Expect(err).To(gomega.Not(gomega.BeNil()))
+			gomega.Expect(err.Error()).To(gomega.Equal("Cannot write index. Field name 'field' does not exist on provided JSON object. If you created an index on a JSON structure on a certain field and its data type, that field must exists with the correct underlying data type"))
+
+			resChan<- res
+		}()
+
+		<-resChan
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
+
+	GinkgoIt("Should fail if field name of an existing index does not exist in written data after restart", func() {
+		a := testCreateRose(false)
+
+		collName := testCreateCollection(a, "coll")
+
+		err := a.NewIndex(collName, "field", stringIndexType)
+
+		gomega.Expect(err).To(gomega.BeNil())
+
+		if err := a.Shutdown(); err != nil {
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		a = testCreateRose(false)
+
+		resChan := make(chan *AppResult)
+		go func() {
+			res, err := a.Write(WriteMetadata{
+				CollectionName: collName,
+				Data:           testAsJsonInterface(TestProfile{
+					Name:     "mario",
+					Lastname: "mario",
+					Age:      15,
+				}),
+			})
+
+			gomega.Expect(err).To(gomega.Not(gomega.BeNil()))
+			gomega.Expect(err.Error()).To(gomega.Equal("Cannot write index. Field name 'field' does not exist on provided JSON object. If you created an index on a JSON structure on a certain field and its data type, that field must exists with the correct underlying data type"))
+
+			resChan<- res
+		}()
+
+		<-resChan
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
 })
 

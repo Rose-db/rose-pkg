@@ -59,6 +59,18 @@ func loadAllIndexes(dbs map[string]*db) Error {
 		// get all indexes from indexes.rose for this collection
 		indexes, err := fsIdx.Find(collName)
 
+		if err != nil {
+			return err
+		}
+
+		if indexes != nil {
+			for _, fsi := range indexes {
+				if !hasString(db.FieldIndexKeys, fsi.Field) {
+					db.FieldIndexKeys = append(db.FieldIndexKeys, fsi.Field)
+				}
+			}
+		}
+
 		// Creates as many batches as there are files, 50 files per batch
 		batch := createFileInfoBatch(files, limit)
 
@@ -144,11 +156,10 @@ func loadSingleFile(f os.FileInfo, m *db, collName string, indexes []*fsIndex) E
 		// write all indexes into memory in the specified database based on the collection name
 		if indexes != nil {
 			for _, fsi := range indexes {
-				if err := m.writeFieldIndex(fsi.Field, fsi.DataType, offset, val.val); err != nil {
+				if err := m.writeFieldIndexWithLock(fsi.Field, fsi.DataType, offset, val.val); err != nil {
 					return err
 				}
 			}
-
 		}
 
 		if err != nil {

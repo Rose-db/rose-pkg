@@ -306,6 +306,8 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		gomega.Expect(fieldIndex.DataType).To(gomega.Equal(stringIndexType))
 		gomega.Expect(len(fieldIndex.Index)).To(gomega.Equal(n))
 
+		gomega.Expect(len(m.FieldIndexKeys)).To(gomega.Equal(1))
+
 		if err := r.Shutdown(); err != nil {
 			testRemoveFileSystemDb(roseDir())
 
@@ -392,6 +394,7 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		gomega.Expect(randomNumFieldIndex.DataType).To(gomega.Equal(intIndexType))
 		gomega.Expect(len(randomNumFieldIndex.Index)).To(gomega.Equal(n))
 
+		gomega.Expect(len(m.FieldIndexKeys)).To(gomega.Equal(5))
 
 		if err := r.Shutdown(); err != nil {
 			testRemoveFileSystemDb(roseDir())

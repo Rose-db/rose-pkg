@@ -40,7 +40,7 @@ name and field name.
 If the collection that the index is written for does not exists, this function returns an error.
  */
 func (a *Rose) NewIndex(collName string, fieldName string, dType indexDataType) Error {
-	_, ok := a.Databases[collName]
+	db, ok := a.Databases[collName]
 
 	if !ok {
 		return newError(ValidationMasterErrorCode, InvalidUserSuppliedDataCode, fmt.Sprintf("Invalid index request. Collection %s does not exist", collName))
@@ -52,6 +52,10 @@ func (a *Rose) NewIndex(collName string, fieldName string, dType indexDataType) 
 		DataType: dType,
 	}); err != nil {
 		return err
+	}
+
+	if !hasString(db.FieldIndexKeys, fieldName) {
+		db.FieldIndexKeys = append(db.FieldIndexKeys, fieldName)
 	}
 
 	return nil

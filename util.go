@@ -220,5 +220,21 @@ func getDateFromString(s string) time.Time {
 	return createDateFromString(sp)
 }
 
+func hasString(s []string, t string) bool {
+	for _, a := range s {
+		if a == t {
+			return true
+		}
+	}
 
+	return false
+}
 
+func stringKeys(s map[string]interface{}) []string {
+	t := make([]string, 0)
+	for k, _ := range s {
+		t = append(t, k)
+	}
+
+	return t
+}

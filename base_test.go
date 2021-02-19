@@ -28,6 +28,12 @@ type TestUser struct {
 	UpdatedAt string `json:"updatedAt"`
 }
 
+type TestProfile struct {
+	Name string `json:"type"`
+	Lastname string `json:"lastName"`
+	Age int `json:"age"`
+}
+
 func TestRose(t *testing.T) {
 	GomegaRegisterFailHandler(GinkgoFail)
 	GinkgoRunSpecs(t, "Rose Suite")

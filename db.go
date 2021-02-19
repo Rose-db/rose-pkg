@@ -18,6 +18,7 @@ type dbReadResult struct {
 type db struct {
 	PrimaryIndex  map[int]int64
 	FieldIndex map[string]*fieldIndex
+	FieldIndexKeys []string
 
 	AutoIncrementCounter int
 	BlockTracker map[uint16][2]uint16
@@ -46,6 +47,7 @@ func newDb(write *fsDriver, read *fsDriver, delete *fsDriver, name string, block
 	return d
 }
 
+// data interface{} is string
 func (d *db) Write(data interface{}) (int, int, Error) {
 	d.Lock()
 
@@ -70,6 +72,15 @@ func (d *db) Write(data interface{}) (int, int, Error) {
 	offset := size - bytesWritten
 
 	d.PrimaryIndex[id] = offset
+
+	idxVal := []uint8(data.(string))
+	if err := d.validateFieldIndex(idxVal); err != nil {
+		return 0, 0, err
+	}
+
+	if err := d.writeFieldIndexWithoutLock(offset, idxVal); err != nil {
+		return 0, 0, err
+	}
 
 	track, ok := d.BlockTracker[mapId]
 
@@ -335,7 +346,50 @@ func (d *db) writeIndex(id int, offset int64) Error {
 	return nil
 }
 
-func (d *db) writeFieldIndex(fieldName string, dType indexDataType, offset int64, val []uint8) Error {
+func (d *db) validateFieldIndex(val []uint8) Error {
+	var p fastjson.Parser
+
+	pVal, pErr := p.ParseBytes(val)
+
+	if pErr != nil {
+		return newError(SystemMasterErrorCode, InvalidUserSuppliedDataCode, fmt.Sprintf("Cannot write index. Data is unparsable. This might be a bug but if it is not, change your data: %s", pErr.Error()))
+	}
+
+	for _, fieldName := range d.FieldIndexKeys {
+		if !pVal.Exists(fieldName) {
+			return newError(SystemMasterErrorCode, InvalidUserSuppliedDataCode, fmt.Sprintf("Cannot write index. Field name '%s' does not exist on provided JSON object. If you created an index on a JSON structure on a certain field and its data type, that field must exists with the correct underlying data type", fieldName))
+		}
+	}
+
+	return nil
+}
+
+// no need to handle error since the index is validate with ::validateFieldIndex()
+func (d *db) writeFieldIndexWithoutLock(offset int64, val []uint8) Error {
+	var p fastjson.Parser
+
+	pVal, _ := p.ParseBytes(val)
+
+	for fieldName, fieldIndex := range d.FieldIndex {
+		var idxVal interface{}
+		if fieldIndex.DataType == stringIndexType {
+			idxVal = pVal.GetStringBytes(fieldName)
+		} else if fieldIndex.DataType == intIndexType {
+			idxVal = pVal.GetInt(fieldName)
+		} else if fieldIndex.DataType == floatIndexType {
+			idxVal = pVal.GetFloat64(fieldName)
+		} else if fieldIndex.DataType == boolIndexType {
+			idxVal = pVal.GetBool(fieldName)
+		}
+
+		fieldIndex.Add(offset, idxVal)
+	}
+
+	return nil
+}
+
+// Only used from boot, do not use after boot when public methods have their own locks
+func (d *db) writeFieldIndexWithLock(fieldName string, dType indexDataType, offset int64, val []uint8) Error {
 	d.Lock()
 
 	var p fastjson.Parser
@@ -486,4 +540,5 @@ func (d *db) init() {
 	d.BlockTracker = make(map[uint16][2]uint16)
 	d.DocCount = make(map[uint16]int)
 	d.FieldIndex = make(map[string]*fieldIndex)
+	d.FieldIndexKeys = make([]string, 0)
 }
