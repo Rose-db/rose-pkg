@@ -367,5 +367,35 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 
 		testRemoveFileSystemDb(roseDir())
 	})
+
+	GinkgoIt("Should fail to readBy is provided mismatched data types", func() {
+		a := testCreateRose(false)
+
+		collName := testCreateCollection(a, "coll")
+
+		err := a.NewIndex(collName, "field", stringIndexType)
+
+		gomega.Expect(err).To(gomega.BeNil())
+
+		_, err = a.ReadBy(ReadByMetadata{
+			CollectionName: collName,
+			Field:          "field",
+			Value:          "some value",
+			DataType:       "int",
+		})
+		
+		gomega.Expect(err).To(gomega.Not(gomega.BeNil()))
+		gomega.Expect(err.Error()).To(gomega.Equal(fmt.Sprintf("Validation error. Invalid data type. You provided %s but the index is a %s data type", "int", "string")))
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
 })
 

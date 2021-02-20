@@ -2,10 +2,11 @@ package rose
 
 import (
 	"fmt"
-	"github.com/onsi/ginkgo"
-	"github.com/onsi/gomega"
 	"io/ioutil"
 	"sync"
+
+	"github.com/onsi/ginkgo"
+	"github.com/onsi/gomega"
 )
 
 var _ = GinkgoDescribe("Internal Memory DB tests", func() {
@@ -31,7 +32,7 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 			dirs, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", roseDbDir(), collName))
 
 			gomega.Expect(err).To(gomega.BeNil())
-			gomega.Expect(len(dirs)).To(gomega.Equal(n / blockMark + 1))
+			gomega.Expect(len(dirs)).To(gomega.Equal(n/blockMark + 1))
 
 			db := a.Databases[collOne]
 
@@ -89,7 +90,7 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 			res := testSingleReplace(ReplaceMetadata{
 				CollectionName: collName,
 				ID:             ids[i],
-				Data: testAsJson("update"),
+				Data:           testAsJson("update"),
 			}, a)
 
 			gomega.Expect(res.Status).To(gomega.Equal(ReplacedResultStatus))
@@ -132,7 +133,7 @@ var _ = GinkgoDescribe("Internal Memory DB tests", func() {
 		dirs, err := ioutil.ReadDir(fmt.Sprintf("%s/%s", roseDbDir(), collName))
 
 		gomega.Expect(err).To(gomega.BeNil())
-		gomega.Expect(len(dirs)).To(gomega.Equal(n / blockMark + 1))
+		gomega.Expect(len(dirs)).To(gomega.Equal(n/blockMark + 1))
 
 		if err := a.Shutdown(); err != nil {
 			testRemoveFileSystemDb(roseDir())

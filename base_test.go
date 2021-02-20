@@ -3,11 +3,12 @@ package rose
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/onsi/ginkgo"
-	"github.com/onsi/gomega"
 	"io/ioutil"
 	"os"
 	"testing"
+
+	"github.com/onsi/ginkgo"
+	"github.com/onsi/gomega"
 )
 
 var GomegaRegisterFailHandler = gomega.RegisterFailHandler
@@ -19,19 +20,19 @@ var GinkgoDescribe = ginkgo.Describe
 var GinkgoIt = ginkgo.It
 
 type TestUser struct {
-	Type string `json:"type"`
-	Email string `json:"email"`
-	IsValid bool `json:"isValid"`
-	Price float64 `json:"price"`
-	RandomNum int `json:"randomNum"`
-	CreatedAt string `json:"createdAt"`
-	UpdatedAt string `json:"updatedAt"`
+	Type      string  `json:"type"`
+	Email     string  `json:"email"`
+	IsValid   bool    `json:"isValid"`
+	Price     float64 `json:"price"`
+	RandomNum int     `json:"randomNum"`
+	CreatedAt string  `json:"createdAt"`
+	UpdatedAt string  `json:"updatedAt"`
 }
 
 type TestProfile struct {
-	Name string `json:"type"`
+	Name     string `json:"type"`
 	Lastname string `json:"lastName"`
-	Age int `json:"age"`
+	Age      int    `json:"age"`
 }
 
 func TestRose(t *testing.T) {
@@ -126,7 +127,7 @@ func testSingleConcurrentInsert(w WriteMetadata, r *Rose) *AppResult {
 
 		gomega.Expect(err).To(gomega.BeNil())
 
-		resChan<- res
+		resChan <- res
 	}()
 
 	return <-resChan
@@ -139,7 +140,7 @@ func testSingleDelete(w DeleteMetadata, r *Rose) *AppResult {
 
 		gomega.Expect(err).To(gomega.BeNil())
 
-		resChan<- res
+		resChan <- res
 	}()
 
 	return <-resChan
@@ -152,7 +153,7 @@ func testSingleReplace(m ReplaceMetadata, r *Rose) *AppResult {
 
 		gomega.Expect(err).To(gomega.BeNil())
 
-		resChan<- res
+		resChan <- res
 	}()
 
 	return <-resChan
@@ -164,7 +165,7 @@ func testSingleRead(w ReadMetadata, r *Rose) *AppResult {
 		res, err := r.Read(w)
 		gomega.Expect(err).To(gomega.BeNil())
 
-		resChan<- res
+		resChan <- res
 	}()
 
 	return <-resChan

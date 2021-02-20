@@ -78,7 +78,7 @@ func (d *db) Write(data interface{}) (int, int, Error) {
 		return 0, 0, err
 	}
 
-	if err := d.writeFieldIndexWithoutLock(offset, idxVal); err != nil {
+	if err := d.writeFieldIndexWithoutLock(offset, idxVal, mapId); err != nil {
 		return 0, 0, err
 	}
 
@@ -223,6 +223,20 @@ func (d *db) ReadStrategic(id int, data interface{}) (*dbReadResult, Error) {
 	}, nil
 }
 
+func (d *db) ReadBy(m ReadByMetadata) ([]*AppResult, Error) {
+	d.Lock()
+
+	fieldIndex := d.FieldIndex[m.Field]
+
+	if fieldIndex.DataType != m.DataType {
+		return nil, newError(ValidationMasterErrorCode, InvalidUserSuppliedDataCode, fmt.Sprintf("Validation error. Invalid data type. You provided %s but the index is a %s data type", string(m.DataType), string(fieldIndex.DataType)))
+	}
+
+	d.Unlock()
+
+	return nil, nil
+}
+
 /**
     1. Delete the document with the specified ID
     2. Write the new document into the same block
@@ -365,7 +379,7 @@ func (d *db) validateFieldIndex(val []uint8) Error {
 }
 
 // no need to handle error since the index is validate with ::validateFieldIndex()
-func (d *db) writeFieldIndexWithoutLock(offset int64, val []uint8) Error {
+func (d *db) writeFieldIndexWithoutLock(offset int64, val []uint8, blockId uint16) Error {
 	var p fastjson.Parser
 
 	pVal, _ := p.ParseBytes(val)
@@ -382,14 +396,14 @@ func (d *db) writeFieldIndexWithoutLock(offset int64, val []uint8) Error {
 			idxVal = pVal.GetBool(fieldName)
 		}
 
-		fieldIndex.Add(offset, idxVal)
+		fieldIndex.Add(offset, idxVal, blockId)
 	}
 
 	return nil
 }
 
 // Only used from boot, do not use after boot when public methods have their own locks
-func (d *db) writeFieldIndexWithLock(fieldName string, dType indexDataType, offset int64, val []uint8) Error {
+func (d *db) writeFieldIndexWithLock(fieldName string, dType indexDataType, offset int64, val []uint8, id int) Error {
 	d.Lock()
 
 	var p fastjson.Parser
@@ -413,7 +427,7 @@ func (d *db) writeFieldIndexWithLock(fieldName string, dType indexDataType, offs
 		idxVal = v.GetBool(fieldName)
 	}
 
-	idx.Add(offset, idxVal)
+	idx.Add(offset, idxVal, d.getBlockId(id))
 
 	d.Unlock()
 

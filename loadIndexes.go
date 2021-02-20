@@ -156,7 +156,7 @@ func loadSingleFile(f os.FileInfo, m *db, collName string, indexes []*fsIndex) E
 		// write all indexes into memory in the specified database based on the collection name
 		if indexes != nil {
 			for _, fsi := range indexes {
-				if err := m.writeFieldIndexWithLock(fsi.Field, fsi.DataType, offset, val.val); err != nil {
+				if err := m.writeFieldIndexWithLock(fsi.Field, fsi.DataType, offset, val.val, val.id); err != nil {
 					return err
 				}
 			}

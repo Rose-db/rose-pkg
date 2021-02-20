@@ -58,6 +58,8 @@ func (a *Rose) NewIndex(collName string, fieldName string, dType indexDataType) 
 		db.FieldIndexKeys = append(db.FieldIndexKeys, fieldName)
 	}
 
+	db.createFieldIndex(fieldName, dType)
+
 	return nil
 }
 
@@ -145,7 +147,7 @@ func (a *Rose) Write(m WriteMetadata) (*AppResult, Error) {
 	}, nil
 }
 
-func (a *Rose) ReadBy(m ReadByMetadata) (*AppResult, Error) {
+func (a *Rose) ReadBy(m ReadByMetadata) ([]*AppResult, Error) {
 	db, ok := a.Databases[m.CollectionName]
 
 	if !ok {
@@ -156,7 +158,7 @@ func (a *Rose) ReadBy(m ReadByMetadata) (*AppResult, Error) {
 		return nil, err
 	}
 
-	return nil, nil
+	return db.ReadBy(m)
 }
 
 func (a *Rose) BulkWrite(m BulkWriteMetadata) (*BulkAppResult, Error) {
