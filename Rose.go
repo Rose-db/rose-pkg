@@ -13,6 +13,17 @@ type AppResult struct {
 	Reason string `json:"reason"`
 }
 
+type readBySingleResult struct {
+	ID int
+	Data interface{}
+}
+
+type AppReadResult struct {
+	Method string `json:"method"`
+	Status string `json:"status"`
+	Data []readBySingleResult `json:"data"`
+}
+
 type BulkAppResult struct {
 	WrittenIDs   string `json:"writtenIds"`
 	Method string `json:"method"`
@@ -147,26 +158,6 @@ func (a *Rose) Write(m WriteMetadata) (*AppResult, Error) {
 	}, nil
 }
 
-func (a *Rose) ReadBy(m ReadByMetadata) ([]*AppResult, Error) {
-	db, ok := a.Databases[m.CollectionName]
-
-	if !ok {
-		return nil, newError(GenericMasterErrorCode, InvalidUserSuppliedDataCode, fmt.Sprintf("Invalid readBy request. Collection %s does not exist", m.CollectionName))
-	}
-
-	if err := m.Validate(db.FieldIndexKeys); err != nil {
-		return nil, err
-	}
-
-	_, err := db.ReadBy(m)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return nil, nil
-}
-
 func (a *Rose) BulkWrite(m BulkWriteMetadata) (*BulkAppResult, Error) {
 	db, ok := a.Databases[m.CollectionName]
 
@@ -218,6 +209,39 @@ func (a *Rose) Read(m ReadMetadata) (*AppResult, Error) {
 		ID: m.ID,
 		Method: ReadMethodType,
 		Status: FoundResultStatus,
+	}, nil
+}
+
+func (a *Rose) ReadBy(m ReadByMetadata) (*AppReadResult, Error) {
+	db, ok := a.Databases[m.CollectionName]
+
+	if !ok {
+		return nil, newError(GenericMasterErrorCode, InvalidUserSuppliedDataCode, fmt.Sprintf("Invalid readBy request. Collection %s does not exist", m.CollectionName))
+	}
+
+	if err := m.Validate(db.FieldIndexKeys); err != nil {
+		return nil, err
+	}
+
+	dbResults, err := db.ReadBy(m)
+
+	appResults := make([]readBySingleResult, 0)
+
+	for _, res := range dbResults {
+		appResults = append(appResults, readBySingleResult{
+			ID:   res.ID,
+			Data: res.Result,
+		})
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &AppReadResult{
+		Method: ReadByMethodType,
+		Status: OkResultStatus,
+		Data:   appResults,
 	}, nil
 }
 

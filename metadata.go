@@ -15,6 +15,7 @@ type ReadByMetadata struct {
 	CollectionName string `json:"collectionName"`
 	Field string `json:"field"`
 	Value interface{} `json:"value"`
+	Data interface{} `json:"data"`
 	DataType indexDataType `json:"dataType"`
 }
 

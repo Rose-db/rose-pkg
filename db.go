@@ -232,6 +232,7 @@ func (d *db) ReadBy(m ReadByMetadata) ([]*dbReadResult, Error) {
 		return nil, newError(ValidationMasterErrorCode, InvalidUserSuppliedDataCode, fmt.Sprintf("Validation error. Invalid data type. You provided %s but the index is a %s data type", string(m.DataType), string(fieldIndex.DataType)))
 	}
 
+	var p fastjson.Parser
 	results := make([]*dbReadResult, 0)
 
 	for _, idx := range fieldIndex.Index {
@@ -241,17 +242,26 @@ func (d *db) ReadBy(m ReadByMetadata) ([]*dbReadResult, Error) {
 			return nil, err
 		}
 
-		var data interface{}
-		e := json.Unmarshal(b.val, data)
+		v, e := p.ParseBytes(b.val)
 
 		if e != nil {
-			return nil, newError(SystemMasterErrorCode, UnmarshalFailCode, fmt.Sprintf("Cannot unmarshal JSON string. This can be a bug with Rose or an invalid document. Try deleting and write the document again. The underlying error is: %s", e.Error()))
+			return nil, newError(DbIntegrityMasterErrorCode, UnmarshalFailCode, fmt.Sprintf("Unable to parse JSON from an already saved value. Be sure that what you saved is a JSON construct: %s", e.Error()))
 		}
 
-		results = append(results, &dbReadResult{
-			ID:     b.id,
-			Result: data,
-		})
+		if v.Exists(m.Field) {
+			if m.DataType == stringIndexType && string(v.GetStringBytes(m.Field)) == m.Value.(string) {
+				e := json.Unmarshal(b.val, m.Data)
+
+				if e != nil {
+					return nil, newError(SystemMasterErrorCode, UnmarshalFailCode, fmt.Sprintf("Cannot unmarshal JSON string. This can be a bug with Rose or an invalid document. Try deleting and write the document again. The underlying error is: %s", e.Error()))
+				}
+
+				results = append(results, &dbReadResult{
+					ID:     b.id,
+					Result: m.Data,
+				})
+			}
+		}
 	}
 
 	d.Unlock()

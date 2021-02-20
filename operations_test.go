@@ -458,4 +458,65 @@ var _ = GinkgoDescribe("Read tests", func() {
 
 		testRemoveFileSystemDb(roseDir())
 	})
+
+	GinkgoIt("Should readBy from the database for a string type", func() {
+		a := testCreateRose(false)
+
+		collName := testCreateCollection(a, "test_coll")
+
+		err := a.NewIndex(collName, "type", stringIndexType)
+
+		gomega.Expect(err).To(gomega.BeNil())
+
+		n := 10000
+
+		for i := 0; i < n; i++ {
+			t := "user"
+
+			if i % 2 == 0 {
+				t = "company"
+			}
+
+			s := testAsJsonInterface(TestUser{
+				Type:      t,
+				Email:     "mario@gmail.com",
+				IsValid:   true,
+				Price:     13.45,
+				RandomNum: 54,
+				CreatedAt: "",
+				UpdatedAt: "",
+			})
+
+			res := testSingleConcurrentInsert(WriteMetadata{Data: s, CollectionName: collName}, a)
+
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
+		}
+
+		var u TestUser
+		res, err := a.ReadBy(ReadByMetadata{
+			CollectionName: collName,
+			Field:          "type",
+			Value:          "company",
+			Data:           &u,
+			DataType:       stringIndexType,
+		})
+
+		gomega.Expect(err).To(gomega.BeNil())
+		gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+		gomega.Expect(res.Method).To(gomega.Equal(ReadByMethodType))
+		gomega.Expect(len(res.Data)).To(gomega.Equal(n / 2))
+
+		d := res.Data
+
+		for _, r := range d {
+			user := r.Data.(*TestUser)
+
+			gomega.Expect(user.Type).To(gomega.Equal("company"))
+			gomega.Expect(user.Email).To(gomega.Equal("mario@gmail.com"))
+			gomega.Expect(user.IsValid).To(gomega.Equal(true))
+			gomega.Expect(user.RandomNum).To(gomega.Equal(54))
+			gomega.Expect(user.Price).To(gomega.Equal(13.45))
+		}
+	})
 })

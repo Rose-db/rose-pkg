@@ -35,6 +35,7 @@ const WriteMethodType = "insert"
 const BulkWriteMethodType = "bulkWrite"
 const DeleteMethodType = "delete"
 const ReadMethodType = "read"
+const ReadByMethodType = "readBy"
 const ReplaceMethodType = "replace"
 
 // memory db status types
