@@ -158,7 +158,13 @@ func (a *Rose) ReadBy(m ReadByMetadata) ([]*AppResult, Error) {
 		return nil, err
 	}
 
-	return db.ReadBy(m)
+	_, err := db.ReadBy(m)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, nil
 }
 
 func (a *Rose) BulkWrite(m BulkWriteMetadata) (*BulkAppResult, Error) {

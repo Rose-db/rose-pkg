@@ -36,7 +36,7 @@ func (d *fsDriver) Save(data []uint8, mapIdx uint16) (int64, int64, Error) {
 	return d.Handler.Write(data)
 }
 
-func (d *fsDriver) ReadStrategic(index int64, mapIdx uint16) (*[]uint8, Error) {
+func (d *fsDriver) ReadStrategic(index int64, mapIdx uint16) (*lineReaderData, Error) {
 	if err := d.loadHandler(mapIdx); err != nil {
 		return nil, err
 	}

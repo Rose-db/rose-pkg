@@ -211,7 +211,7 @@ func (d *db) ReadStrategic(id int, data interface{}) (*dbReadResult, Error) {
 		return nil, err
 	}
 
-	e := json.Unmarshal(*b, data)
+	e := json.Unmarshal(b.val, data)
 
 	if e != nil {
 		return nil, newError(SystemMasterErrorCode, UnmarshalFailCode, fmt.Sprintf("Cannot unmarshal JSON string. This can be a bug with Rose or an invalid document. Try deleting and write the document again. The underlying error is: %s", e.Error()))
@@ -223,7 +223,7 @@ func (d *db) ReadStrategic(id int, data interface{}) (*dbReadResult, Error) {
 	}, nil
 }
 
-func (d *db) ReadBy(m ReadByMetadata) ([]*AppResult, Error) {
+func (d *db) ReadBy(m ReadByMetadata) ([]*dbReadResult, Error) {
 	d.Lock()
 
 	fieldIndex := d.FieldIndex[m.Field]
@@ -232,9 +232,31 @@ func (d *db) ReadBy(m ReadByMetadata) ([]*AppResult, Error) {
 		return nil, newError(ValidationMasterErrorCode, InvalidUserSuppliedDataCode, fmt.Sprintf("Validation error. Invalid data type. You provided %s but the index is a %s data type", string(m.DataType), string(fieldIndex.DataType)))
 	}
 
+	results := make([]*dbReadResult, 0)
+
+	for _, idx := range fieldIndex.Index {
+		b, err := d.ReadDriver.ReadStrategic(idx.Pos, idx.BlockId)
+
+		if err != nil {
+			return nil, err
+		}
+
+		var data interface{}
+		e := json.Unmarshal(b.val, data)
+
+		if e != nil {
+			return nil, newError(SystemMasterErrorCode, UnmarshalFailCode, fmt.Sprintf("Cannot unmarshal JSON string. This can be a bug with Rose or an invalid document. Try deleting and write the document again. The underlying error is: %s", e.Error()))
+		}
+
+		results = append(results, &dbReadResult{
+			ID:     b.id,
+			Result: data,
+		})
+	}
+
 	d.Unlock()
 
-	return nil, nil
+	return results, nil
 }
 
 /**

@@ -383,8 +383,8 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 			Value:          "some value",
 			DataType:       "int",
 		})
-		
-		gomega.Expect(err).To(gomega.Not(gomega.BeNil()))
+
+		gomega.Expect(err == (Error)(nil)).To(gomega.Equal(false))
 		gomega.Expect(err.Error()).To(gomega.Equal(fmt.Sprintf("Validation error. Invalid data type. You provided %s but the index is a %s data type", "int", "string")))
 
 		if err := a.Shutdown(); err != nil {

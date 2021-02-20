@@ -57,7 +57,7 @@ func (fs *fsDb) Write(d []uint8) (int64, int64, Error) {
 	return int64(len(d)), fs.Size, nil
 }
 
-func (fs *fsDb) ReadStrategic(offset int64) (*[]uint8, Error) {
+func (fs *fsDb) ReadStrategic(offset int64) (*lineReaderData, Error) {
 	_, err := fs.File.Seek(offset, 0)
 
 	if err != nil {
@@ -84,7 +84,7 @@ func (fs *fsDb) ReadStrategic(offset int64) (*[]uint8, Error) {
 		return nil, newError(GenericMasterErrorCode, DocumentNotFoundCode, "Document not found")
 	}
 
-	return &data.val, nil
+	return data, nil
 }
 
 func (fs *fsDb) StrategicDelete(id []uint8, del []uint8, offset int64) Error {
