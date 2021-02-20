@@ -145,6 +145,20 @@ func (a *Rose) Write(m WriteMetadata) (*AppResult, Error) {
 	}, nil
 }
 
+func (a *Rose) ReadBy(m ReadByMetadata) (*AppResult, Error) {
+	db, ok := a.Databases[m.CollectionName]
+
+	if !ok {
+		return nil, newError(GenericMasterErrorCode, InvalidUserSuppliedDataCode, fmt.Sprintf("Invalid readBy request. Collection %s does not exist", m.CollectionName))
+	}
+
+	if err := m.Validate(db.FieldIndexKeys); err != nil {
+		return nil, err
+	}
+
+	return nil, nil
+}
+
 func (a *Rose) BulkWrite(m BulkWriteMetadata) (*BulkAppResult, Error) {
 	db, ok := a.Databases[m.CollectionName]
 

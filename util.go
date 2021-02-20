@@ -230,11 +230,22 @@ func hasString(s []string, t string) bool {
 	return false
 }
 
-func stringKeys(s map[string]interface{}) []string {
-	t := make([]string, 0)
-	for k, _ := range s {
-		t = append(t, k)
+func isIndexDataType(d string) bool {
+	if d == string(floatIndexType) {
+		return true
 	}
 
-	return t
+	if d == string(intIndexType) {
+		return true
+	}
+
+	if d == string(stringIndexType) {
+		return true
+	}
+
+	if d == string(boolIndexType) {
+		return true
+	}
+
+	return false
 }

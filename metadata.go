@@ -1,5 +1,7 @@
 package rose
 
+import "fmt"
+
 type Validator interface {
 	Validate() Error
 }
@@ -7,6 +9,13 @@ type Validator interface {
 type WriteMetadata struct {
 	CollectionName string `json:"collectionName"`
 	Data interface{} `json:"data"`
+}
+
+type ReadByMetadata struct {
+	CollectionName string `json:"collectionName"`
+	Field string `json:"field"`
+	Value interface{} `json:"value"`
+	DataType indexDataType `json:"dataType"`
 }
 
 type BulkWriteMetadata struct {
@@ -48,6 +57,26 @@ func (m WriteMetadata) Validate() Error {
 
 	if !isJSON([]uint8(d)) {
 		return newError(ValidationMasterErrorCode, InvalidUserSuppliedDataCode, "Data must be a JSON byte array")
+	}
+
+	return nil
+}
+
+func (m ReadByMetadata) Validate(idxKeys []string) Error {
+	if m.Field == "" {
+		return newError(ValidationMasterErrorCode, InvalidUserSuppliedDataCode, "Validation error. Invalid readBy method. 'field' is empty. 'field' must be a non empty string")
+	}
+
+	if !hasString(idxKeys, m.Field) {
+		return newError(ValidationMasterErrorCode, InvalidUserSuppliedDataCode, fmt.Sprintf("Validation error. Invalid readBy method. '%s' does not exist as an index. In using readBy, 'field' must be indexed", m.Field))
+	}
+
+	if m.Value == nil {
+		return newError(ValidationMasterErrorCode, InvalidUserSuppliedDataCode, "Validation error. Invalid readBy method 'value'. 'value' is empty. 'value' must be a non nil value that corresponds to 'dataType' (int data type -> value must be int)")
+	}
+
+	if !isIndexDataType(string(m.DataType)) {
+		return newError(ValidationMasterErrorCode, InvalidUserSuppliedDataCode, "Validation error. Invalid readBy method 'dataType'. 'dataType' is an invalid data type. Valid data types are int, float, string and bool")
 	}
 
 	return nil

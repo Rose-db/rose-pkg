@@ -229,5 +229,143 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 
 		testRemoveFileSystemDb(roseDir())
 	})
+
+	GinkgoIt("Should fail to readBy if field is an empty string", func() {
+		a := testCreateRose(false)
+
+		collName := testCreateCollection(a, "coll")
+
+		_, err := a.ReadBy(ReadByMetadata{
+			CollectionName: collName,
+			Field:          "",
+			Value:          nil,
+			DataType:       "",
+		})
+
+		gomega.Expect(err).To(gomega.Not(gomega.BeNil()))
+		gomega.Expect(err.Error()).To(gomega.Equal("Validation error. Invalid readBy method. 'field' is empty. 'field' must be a non empty string"))
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
+
+	GinkgoIt("Should fail to readBy if field does not exists as an index", func() {
+		a := testCreateRose(false)
+
+		collName := testCreateCollection(a, "coll")
+
+		_, err := a.ReadBy(ReadByMetadata{
+			CollectionName: collName,
+			Field:          "non_exists",
+			Value:          nil,
+			DataType:       "",
+		})
+
+		gomega.Expect(err).To(gomega.Not(gomega.BeNil()))
+		gomega.Expect(err.Error()).To(gomega.Equal(fmt.Sprintf("Validation error. Invalid readBy method. '%s' does not exist as an index. In using readBy, 'field' must be indexed", "non_exists")))
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
+
+	GinkgoIt("Should fail to readBy if field does not exists as an index", func() {
+		a := testCreateRose(false)
+
+		collName := testCreateCollection(a, "coll")
+
+		_, err := a.ReadBy(ReadByMetadata{
+			CollectionName: collName,
+			Field:          "non_exists",
+			Value:          nil,
+			DataType:       "",
+		})
+
+		gomega.Expect(err).To(gomega.Not(gomega.BeNil()))
+		gomega.Expect(err.Error()).To(gomega.Equal(fmt.Sprintf("Validation error. Invalid readBy method. '%s' does not exist as an index. In using readBy, 'field' must be indexed", "non_exists")))
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
+
+	GinkgoIt("Should fail to readBy if field does not exists as an index", func() {
+		a := testCreateRose(false)
+
+		collName := testCreateCollection(a, "coll")
+
+		err := a.NewIndex(collName, "field", stringIndexType)
+
+		gomega.Expect(err).To(gomega.BeNil())
+
+		_, err = a.ReadBy(ReadByMetadata{
+			CollectionName: collName,
+			Field:          "field",
+			Value:          nil,
+			DataType:       "",
+		})
+
+		gomega.Expect(err).To(gomega.Not(gomega.BeNil()))
+		gomega.Expect(err.Error()).To(gomega.Equal("Validation error. Invalid readBy method 'value'. 'value' is empty. 'value' must be a non nil value that corresponds to 'dataType' (int data type -> value must be int)"))
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
+
+	GinkgoIt("Should fail to readBy if dataType is an invalid data type", func() {
+		a := testCreateRose(false)
+
+		collName := testCreateCollection(a, "coll")
+
+		err := a.NewIndex(collName, "field", stringIndexType)
+
+		gomega.Expect(err).To(gomega.BeNil())
+
+		_, err = a.ReadBy(ReadByMetadata{
+			CollectionName: collName,
+			Field:          "field",
+			Value:          "some value",
+			DataType:       "invalid",
+		})
+
+		gomega.Expect(err).To(gomega.Not(gomega.BeNil()))
+		gomega.Expect(err.Error()).To(gomega.Equal("Validation error. Invalid readBy method 'dataType'. 'dataType' is an invalid data type. Valid data types are int, float, string and bool"))
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
 })
 
