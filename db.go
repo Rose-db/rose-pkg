@@ -269,6 +269,22 @@ func (d *db) ReadBy(m ReadByMetadata) ([]*dbReadResult, Error) {
 
 				found++
 			}
+
+			if m.DataType == intIndexType && v.GetInt(m.Field) == m.Value.(int) {
+				var data interface{}
+				e := json.Unmarshal(b.val, &data)
+
+				if e != nil {
+					return nil, newError(SystemMasterErrorCode, UnmarshalFailCode, fmt.Sprintf("Cannot unmarshal JSON string. This can be a bug with Rose or an invalid document. Try deleting and write the document again. The underlying error is: %s", e.Error()))
+				}
+
+				results = append(results, &dbReadResult{
+					ID:     b.id,
+					Result: data,
+				})
+
+				found++
+			}
 		}
 	}
 
