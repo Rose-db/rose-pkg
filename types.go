@@ -57,6 +57,7 @@ const delMark = "{[{del}]}"
 
 const blockMark = 3307
 const defragmentMark = 1323
+const maxPaginate = 100
 
 type dataType string
 

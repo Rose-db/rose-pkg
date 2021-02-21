@@ -11,11 +11,17 @@ type WriteMetadata struct {
 	Data interface{} `json:"data"`
 }
 
+type Pagination struct {
+	Page int
+	Limit int
+}
+
 type ReadByMetadata struct {
 	CollectionName string `json:"collectionName"`
 	Field string `json:"field"`
 	Value interface{} `json:"value"`
 	Data interface{} `json:"data"`
+	Pagination Pagination
 	DataType indexDataType `json:"dataType"`
 }
 

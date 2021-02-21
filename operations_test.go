@@ -482,7 +482,7 @@ var _ = GinkgoDescribe("Read tests", func() {
 				Email:     "mario@gmail.com",
 				IsValid:   true,
 				Price:     13.45,
-				RandomNum: 54,
+				RandomNum: i,
 				CreatedAt: "",
 				UpdatedAt: "",
 			})
@@ -493,30 +493,138 @@ var _ = GinkgoDescribe("Read tests", func() {
 			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
 		}
 
-		var u TestUser
+		limit := 24
 		res, err := a.ReadBy(ReadByMetadata{
 			CollectionName: collName,
 			Field:          "type",
 			Value:          "company",
-			Data:           &u,
+			DataType:       stringIndexType,
+			Pagination: Pagination{
+				Page:  1,
+				Limit: limit,
+			},
+		})
+
+		gomega.Expect(err).To(gomega.BeNil())
+		gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+		gomega.Expect(res.Method).To(gomega.Equal(ReadByMethodType))
+		gomega.Expect(len(res.Data)).To(gomega.Equal(limit))
+
+		for i := 0; i < limit; i++ {
+			user := res.Data[i].Data.(map[string]interface{})
+
+			randomNum := int(user["randomNum"].(float64))
+			gomega.Expect(randomNum).To(gomega.Equal(i * 2))
+		}
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
+
+	GinkgoIt("Should assert that pagination returns the correct documents with readBy", func() {
+		a := testCreateRose(false)
+
+		collName := testCreateCollection(a, "test_coll")
+
+		err := a.NewIndex(collName, "email", stringIndexType)
+
+		gomega.Expect(err).To(gomega.BeNil())
+
+		n := 10000
+
+		for i := 0; i < n; i++ {
+			s := testAsJsonInterface(TestUser{
+				Type:      "user",
+				Email:     "mario@gmail.com",
+				IsValid:   true,
+				Price:     13.45,
+				RandomNum: i,
+				CreatedAt: "",
+				UpdatedAt: "",
+			})
+
+			res := testSingleConcurrentInsert(WriteMetadata{Data: s, CollectionName: collName}, a)
+
+			gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+			gomega.Expect(res.Method).To(gomega.Equal(WriteMethodType))
+		}
+
+		// default pagination
+		res, err := a.ReadBy(ReadByMetadata{
+			CollectionName: collName,
+			Field:          "email",
+			Value:          "mario@gmail.com",
 			DataType:       stringIndexType,
 		})
 
 		gomega.Expect(err).To(gomega.BeNil())
 		gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
 		gomega.Expect(res.Method).To(gomega.Equal(ReadByMethodType))
-		gomega.Expect(len(res.Data)).To(gomega.Equal(n / 2))
+		gomega.Expect(len(res.Data)).To(gomega.Equal(100))
 
-		d := res.Data
+		for i := 0; i < 100; i++ {
+			id := res.Data[i].ID
 
-		for _, r := range d {
-			user := r.Data.(*TestUser)
-
-			gomega.Expect(user.Type).To(gomega.Equal("company"))
-			gomega.Expect(user.Email).To(gomega.Equal("mario@gmail.com"))
-			gomega.Expect(user.IsValid).To(gomega.Equal(true))
-			gomega.Expect(user.RandomNum).To(gomega.Equal(54))
-			gomega.Expect(user.Price).To(gomega.Equal(13.45))
+			gomega.Expect(id).To(gomega.Equal(i + 1))
 		}
+
+		// custom pagination
+		res, err = a.ReadBy(ReadByMetadata{
+			CollectionName: collName,
+			Field:          "email",
+			Value:          "mario@gmail.com",
+			DataType:       stringIndexType,
+			Pagination: Pagination{Page: 2, Limit: 5},
+		})
+
+		gomega.Expect(err).To(gomega.BeNil())
+		gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+		gomega.Expect(res.Method).To(gomega.Equal(ReadByMethodType))
+		gomega.Expect(len(res.Data)).To(gomega.Equal(5))
+
+		counter := 0
+		for i := 101; i <= 105; i++ {
+			id := res.Data[counter].ID
+
+			gomega.Expect(id).To(gomega.Equal(i))
+			counter++
+		}
+
+		// default page, custom pagination
+		res, err = a.ReadBy(ReadByMetadata{
+			CollectionName: collName,
+			Field:          "email",
+			Value:          "mario@gmail.com",
+			DataType:       stringIndexType,
+			Pagination: Pagination{Page: 1, Limit: 5},
+		})
+
+		gomega.Expect(err).To(gomega.BeNil())
+		gomega.Expect(res.Status).To(gomega.Equal(OkResultStatus))
+		gomega.Expect(res.Method).To(gomega.Equal(ReadByMethodType))
+		gomega.Expect(len(res.Data)).To(gomega.Equal(5))
+
+		for i := 0; i < 5; i++ {
+			id := res.Data[i].ID
+
+			gomega.Expect(id).To(gomega.Equal(i + 1))
+		}
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
 	})
 })

@@ -144,7 +144,6 @@ func (a *Rose) Write(m WriteMetadata) (*AppResult, Error) {
 		return nil, newError(GenericMasterErrorCode, InvalidUserSuppliedDataCode, fmt.Sprintf("Invalid write request. Collection %s does not exist", m.CollectionName))
 	}
 
-	// save the entry under idx into memory
 	_, ID, err := db.Write(m.Data)
 
 	if err != nil {
@@ -221,6 +220,14 @@ func (a *Rose) ReadBy(m ReadByMetadata) (*AppReadResult, Error) {
 
 	if err := m.Validate(db.FieldIndexKeys); err != nil {
 		return nil, err
+	}
+
+	if m.Pagination.Page == 0 {
+		m.Pagination.Page = 1
+	}
+
+	if m.Pagination.Limit == 0 {
+		m.Pagination.Limit = 100
 	}
 
 	dbResults, err := db.ReadBy(m)

@@ -249,3 +249,10 @@ func isIndexDataType(d string) bool {
 
 	return false
 }
+
+func paginate(page int) int {
+	t := page - 1
+	from := t * maxPaginate
+
+	return from
+}

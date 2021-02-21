@@ -235,7 +235,12 @@ func (d *db) ReadBy(m ReadByMetadata) ([]*dbReadResult, Error) {
 	var p fastjson.Parser
 	results := make([]*dbReadResult, 0)
 
-	for _, idx := range fieldIndex.Index {
+	from := paginate(m.Pagination.Page)
+
+	found := 0
+	for i := from; i <= len(fieldIndex.Index) && found < m.Pagination.Limit; i++ {
+		idx := fieldIndex.Index[i]
+
 		b, err := d.ReadDriver.ReadStrategic(idx.Pos, idx.BlockId)
 
 		if err != nil {
@@ -250,7 +255,8 @@ func (d *db) ReadBy(m ReadByMetadata) ([]*dbReadResult, Error) {
 
 		if v.Exists(m.Field) {
 			if m.DataType == stringIndexType && string(v.GetStringBytes(m.Field)) == m.Value.(string) {
-				e := json.Unmarshal(b.val, m.Data)
+				var data interface{}
+				e := json.Unmarshal(b.val, &data)
 
 				if e != nil {
 					return nil, newError(SystemMasterErrorCode, UnmarshalFailCode, fmt.Sprintf("Cannot unmarshal JSON string. This can be a bug with Rose or an invalid document. Try deleting and write the document again. The underlying error is: %s", e.Error()))
@@ -258,8 +264,10 @@ func (d *db) ReadBy(m ReadByMetadata) ([]*dbReadResult, Error) {
 
 				results = append(results, &dbReadResult{
 					ID:     b.id,
-					Result: m.Data,
+					Result: data,
 				})
+
+				found++
 			}
 		}
 	}
