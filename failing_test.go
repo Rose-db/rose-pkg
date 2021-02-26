@@ -397,5 +397,36 @@ var _ = GinkgoDescribe("Successfully failing tests", func() {
 
 		testRemoveFileSystemDb(roseDir())
 	})
+
+	GinkgoIt("Should fail to readBy is sort option is not asc or desc", func() {
+		a := testCreateRose(false)
+
+		collName := testCreateCollection(a, "coll")
+
+		err := a.NewIndex(collName, "field", stringIndexType)
+
+		gomega.Expect(err).To(gomega.BeNil())
+
+		_, err = a.ReadBy(ReadByMetadata{
+			CollectionName: collName,
+			Field:          "field",
+			Value:          "some value",
+			DataType:       "string",
+			Sort: "invalid",
+		})
+
+		gomega.Expect(err == (Error)(nil)).To(gomega.Equal(false))
+		gomega.Expect(err.Error()).To(gomega.Equal(fmt.Sprintf("Validation error. Invalid sort options. Sort can be only '%s' or '%s'", sortAsc, sortDesc)))
+
+		if err := a.Shutdown(); err != nil {
+			testRemoveFileSystemDb(roseDir())
+
+			ginkgo.Fail(fmt.Sprintf("Rose failed to shutdown with message: %s", err.Error()))
+
+			return
+		}
+
+		testRemoveFileSystemDb(roseDir())
+	})
 })
 

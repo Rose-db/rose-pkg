@@ -23,6 +23,7 @@ type ReadByMetadata struct {
 	Data interface{} `json:"data"`
 	Pagination Pagination
 	DataType indexDataType `json:"dataType"`
+	Sort sortType
 }
 
 type BulkWriteMetadata struct {
@@ -72,6 +73,10 @@ func (m WriteMetadata) Validate() Error {
 func (m ReadByMetadata) Validate(idxKeys []string) Error {
 	if m.Field == "" {
 		return newError(ValidationMasterErrorCode, InvalidUserSuppliedDataCode, "Validation error. Invalid readBy method. 'field' is empty. 'field' must be a non empty string")
+	}
+
+	if m.Sort != "" && m.Sort != sortAsc && m.Sort != sortDesc {
+		return newError(ValidationMasterErrorCode, InvalidUserSuppliedDataCode, fmt.Sprintf("Validation error. Invalid sort options. Sort can be only '%s' or '%s'", sortAsc, sortDesc))
 	}
 
 	if !hasString(idxKeys, m.Field) {

@@ -46,6 +46,11 @@ type driverType int
 const writeDriver driverType = 1
 const updateDriver driverType = 2
 
+type sortType string
+
+const sortAsc sortType = "asc"
+const sortDesc sortType = "desc"
+
 // 16MB
 const maxValSize = 5000000
 
