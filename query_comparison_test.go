@@ -57,7 +57,9 @@ var _ = GinkgoDescribe("Query comparison tests", func() {
 
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "isValid:bool == true", map[string]interface{}{})
+			err := qb.If(collName, "isValid:bool == true", map[string]interface{}{})
+
+			gomega.Expect(err).To(gomega.BeNil())
 
 			queryResults, err := r.Query(qb)
 
@@ -125,7 +127,9 @@ var _ = GinkgoDescribe("Query comparison tests", func() {
 
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "isValid:bool != false", map[string]interface{}{})
+			err := qb.If(collName, "isValid:bool != false", map[string]interface{}{})
+
+			gomega.Expect(err).To(gomega.BeNil())
 
 			queryResults, err := r.Query(qb)
 
@@ -194,7 +198,9 @@ var _ = GinkgoDescribe("Query comparison tests", func() {
 
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "isValid:bool == true && price:float == 2.35", map[string]interface{}{})
+			err := qb.If(collName, "isValid:bool == true && price:float == 2.35", map[string]interface{}{})
+
+			gomega.Expect(err).To(gomega.BeNil())
 
 			queryResults, err := r.Query(qb)
 
@@ -263,7 +269,9 @@ var _ = GinkgoDescribe("Query comparison tests", func() {
 
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "isValid:bool == true && price:float != 2.34", map[string]interface{}{})
+			err := qb.If(collName, "isValid:bool == true && price:float != 2.34", map[string]interface{}{})
+
+			gomega.Expect(err).To(gomega.BeNil())
 
 			queryResults, err := r.Query(qb)
 
@@ -332,12 +340,13 @@ var _ = GinkgoDescribe("Query comparison tests", func() {
 
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "isValid:bool == true && price:float > 1.23", map[string]interface{}{})
+			err := qb.If(collName, "isValid:bool == true && price:float > 1.23", map[string]interface{}{})
+
+			gomega.Expect(err).To(gomega.BeNil())
 
 			queryResults, err := r.Query(qb)
 
 			gomega.Expect(len(queryResults)).To(gomega.Equal(n / 4))
-
 			gomega.Expect(err).To(gomega.BeNil())
 		}
 
@@ -396,12 +405,11 @@ var _ = GinkgoDescribe("Query comparison tests", func() {
 
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "isValid:bool == true && price:float < 2.36", map[string]interface{}{})
+			err := qb.If(collName, "isValid:bool == true && price:float < 2.36", map[string]interface{}{})
+			gomega.Expect(err).To(gomega.BeNil())
 
 			queryResults, err := r.Query(qb)
-
 			gomega.Expect(len(queryResults)).To(gomega.Equal(n))
-
 			gomega.Expect(err).To(gomega.BeNil())
 		}
 
@@ -469,12 +477,11 @@ var _ = GinkgoDescribe("Query comparison tests", func() {
 
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "isValid:bool == true && price:float <= 2.36", map[string]interface{}{})
+			err := qb.If(collName, "isValid:bool == true && price:float <= 2.36", map[string]interface{}{})
+			gomega.Expect(err).To(gomega.BeNil())
 
 			queryResults, err := r.Query(qb)
-
 			gomega.Expect(len(queryResults)).To(gomega.Equal(n))
-
 			gomega.Expect(err).To(gomega.BeNil())
 		}
 
@@ -533,12 +540,11 @@ var _ = GinkgoDescribe("Query comparison tests", func() {
 
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "isValid:bool == true && price:float >= 2.35", map[string]interface{}{})
+			err := qb.If(collName, "isValid:bool == true && price:float >= 2.35", map[string]interface{}{})
+			gomega.Expect(err).To(gomega.BeNil())
 
 			queryResults, err := r.Query(qb)
-
 			gomega.Expect(len(queryResults)).To(gomega.Equal(n))
-
 			gomega.Expect(err).To(gomega.BeNil())
 		}
 
@@ -603,12 +609,11 @@ var _ = GinkgoDescribe("Query comparison tests", func() {
 
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "isValid:bool == true && price:float > 1.23 && randomNum:int == 5", map[string]interface{}{})
+			err := qb.If(collName, "isValid:bool == true && price:float > 1.23 && randomNum:int == 5", map[string]interface{}{})
+			gomega.Expect(err).To(gomega.BeNil())
 
 			queryResults, err := r.Query(qb)
-
 			gomega.Expect(len(queryResults)).To(gomega.Equal(n / 4))
-
 			gomega.Expect(err).To(gomega.BeNil())
 		}
 
@@ -673,12 +678,11 @@ var _ = GinkgoDescribe("Query comparison tests", func() {
 
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "isValid:bool == true && price:float > 1.23 && randomNum:int != 6", map[string]interface{}{})
+			err := qb.If(collName, "isValid:bool == true && price:float > 1.23 && randomNum:int != 6", map[string]interface{}{})
+			gomega.Expect(err).To(gomega.BeNil())
 
 			queryResults, err := r.Query(qb)
-
 			gomega.Expect(len(queryResults)).To(gomega.Equal(n / 4))
-
 			gomega.Expect(err).To(gomega.BeNil())
 		}
 
@@ -743,12 +747,11 @@ var _ = GinkgoDescribe("Query comparison tests", func() {
 
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "isValid:bool == true && price:float < 2.36 && randomNum:int < 6", map[string]interface{}{})
+			err := qb.If(collName, "isValid:bool == true && price:float < 2.36 && randomNum:int < 6", map[string]interface{}{})
+			gomega.Expect(err).To(gomega.BeNil())
 
 			queryResults, err := r.Query(qb)
-
 			gomega.Expect(len(queryResults)).To(gomega.Equal(n / 4))
-
 			gomega.Expect(err).To(gomega.BeNil())
 		}
 
@@ -813,12 +816,11 @@ var _ = GinkgoDescribe("Query comparison tests", func() {
 
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "isValid:bool == true && price:float < 2.36 && randomNum:int > 4", map[string]interface{}{})
+			err := qb.If(collName, "isValid:bool == true && price:float < 2.36 && randomNum:int > 4", map[string]interface{}{})
+			gomega.Expect(err).To(gomega.BeNil())
 
 			queryResults, err := r.Query(qb)
-
 			gomega.Expect(len(queryResults)).To(gomega.Equal(n / 4))
-
 			gomega.Expect(err).To(gomega.BeNil())
 		}
 
@@ -883,12 +885,11 @@ var _ = GinkgoDescribe("Query comparison tests", func() {
 
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "isValid:bool == true && price:float < 2.36 && randomNum:int <= 5", map[string]interface{}{})
+			err := qb.If(collName, "isValid:bool == true && price:float < 2.36 && randomNum:int <= 5", map[string]interface{}{})
+			gomega.Expect(err).To(gomega.BeNil())
 
 			queryResults, err := r.Query(qb)
-
 			gomega.Expect(len(queryResults)).To(gomega.Equal(n / 4))
-
 			gomega.Expect(err).To(gomega.BeNil())
 		}
 
@@ -953,12 +954,11 @@ var _ = GinkgoDescribe("Query comparison tests", func() {
 
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "isValid:bool == true && price:float < 2.36 && randomNum:int >= 5", map[string]interface{}{})
+			err := qb.If(collName, "isValid:bool == true && price:float < 2.36 && randomNum:int >= 5", map[string]interface{}{})
+			gomega.Expect(err).To(gomega.BeNil())
 
 			queryResults, err := r.Query(qb)
-
 			gomega.Expect(len(queryResults)).To(gomega.Equal(n / 4))
-
 			gomega.Expect(err).To(gomega.BeNil())
 		}
 
@@ -1024,12 +1024,11 @@ var _ = GinkgoDescribe("Query comparison tests", func() {
 
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "isValid:bool == false && price:float == 2.36 && randomNum:int >= 6 || createdAt:date == 2019-3-12", map[string]interface{}{})
+			err := qb.If(collName, "isValid:bool == false && price:float == 2.36 && randomNum:int >= 6 || createdAt:date == 2019-3-12", map[string]interface{}{})
+			gomega.Expect(err).To(gomega.BeNil())
 
 			queryResults, err := r.Query(qb)
-
 			gomega.Expect(len(queryResults)).To(gomega.Equal(n))
-
 			gomega.Expect(err).To(gomega.BeNil())
 		}
 
@@ -1095,12 +1094,11 @@ var _ = GinkgoDescribe("Query comparison tests", func() {
 
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "isValid:bool == false && price:float == 2.36 && randomNum:int >= 6 || createdAt:date != 2018-3-12", map[string]interface{}{})
+			err := qb.If(collName, "isValid:bool == false && price:float == 2.36 && randomNum:int >= 6 || createdAt:date != 2018-3-12", map[string]interface{}{})
+			gomega.Expect(err).To(gomega.BeNil())
 
 			queryResults, err := r.Query(qb)
-
 			gomega.Expect(len(queryResults)).To(gomega.Equal(n))
-
 			gomega.Expect(err).To(gomega.BeNil())
 		}
 
@@ -1166,12 +1164,11 @@ var _ = GinkgoDescribe("Query comparison tests", func() {
 
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "isValid:bool == false && price:float == 2.36 && randomNum:int >= 6 || createdAt:date < 2020-3-12", map[string]interface{}{})
+			err := qb.If(collName, "isValid:bool == false && price:float == 2.36 && randomNum:int >= 6 || createdAt:date < 2020-3-12", map[string]interface{}{})
+			gomega.Expect(err).To(gomega.BeNil())
 
 			queryResults, err := r.Query(qb)
-
 			gomega.Expect(len(queryResults)).To(gomega.Equal(n))
-
 			gomega.Expect(err).To(gomega.BeNil())
 		}
 
@@ -1237,12 +1234,11 @@ var _ = GinkgoDescribe("Query comparison tests", func() {
 
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "isValid:bool == false && price:float == 2.36 && randomNum:int >= 6 || createdAt:date > 2018-03-12", map[string]interface{}{})
+			err := qb.If(collName, "isValid:bool == false && price:float == 2.36 && randomNum:int >= 6 || createdAt:date > 2018-03-12", map[string]interface{}{})
+			gomega.Expect(err).To(gomega.BeNil())
 
 			queryResults, err := r.Query(qb)
-
 			gomega.Expect(len(queryResults)).To(gomega.Equal(n))
-
 			gomega.Expect(err).To(gomega.BeNil())
 		}
 
@@ -1319,12 +1315,11 @@ var _ = GinkgoDescribe("Query comparison tests", func() {
 
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "isValid:bool == false && price:float == 2.36 && randomNum:int >= 6 || createdAt:date <= 2019-03-12", map[string]interface{}{})
+			err := qb.If(collName, "isValid:bool == false && price:float == 2.36 && randomNum:int >= 6 || createdAt:date <= 2019-03-12", map[string]interface{}{})
+			gomega.Expect(err).To(gomega.BeNil())
 
 			queryResults, err := r.Query(qb)
-
 			gomega.Expect(len(queryResults)).To(gomega.Equal(n))
-
 			gomega.Expect(err).To(gomega.BeNil())
 		}
 
@@ -1402,12 +1397,11 @@ var _ = GinkgoDescribe("Query comparison tests", func() {
 
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "isValid:bool == false && price:float == 2.36 && randomNum:int >= 6 || createdAt:date >= 2019-03-12", map[string]interface{}{})
+			err := qb.If(collName, "isValid:bool == false && price:float == 2.36 && randomNum:int >= 6 || createdAt:date >= 2019-03-12", map[string]interface{}{})
+			gomega.Expect(err).To(gomega.BeNil())
 
 			queryResults, err := r.Query(qb)
-
 			gomega.Expect(len(queryResults)).To(gomega.Equal(n))
-
 			gomega.Expect(err).To(gomega.BeNil())
 		}
 
@@ -1474,14 +1468,13 @@ var _ = GinkgoDescribe("Query comparison tests", func() {
 
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "isValid:bool == false && price:float == 2.36 && randomNum:int >= 6 || updatedAt:date_time == #updatedAt", map[string]interface{}{
+			err := qb.If(collName, "isValid:bool == false && price:float == 2.36 && randomNum:int >= 6 || updatedAt:date_time == #updatedAt", map[string]interface{}{
 				"#updatedAt": "2019-3-12 12:34:56",
 			})
+			gomega.Expect(err).To(gomega.BeNil())
 
 			queryResults, err := r.Query(qb)
-
 			gomega.Expect(len(queryResults)).To(gomega.Equal(n))
-
 			gomega.Expect(err).To(gomega.BeNil())
 		}
 
@@ -1548,14 +1541,13 @@ var _ = GinkgoDescribe("Query comparison tests", func() {
 
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "isValid:bool == false && price:float == 2.36 && randomNum:int >= 6 || updatedAt:date_time != #updatedAt", map[string]interface{}{
+			err := qb.If(collName, "isValid:bool == false && price:float == 2.36 && randomNum:int >= 6 || updatedAt:date_time != #updatedAt", map[string]interface{}{
 				"#updatedAt": "2019-3-12 12:34:55",
 			})
+			gomega.Expect(err).To(gomega.BeNil())
 
 			queryResults, err := r.Query(qb)
-
 			gomega.Expect(len(queryResults)).To(gomega.Equal(n))
-
 			gomega.Expect(err).To(gomega.BeNil())
 		}
 
@@ -1622,14 +1614,13 @@ var _ = GinkgoDescribe("Query comparison tests", func() {
 
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "isValid:bool == false && price:float == 2.36 && randomNum:int >= 6 || updatedAt:date_time < #updatedAt", map[string]interface{}{
+			err := qb.If(collName, "isValid:bool == false && price:float == 2.36 && randomNum:int >= 6 || updatedAt:date_time < #updatedAt", map[string]interface{}{
 				"#updatedAt": "2019-3-12 12:34:57",
 			})
+			gomega.Expect(err).To(gomega.BeNil())
 
 			queryResults, err := r.Query(qb)
-
 			gomega.Expect(len(queryResults)).To(gomega.Equal(n))
-
 			gomega.Expect(err).To(gomega.BeNil())
 		}
 
@@ -1696,14 +1687,13 @@ var _ = GinkgoDescribe("Query comparison tests", func() {
 
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "isValid:bool == false && price:float == 2.36 && randomNum:int >= 6 || updatedAt:date_time > #updatedAt", map[string]interface{}{
+			err := qb.If(collName, "isValid:bool == false && price:float == 2.36 && randomNum:int >= 6 || updatedAt:date_time > #updatedAt", map[string]interface{}{
 				"#updatedAt": "2019-3-12 12:34:53",
 			})
+			gomega.Expect(err).To(gomega.BeNil())
 
 			queryResults, err := r.Query(qb)
-
 			gomega.Expect(len(queryResults)).To(gomega.Equal(n))
-
 			gomega.Expect(err).To(gomega.BeNil())
 		}
 
@@ -1782,14 +1772,13 @@ var _ = GinkgoDescribe("Query comparison tests", func() {
 
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "isValid:bool == false && price:float == 2.36 && randomNum:int >= 6 || updatedAt:date_time <= #updatedAt", map[string]interface{}{
+			err := qb.If(collName, "isValid:bool == false && price:float == 2.36 && randomNum:int >= 6 || updatedAt:date_time <= #updatedAt", map[string]interface{}{
 				"#updatedAt": "2019-3-12 12:34:56",
 			})
+			gomega.Expect(err).To(gomega.BeNil())
 
 			queryResults, err := r.Query(qb)
-
 			gomega.Expect(len(queryResults)).To(gomega.Equal(n))
-
 			gomega.Expect(err).To(gomega.BeNil())
 		}
 
@@ -1868,14 +1857,13 @@ var _ = GinkgoDescribe("Query comparison tests", func() {
 
 			qb := NewQueryBuilder()
 
-			qb.If(collName, "isValid:bool == false && price:float == 2.36 && randomNum:int >= 6 || updatedAt:date_time >= #updatedAt", map[string]interface{}{
+			err := qb.If(collName, "isValid:bool == false && price:float == 2.36 && randomNum:int >= 6 || updatedAt:date_time >= #updatedAt", map[string]interface{}{
 				"#updatedAt": "2019-3-12 12:34:56",
 			})
+			gomega.Expect(err).To(gomega.BeNil())
 
 			queryResults, err := r.Query(qb)
-
 			gomega.Expect(len(queryResults)).To(gomega.Equal(n))
-
 			gomega.Expect(err).To(gomega.BeNil())
 		}
 

@@ -313,17 +313,13 @@ func (a *Rose) Replace(m ReplaceMetadata) (*AppResult, Error) {
 }
 
 func (a *Rose) Query(qb *queryBuilder) ([]QueryResult, Error) {
-	if qb.singleQuery != nil {
-		db, ok := a.Databases[qb.singleQuery.collName]
+	db, ok := a.Databases[qb.query.collName]
 
-		if !ok {
-			return nil, newError(GenericMasterErrorCode, InvalidUserSuppliedDataCode, fmt.Sprintf("Invalid read request. Collection %s does not exist", qb.singleQuery.collName))
-		}
-
-		return db.Query(qb.singleQuery)
+	if !ok {
+		return nil, newError(GenericMasterErrorCode, InvalidUserSuppliedDataCode, fmt.Sprintf("Invalid read request. Collection %s does not exist", qb.query.collName))
 	}
 
-	return nil, nil
+	return db.Query(qb.query)
 }
 
 func (a *Rose) Size() (uint64, Error) {

@@ -395,7 +395,7 @@ func (d *db) Replace(id int, data interface{}) Error {
 	return nil
 }
 
-func (d *db) Query(singleQuery *singleQuery) ([]QueryResult, Error) {
+func (d *db)  Query(singleQuery *singleQuery) ([]QueryResult, Error) {
 	ch := make(chan *queueResponse)
 
 	return d.Balancer.Push(&balancerRequest{

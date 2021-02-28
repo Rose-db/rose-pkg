@@ -49,16 +49,7 @@ type operatorStages struct {
 }
 
 func (sc *singleCondition) resolveCondition(query string, params map[string]interface{}) (string, interface{}, comparisonType) {
-	conds := []string{
-		"==",
-		"!=",
-		"<=",
-		">=",
-		"<",
-		">",
-	}
-
-	for _, c := range conds {
+	for _, c := range comparisonOperators {
 		s := strings.Split(query, c)
 
 		if len(s) == 2 {
@@ -114,7 +105,6 @@ func (sc *singleCondition) getExplicitDataType(field string) (string, dataType) 
 
 	return field, ""
 }
-
 
 func (sq *singleQuery) createConditions(query string) []map[string]string {
 	parts := strings.Split(query, " ")
